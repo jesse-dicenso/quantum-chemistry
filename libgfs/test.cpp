@@ -13,6 +13,7 @@ int main(){
 	PGF p3(1.35, center[0], center[1], center[2], 1, 0, 0);
 	vector<PGF> pv({p1, p2, p3});
 	vector<double> dv({0.67978, 0.012334, 0.02221});
+	p1.printpgf();
 	CGF c1(3, pv, dv);
 	c1.printcgf();
 }
