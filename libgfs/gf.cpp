@@ -62,14 +62,10 @@ double PGF::getexp(){
 
 void PGF::printpgf(){
 	cout << "Start PGF\n";
-	cout << "   Exponent:\n";
-	cout << "   " << exp << '\n';
-	cout << "   Center (x, y, z):\n";
-	cout << "   " << setprecision(15) << x << ", " << setprecision(15) << y << ", " << setprecision(15) << z << '\n';
-	cout << "   Angular momenta (l, m, n):\n";
-	cout << "   " << l << ", " << m << ", " << n << '\n';
-	cout << "   Normalization constant: ";
-	cout << "   " << N << '\n';
+	cout << "   Exponent: " << exp << '\n';
+	cout << "   Center (x, y, z): " << setprecision(15) << x << ", " << setprecision(15) << y << ", " << setprecision(15) << z << '\n';
+	cout << "   Angular momenta (l, m, n): " << l << ", " << m << ", " << n << '\n';
+	cout << "   Normalization constant: " << N << '\n';
 	cout << "End PGF\n";
 }
 
