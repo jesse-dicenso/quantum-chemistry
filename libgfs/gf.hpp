@@ -13,7 +13,7 @@ class PGF{
 		double y;
 		double z;
 
-		int getexp();
+		double getexp();
 		int getl();
 		int getm();
 		int getn();
@@ -31,8 +31,11 @@ class PGF{
 
 class CGF{
 	public:
-		CGF(int len, vector<PGF> pgf, vector<double> d);
+		CGF(int lenC, vector<PGF> pgfC, vector<double> dC);
 		
+		int getlen();
+		vector<PGF> getpgf();
+		vector<double> getd();
 		double getN();
 		void printcgf();
 
@@ -41,6 +44,6 @@ class CGF{
 		vector<PGF> pgf;
 		vector<double> d;
 		double N;
-}
+};
 
 #endif
