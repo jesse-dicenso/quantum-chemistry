@@ -1,12 +1,10 @@
 libmath - Library for mathematical routines and functions
-
 ---------------------------------------------------------------
 miscmath.hpp - miscellaneous functions
 
 Functions:
 
-fact(n)  : factorial, integer input
-dfact(n) : "double factorial" 
-	dfact(2n-1) = (2n-1)!! = (2n-1)*(2n-3)*...*5*3*1
-	demands odd input
+fact(n)        : factorial, integer input
+dfact(n)       : double factorial, integer input
+binomial(n, k) : binomial coefficient, "n choose k"
 ---------------------------------------------------------------

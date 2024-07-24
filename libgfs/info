@@ -1,5 +1,4 @@
 libgau - Library for Gaussian basis functions
-
 ---------------------------------------------------------------
 gf.hpp - Class for:
 
@@ -25,4 +24,3 @@ gf.hpp - Class for:
 ---------------------------------------------------------------
 
 todo: standard basis set library
-

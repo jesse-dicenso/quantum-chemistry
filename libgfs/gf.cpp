@@ -1,5 +1,5 @@
 #include "gf.hpp"
-#include "../libmath/miscmath.hpp" // Need for dfact(n)
+#include "../libmath/miscmath.hpp"
 #include <cmath>
 #include <cassert>
 #include <iostream>
@@ -10,12 +10,11 @@ using namespace std;
 
 // class PGF
 
-PGF::PGF(double exponent, double Rx, double Ry, double Rz, int Ll, int Lm, int Ln){
+PGF::PGF(double exponent, vector<double> pos, int Ll, int Lm, int Ln){
 	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
+	assert(pos.size()==3);
 	exp = exponent;
-	x = Rx;
-	y = Ry;
-	z = Rz;
+	xyz = pos;
 	l = Ll;
 	m = Lm;
 	n = Ln;
@@ -63,10 +62,19 @@ double PGF::getexp(){
 void PGF::printpgf(){
 	cout << "Start PGF\n";
 	cout << "   Exponent: " << exp << '\n';
-	cout << "   Center (x, y, z): " << setprecision(15) << x << ", " << setprecision(15) << y << ", " << setprecision(15) << z << '\n';
+	cout << "   Center (x, y, z): " << setprecision(15) << xyz[0] << ", " << setprecision(15) << xyz[1] << ", " << setprecision(15) << xyz[2] << '\n';
 	cout << "   Angular momenta (l, m, n): " << l << ", " << m << ", " << n << '\n';
 	cout << "   Normalization constant: " << N << '\n';
 	cout << "End PGF\n";
+}
+
+bool operator== (const PGF &p1, const PGF &p2){
+	if((p1.exp==p2.exp) && (p1.xyz==p2.xyz) && (p1.l==p2.l) && (p1.m==p2.m) && (p1.n==p2.n)){
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 // class CGF
@@ -75,7 +83,7 @@ CGF::CGF(int lenC, vector<PGF> pgfC, vector<double> dC){
 	assert((lenC == pgfC.size()) && (lenC == dC.size()));
 	// Center and angular momenta of each PGF must be the same!
 	for(int h = 1; h < lenC; h++){
-		assert((pgfC[0].x==pgfC[h].x) && (pgfC[0].y==pgfC[h].y) && (pgfC[0].z==pgfC[h].z));
+		assert((pgfC[0].xyz[0]==pgfC[h].xyz[0]) && (pgfC[0].xyz[1]==pgfC[h].xyz[1]) && (pgfC[0].xyz[2]==pgfC[h].xyz[2]));
 		assert((pgfC[0].getl()==pgfC[h].getl()) && (pgfC[0].getm()==pgfC[h].getm()) && (pgfC[0].getn()==pgfC[h].getn()));
 	}
 		
@@ -139,7 +147,7 @@ void CGF::printcgf(){
 	cout << "Start CGF\n";
 	cout << "Contraction Length: " << len << '\n';
 	cout << "Normalization constant: " << setprecision(15) << N << '\n';
-	cout << "Center (x, y, z): " << setprecision(15) << pgf[0].x << ", " << setprecision(15) << pgf[0].y << ", "  << setprecision(15) << pgf[0].z << '\n';
+	cout << "Center (x, y, z): " << setprecision(15) << pgf[0].xyz[0] << ", " << setprecision(15) << pgf[0].xyz[1] << ", "  << setprecision(15) << pgf[0].xyz[2] << '\n';
 	cout << "Angular momenta (l, m, n): " << pgf[0].getl() << ", " << pgf[0].getm() << ", " << pgf[0].getn() << '\n';
 	for(int i = 0; i < len; i++){
 		cout << "   PGF " << i << '\n';
@@ -147,4 +155,16 @@ void CGF::printcgf(){
 		cout << "      Exponent: " << pgf[i].getexp() << '\n';
 	}
 	cout << "End CGF\n";
+}
+
+double fk(int k, int y1, int y2, double PA, double PB){
+        double sum = 0;
+        for(int i = 0; i <= y1; i++){
+                for(int j = 0; j <= y2; j++){
+                        if((i+j)==k){
+                                sum += pow(PA,(y1-i))*pow(PB,(y2-j))*binomial(y1,i)*binomial(y2,j);
+                        }
+                }
+        }
+        return sum;
 }

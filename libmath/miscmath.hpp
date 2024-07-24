@@ -30,4 +30,9 @@ int dfact(int n){
 	}
 }
 
+int binomial(int n, int k){
+	assert((n >= 0) && (k >= 0) && (n >= k));
+	return fact(n) / (fact(k) * fact(n - k));
+}
+
 #endif

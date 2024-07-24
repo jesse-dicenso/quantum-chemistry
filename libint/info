@@ -1,0 +1,11 @@
+libint - Library for integration routines
+---------------------------------------------------------------
+0e.hpp - header file for computing overlap integrals
+
+---------------------------------------------------------------
+1e.hpp - header file for computing one-electron integrals
+
+---------------------------------------------------------------
+2e.hpp - header file for computing two-electron integrals
+
+---------------------------------------------------------------
