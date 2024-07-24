@@ -1,14 +1,7 @@
-#ifndef 0EHEADERDEF
-#define 0EHEADERDEF
+#ifndef ZEROEHEADERDEF
+#define ZEROEHEADERDEF
 
-#include "../libgfs/gf.hpp"
-#include "../libmath/miscmath.hpp"
-
-double overlap(CGF A, CGF B){
-	if(((A.getl()+A.getm()+A.getn())==0) && ((B.getl()+B.)==0))
-		
-	return 0;
-}
-
+double overlap(PGF A, PGF B);
+double overlap(CGF A, CGF B);
 
 #endif
