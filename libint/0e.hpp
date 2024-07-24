@@ -6,7 +6,7 @@
 
 double overlap(CGF A, CGF B){
 	if(((A.getl()+A.getm()+A.getn())==0) && ((B.getl()+B.)==0))
-	
+		
 	return 0;
 }
 

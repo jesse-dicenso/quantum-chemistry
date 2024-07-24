@@ -3,6 +3,7 @@
 
 #include<cmath>
 #include<cassert>
+#include<vector>
 
 int fact(int n){
 	assert(n >= 0);
@@ -33,6 +34,15 @@ int dfact(int n){
 int binomial(int n, int k){
 	assert((n >= 0) && (k >= 0) && (n >= k));
 	return fact(n) / (fact(k) * fact(n - k));
+}
+
+double dot(vector<double> a, vector<double> b){
+	assert(a.size()==b.size());
+	double sum = 0;
+	for(int i = 0; i < a.size(); i++){
+		sum += a[i]*b[i];
+	}
+	return sum;
 }
 
 #endif

@@ -157,6 +157,17 @@ void CGF::printcgf(){
 	cout << "End CGF\n";
 }
 
+bool operator== (const CGF &c1, const CGF &c2){
+	if((c1.len == c2.len) && (c1.N == c2.N) && (c1.d == c2.d) && (c1.pgf == c2.pgf)){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+// misc functions related to PGF/CGF
+
 double fk(int k, int y1, int y2, double PA, double PB){
         double sum = 0;
         for(int i = 0; i <= y1; i++){
@@ -167,4 +178,22 @@ double fk(int k, int y1, int y2, double PA, double PB){
                 }
         }
         return sum;
+}
+
+double K(PGF p1, PGF p2){
+	vector<double> AB(3);
+	for(int i = 0; i < 3; i++){
+		AB[i] = p1.xyz[i] - p2.xyz[i];
+	}
+	return exp(-(p1.getexp()*p2.getexp()/(p1.getexp()+p2.getexp()))*dot(AB,AB));
+}
+
+vector<double> P(PGF p1, PGF p2){
+	vector<double> vec(3);
+	double a = p1.getexp();
+	double b = p2.getexp();
+	for(int i = 0; i < 3; i++){
+		vec[i] = (a*p1.xyz[i]+b*p2.xyz[i])/(a+b);
+	}
+	return vec;
 }

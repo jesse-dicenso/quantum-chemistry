@@ -2,8 +2,6 @@
 #define GFHEADERDEF
 
 #include <vector>
-#include <cmath>
-//#include "../libmath/miscmath.hpp"
 
 using namespace std;
 
@@ -39,6 +37,7 @@ class CGF{
 		vector<double> getd();
 		double getN();
 		void printcgf();
+		friend bool operator== (const CGF &c1, const CGF &c2);
 
 	private:
 		int len;
@@ -47,10 +46,17 @@ class CGF{
 		double N;
 };
 
+// Functions for Gaussian Product Theorem
+
 // fk: returns components of coefficients
 // for contractions of arbitrary angular momentum
 // in Gaussian Product Theorem
-
 double fk(int k, int y1, int y2, double PA, double PB);
+
+// Product Constant
+double K(PGF p1, PGF p2);
+
+// New Center
+vector<double> P(PGF p1, PGF p2);
 
 #endif
