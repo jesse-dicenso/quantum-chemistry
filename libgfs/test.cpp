@@ -2,17 +2,18 @@
 #include <iostream>
 #include <iomanip>
 #include "gf.hpp"
-#include "../libint/0e.hpp"
+//#include "../libint/0e.hpp"
 #include <vector>
 
 using namespace std;
 
 int main(){
-	vector<double> center1({1.0994558, 2.598574, 12.000000123});
+	vector<double> center1({1.5994558, 2.598574, 12.000000123});
 	vector<double> center2({1.5994558, 2.598574, 12.000000123});
-	PGF p1(1.27, center1, 2, 1, 0);
-	PGF p2(1.27, center2, 1, 1, 1);
+	PGF p1(1.27, center1, 2, 0, 0);
+	PGF p2(1.27, center2, 0, 0, 0);
 	cout << "K = " << K(p1, p2) << '\n';
 	cout << "P = " << P(p1, p2)[0] << "   " << P(p1, p2)[1] << "   " << P(p1, p2)[2] << '\n';
-	cout << overlap(p1, p2);
+	double r = overlap(p1, p2);
+	cout << setprecision(15) << r << '\n';
 }	

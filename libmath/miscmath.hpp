@@ -1,9 +1,11 @@
 #ifndef MISCMATHHEADERDEF
 #define MISCMATHHEADERDEF
 
-#include<cmath>
-#include<cassert>
-#include<vector>
+#include "miscmath.hpp"
+
+#include <cmath>
+#include <cassert>
+#include <vector>
 
 int fact(int n){
 	assert(n >= 0);
