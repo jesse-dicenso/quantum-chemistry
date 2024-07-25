@@ -97,7 +97,7 @@ CGF::CGF(int lenC, vector<PGF> pgfC, vector<double> dC){
 				sum += d[i]*d[j] / pow((pgf[i].getexp() + pgf[j].getexp()), 1.5);
 			}
 		}
-		N = pow(M_PI, 0.75) / pow(sum, 0.5);
+		N = pow(M_PI, -0.75) / pow(sum, 0.5);
 	}
 	else{
 		double sum = 0.0;
@@ -199,12 +199,9 @@ vector<double> P(PGF p1, PGF p2){
 }
 
 double overlap(PGF A, PGF B){
-        double S = 1.0;
-
-        //if(A==B){
-        //        return S;
-        //}
-
+        if(A==B){
+                return 1.0;
+        }
         double l1 = A.getl();
         double l2 = B.getl();
         double m1 = A.getm();
@@ -240,8 +237,23 @@ double overlap(PGF A, PGF B){
                 Iz += fk(2*i, n1, n2, PA[2], PB[2])*(dfact(2*i-1)/pow(2*gam,i))*pow((M_PI/gam),0.5);
         }
         // Remember to normalize
-        S = (A.getN() * B.getN())*Kab*Ix*Iy*Iz;
-        //assert(S <= 1.0);
-        return S;
+        return (A.getN() * B.getN())*Kab*Ix*Iy*Iz;
 }
 
+double overlap(CGF A, CGF B){
+	if(A==B){
+		return 1.0;
+	}
+	double sum = 0;
+	vector<double> dA = A.getd();
+	vector<double> dB = B.getd();
+	vector<PGF> GA = A.getpgf();
+	vector<PGF> GB = B.getpgf();
+	for(int i = 0; i < A.getlen(); i++){
+		for(int j = 0; j < B.getlen(); j++){
+			sum += dA[i] * (overlap(GA[i], GB[j]) / (GA[i].getN() * GB[j].getN())) * dB[j];
+		}
+	}
+	//Remember to normalize; we "unnormalized" the PGFs above 
+	return (A.getN() * B.getN() * sum);
+}

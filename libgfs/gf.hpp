@@ -60,7 +60,7 @@ double K(PGF p1, PGF p2);
 vector<double> P(PGF p1, PGF p2);
 
 // overlap test
-
 double overlap(PGF A, PGF B);
+double overlap(CGF A, CGF B);
 
 #endif
