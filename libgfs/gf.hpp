@@ -3,13 +3,11 @@
 
 #include <vector>
 
-using namespace std;
-
 class PGF{
 	public:
-		PGF(double exponent, vector<double> pos, int Ll, int Lm, int Ln);
+		PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln);
 		
-		vector<double> xyz;
+		std::vector<double> xyz;
 
 		double getexp();
 		int getl();
@@ -30,19 +28,19 @@ class PGF{
 
 class CGF{
 	public:
-		CGF(int lenC, vector<PGF> pgfC, vector<double> dC);
+		CGF(int lenC, std::vector<PGF> pgfC, std::vector<double> dC);
 		
 		int getlen();
-		vector<PGF> getpgf();
-		vector<double> getd();
+		std::vector<PGF> getpgf();
+		std::vector<double> getd();
 		double getN();
 		void printcgf();
 		friend bool operator== (const CGF &c1, const CGF &c2);
 
 	private:
 		int len;
-		vector<PGF> pgf;
-		vector<double> d;
+		std::vector<PGF> pgf;
+		std::vector<double> d;
 		double N;
 };
 
@@ -57,7 +55,7 @@ double fk(int k, int y1, int y2, double PA, double PB);
 double K(PGF p1, PGF p2);
 
 // New Center
-vector<double> P(PGF p1, PGF p2);
+std::vector<double> P(PGF p1, PGF p2);
 
 // overlap test
 double overlap(PGF A, PGF B);

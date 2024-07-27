@@ -1,16 +1,15 @@
 #include "gf.hpp"
 #include "../libmath/miscmath.hpp"
+
 #include <cmath>
 #include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <vector>
 
-using namespace std;
-
 // class PGF
 
-PGF::PGF(double exponent, vector<double> pos, int Ll, int Lm, int Ln){
+PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln){
 	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
 	assert(pos.size()==3);
 	exp = exponent;
@@ -60,12 +59,12 @@ double PGF::getexp(){
 }
 
 void PGF::printpgf(){
-	cout << "Start PGF\n";
-	cout << "   Exponent: " << exp << '\n';
-	cout << "   Center (x, y, z): " << setprecision(15) << xyz[0] << ", " << setprecision(15) << xyz[1] << ", " << setprecision(15) << xyz[2] << '\n';
-	cout << "   Angular momenta (l, m, n): " << l << ", " << m << ", " << n << '\n';
-	cout << "   Normalization constant: " << N << '\n';
-	cout << "End PGF\n";
+	std::cout << "Start PGF\n";
+	std::cout << "   Exponent: " << exp << '\n';
+	std::cout << "   Center (x, y, z): " << std::setprecision(15) << xyz[0] << ", " << std::setprecision(15) << xyz[1] << ", " << std::setprecision(15) << xyz[2] << '\n';
+	std::cout << "   Angular momenta (l, m, n): " << l << ", " << m << ", " << n << '\n';
+	std::cout << "   Normalization constant: " << N << '\n';
+	std::cout << "End PGF\n";
 }
 
 bool operator== (const PGF &p1, const PGF &p2){
@@ -79,7 +78,7 @@ bool operator== (const PGF &p1, const PGF &p2){
 
 // class CGF
 
-CGF::CGF(int lenC, vector<PGF> pgfC, vector<double> dC){
+CGF::CGF(int lenC, std::vector<PGF> pgfC, std::vector<double> dC){
 	assert((lenC == pgfC.size()) && (lenC == dC.size()));
 	// Center and angular momenta of each PGF must be the same!
 	for(int h = 1; h < lenC; h++){
@@ -131,11 +130,11 @@ int CGF::getlen(){
 	return len;
 }
 
-vector<PGF> CGF::getpgf(){
+std::vector<PGF> CGF::getpgf(){
 	return pgf;
 }
 
-vector<double> CGF::getd(){
+std::vector<double> CGF::getd(){
 	return d;
 }
 
@@ -144,17 +143,17 @@ double CGF::getN(){
 }
 
 void CGF::printcgf(){
-	cout << "Start CGF\n";
-	cout << "Contraction Length: " << len << '\n';
-	cout << "Normalization constant: " << setprecision(15) << N << '\n';
-	cout << "Center (x, y, z): " << setprecision(15) << pgf[0].xyz[0] << ", " << setprecision(15) << pgf[0].xyz[1] << ", "  << setprecision(15) << pgf[0].xyz[2] << '\n';
-	cout << "Angular momenta (l, m, n): " << pgf[0].getl() << ", " << pgf[0].getm() << ", " << pgf[0].getn() << '\n';
+	std::cout << "Start CGF\n";
+	std::cout << "Contraction Length: " << len << '\n';
+	std::cout << "Normalization constant: " << std::setprecision(15) << N << '\n';
+	std::cout << "Center (x, y, z): " << std::setprecision(15) << pgf[0].xyz[0] << ", " << std::setprecision(15) << pgf[0].xyz[1] << ", "  << std::setprecision(15) << pgf[0].xyz[2] << '\n';
+	std::cout << "Angular momenta (l, m, n): " << pgf[0].getl() << ", " << pgf[0].getm() << ", " << pgf[0].getn() << '\n';
 	for(int i = 0; i < len; i++){
-		cout << "   PGF " << i << '\n';
-		cout << "      d = " << d[i] << '\n';
-		cout << "      Exponent: " << pgf[i].getexp() << '\n';
+		std::cout << "   PGF " << i << '\n';
+		std::cout << "      d = " << d[i] << '\n';
+		std::cout << "      Exponent: " << pgf[i].getexp() << '\n';
 	}
-	cout << "End CGF\n";
+	std::cout << "End CGF\n";
 }
 
 bool operator== (const CGF &c1, const CGF &c2){
@@ -181,15 +180,15 @@ double fk(int k, int y1, int y2, double PA, double PB){
 }
 
 double K(PGF p1, PGF p2){
-	vector<double> AB(3);
+	std::vector<double> AB(3);
 	for(int i = 0; i < 3; i++){
 		AB[i] = p1.xyz[i] - p2.xyz[i];
 	}
 	return exp(-(p1.getexp()*p2.getexp()/(p1.getexp()+p2.getexp()))*dot(AB,AB));
 }
 
-vector<double> P(PGF p1, PGF p2){
-	vector<double> vec(3);
+std::vector<double> P(PGF p1, PGF p2){
+	std::vector<double> vec(3);
 	double a = p1.getexp();
 	double b = p2.getexp();
 	for(int i = 0; i < 3; i++){
@@ -211,9 +210,9 @@ double overlap(PGF A, PGF B){
 
         double Kab = K(A, B);
         double gam = A.getexp() + B.getexp();
-        vector<double> Pab = P(A, B);
-        vector<double> PA(3);
-        vector<double> PB(3);
+        std::vector<double> Pab = P(A, B);
+        std::vector<double> PA(3);
+        std::vector<double> PB(3);
 
         PA[0] = Pab[0]-A.xyz[0];
         PA[1] = Pab[1]-A.xyz[1];
@@ -245,10 +244,10 @@ double overlap(CGF A, CGF B){
 		return 1.0;
 	}
 	double sum = 0;
-	vector<double> dA = A.getd();
-	vector<double> dB = B.getd();
-	vector<PGF> GA = A.getpgf();
-	vector<PGF> GB = B.getpgf();
+	std::vector<double> dA = A.getd();
+	std::vector<double> dB = B.getd();
+	std::vector<PGF> GA = A.getpgf();
+	std::vector<PGF> GB = B.getpgf();
 	for(int i = 0; i < A.getlen(); i++){
 		for(int j = 0; j < B.getlen(); j++){
 			sum += dA[i] * (overlap(GA[i], GB[j]) / (GA[i].getN() * GB[j].getN())) * dB[j];
