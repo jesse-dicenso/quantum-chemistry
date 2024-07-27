@@ -1,8 +1,8 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-#include "gf.hpp"
-//#include "../libint/0e.hpp"
+#include "../libgfs/gf.hpp"
+#include "../libint/0e.hpp"
 #include <vector>
 
 using namespace std;

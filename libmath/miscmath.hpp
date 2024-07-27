@@ -1,8 +1,8 @@
 #ifndef MISCMATHHEADERDEF
 #define MISCMATHHEADERDEF
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <vector>
 
 int fact(int n);

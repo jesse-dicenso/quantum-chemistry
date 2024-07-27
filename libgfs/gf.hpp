@@ -1,6 +1,12 @@
 #ifndef GFHEADERDEF
 #define GFHEADERDEF
 
+#include "../libmath/miscmath.hpp"
+
+#include <cassert>
+#include <cmath>
+#include <iomanip>
+#include <iostream>
 #include <vector>
 
 class PGF{
@@ -57,8 +63,9 @@ double K(PGF p1, PGF p2);
 // New Center
 std::vector<double> P(PGF p1, PGF p2);
 
-// overlap test
+/*
 double overlap(PGF A, PGF B);
 double overlap(CGF A, CGF B);
+*/
 
 #endif
