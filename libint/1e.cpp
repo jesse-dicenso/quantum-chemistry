@@ -4,6 +4,49 @@ double T(PGF A, PGF B){
 	double Ix;
 	double Iy;
 	double Iz;
+	double Aexp = A.getexp();
+	double Bexp = B.getexp();
+	
+	double Al = A.getl();
+	double Am = A.getm();
+	double An = A.getn();
+	double AN = A.getN();
+	double Bl = B.getl();
+	double Bm = B.getm();
+	double Bn = B.getn();
+	double BN = B.getN();
+
+	PGF Aup1x(Aexp, A.xyz, Al+1, Am, An, AN);
+	PGF Aup1y(Aexp, A.xyz, Al, Am+1, An, AN);
+	PGF Aup1z(Aexp, A.xyz, Al, Am, An+1, AN);
+	PGF Bup1x(Bexp, B.xyz, Bl+1, Bm, Bn, BN);
+	PGF Bup1y(Bexp, B.xyz, Bl, Bm+1, Bn, BN);
+	PGF Bup1z(Bexp, B.xyz, Bl, Bm, Bn+1, BN);
+
+	// Ix
+	PGF Adn1x(Aexp, A.xyz, ((Al-1)+abs(Al-1))/2, Am, An, AN);
+	PGF Bdn1x(Bexp, B.xyz, ((Bl-1)+abs(Bl-1))/2, Bm, Bn, BN);
+	Ix = 0.5*Al*Bl*S(Adn1x,Bdn1x) + 2*Aexp*Bexp*S(Aup1x,Bup1x) - Aexp*Bl*S(Aup1x,Bdn1x) - Bexp*Al*S(Adn1x,Bup1x);
+	// Iy
+	PGF Adn1y(Aexp, A.xyz, Al, ((Am-1)+abs(Am-1))/2, An, AN);
+	PGF Bdn1y(Bexp, B.xyz, Bl, ((Bm-1)+abs(Bm-1))/2, Bn, BN);	
+	Iy = 0.5*Am*Bm*S(Adn1y,Bdn1y) + 2*Aexp*Bexp*S(Aup1y,Bup1y) - Aexp*Bm*S(Aup1y,Bdn1y) - Bexp*Am*S(Adn1y,Bup1y);
+
+	// Iz
+	PGF Adn1z(Aexp, A.xyz, Al, Am, ((An-1)+abs(An-1))/2, AN);	
+	PGF Bdn1z(Bexp, B.xyz, Bl, Bm, ((Bn-1)+abs(Bn-1))/2, BN);	
+	Iz = 0.5*An*Bn*S(Adn1z,Bdn1z) + 2*Aexp*Bexp*S(Aup1z,Bup1z) - Aexp*Bn*S(Aup1z,Bdn1z) - Bexp*An*S(Adn1z,Bup1z);
+
+	// Normalization included in overlaps
+	return (Ix + Iy + Iz);
+}
+
+// Asymmetric version of T; doesn't work!
+/*
+double T(PGF A, PGF B){
+	double Ix;
+	double Iy;
+	double Iz;
 	double Bexp = B.getexp();
 	double Bl = B.getl();
 	double Bm = B.getm();
@@ -40,6 +83,7 @@ double T(PGF A, PGF B){
 	// Normalization included in overlaps
 	return (Ix + Iy + Iz);
 }
+*/
 
 double T(CGF A, CGF B){
         double sum = 0;
