@@ -2,6 +2,7 @@
 
 // class PGF
 
+// Constructor : automatically normalizes PGF
 PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln){
 	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
 	assert(pos.size()==3);
@@ -31,6 +32,18 @@ PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln){
 	}
 }
 
+// Constructor : give N
+PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln, double nrm){
+	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
+	assert(pos.size()==3);
+	exp = exponent;
+	xyz = pos;
+	l = Ll;
+	m = Lm;
+	n = Ln;
+	N = nrm;
+}
+
 int PGF::getl(){
 	return l;
 }
@@ -49,6 +62,10 @@ double PGF::getN(){
 
 double PGF::getexp(){
 	return exp;
+}
+
+void PGF::setN(double nrm){
+	N = nrm;
 }
 
 void PGF::printpgf(){

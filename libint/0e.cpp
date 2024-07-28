@@ -1,6 +1,6 @@
 #include "0e.hpp"
 
-double overlap(PGF A, PGF B){
+double S(PGF A, PGF B){
         if(A==B){
                 return 1.0;
         }
@@ -38,11 +38,10 @@ double overlap(PGF A, PGF B){
         for(int i = 1; i <= ((n1+n2))/2; i++){
                 Iz += fk(2*i, n1, n2, PA[2], PB[2])*(dfact(2*i-1)/pow(2*gam,i))*pow((M_PI/gam),0.5);
         }
-        // Remember to normalize
         return (A.getN() * B.getN())*Kab*Ix*Iy*Iz;
 }
 
-double overlap(CGF A, CGF B){
+double S(CGF A, CGF B){
         if(A==B){
                 return 1.0;
         }
@@ -53,9 +52,8 @@ double overlap(CGF A, CGF B){
         std::vector<PGF> GB = B.getpgf();
         for(int i = 0; i < A.getlen(); i++){
                 for(int j = 0; j < B.getlen(); j++){
-                        sum += dA[i] * (overlap(GA[i], GB[j]) / (GA[i].getN() * GB[j].getN())) * dB[j];
+                        sum += dA[i] * (S(GA[i], GB[j]) / (GA[i].getN() * GB[j].getN())) * dB[j];
                 }
         }
-        //Remember to normalize; we "unnormalized" the PGFs above
         return (A.getN() * B.getN() * sum);
 }

@@ -1,11 +1,10 @@
+---------------------------------------------------------------
 libmath - Library for mathematical routines and functions
 ---------------------------------------------------------------
 miscmath.hpp - miscellaneous functions
 
-Functions:
-
-binomial(n, k) : binomial coefficient, "n choose k"
-dfact(n)       : double factorial, integer input
-dot(v1, v2)    : dot product of vectors v1 and v2
-fact(n)        : factorial, integer input
+	binomial(n, k) : binomial coefficient, "n choose k"
+	dfact(n)       : double factorial, integer input
+	dot(v1, v2)    : dot product of vectors v1 and v2
+	fact(n)        : factorial, integer input
 ---------------------------------------------------------------

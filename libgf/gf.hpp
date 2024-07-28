@@ -12,6 +12,7 @@
 class PGF{
 	public:
 		PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln);
+		PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln, double nrm);
 		
 		std::vector<double> xyz;
 
@@ -20,6 +21,7 @@ class PGF{
 		int getm();
 		int getn();
 		double getN();
+		void setN(double nrm);
 
 		void printpgf();
 		friend bool operator== (const PGF &p1, const PGF &p2);
@@ -62,10 +64,5 @@ double K(PGF p1, PGF p2);
 
 // New Center
 std::vector<double> P(PGF p1, PGF p2);
-
-/*
-double overlap(PGF A, PGF B);
-double overlap(CGF A, CGF B);
-*/
 
 #endif

@@ -1,5 +1,12 @@
-#include <cmath>
+#ifndef ONEEHEADERDEF
+#define ONEEHEADERDEF
 
-// Routine for 1e integrals
+#include "0e.hpp"
 
+double T(PGF A, PGF B);
+double T(CGF A, CGF B);
 
+double V(PGF A, PGF B);
+double V(CGF A, CGF B);
+
+#endif

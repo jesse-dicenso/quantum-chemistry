@@ -1,9 +1,4 @@
-#include <cmath>
-#include <iostream>
-#include <iomanip>
-#include "../libgfs/gf.hpp"
-#include "../libint/0e.hpp"
-#include <vector>
+#include "../libint/1e.hpp"
 
 using namespace std;
 
@@ -23,30 +18,21 @@ int main(){
 	vector<double> d3({0.32333, 0.293491, 0.9111});
 	CGF c1(3, pg1, d1);
 	CGF c2(3, pg2, d2);
-	CGF c3(3, pg1, d3);
-	cout << c1.getN() <<'\n';
-	cout << c2.getN() << '\n';
-	/*
-	cout << setprecision(15) << overlap(p1, p1) << '\n';
-	cout << setprecision(15) << overlap(p1, p2) << '\n';
-	cout << setprecision(15) << overlap(p1, p3) << '\n';
-	cout << setprecision(15) << overlap(p1, q1) << '\n';
-	cout << setprecision(15) << overlap(p1, q2) << '\n';
-	cout << setprecision(15) << overlap(p1, q3) << '\n';
-	*/
-	cout << setprecision(15) << overlap(c1, c1) << '\n';
-	cout << setprecision(15) << overlap(c1, c2) << '\n';
-	cout << setprecision(15) << overlap(c2, c1) << '\n';
-	cout << setprecision(15) << overlap(c2, c2) << '\n';
-	cout << setprecision(15) << overlap(c1, c3) << '\n';
-	/*
-	vector<double> center({0.0, 0.0, 0.0});
-	PGF t1(1.0, center, 2, 1, 3);
-	PGF t2(1.0, center, 2, 1, 3);
-	vector<PGF> ts({t1, t2});
-	vector<double> ds({0.5, 0.5});
-	CGF t12(2, ts, ds);
-	cout << t1.getN() << '\n';
-	cout << t12.getN() << '\n';
-	*/
+	cout << "S(p1, p1) = " << S(p1, p1) << '\n';
+	cout << "S(p1, p2) = " << S(p1, p2) << '\n';
+	cout << "S(p2, p1) = " << S(p2, p1) << '\n';
+	cout << "S(p1, q1) = " << S(p1, q1) << '\n';
+	cout << "S(q1, p1) = " << S(q1, p1) << '\n';
+	cout << "\nS(c1, c1) = " << S(c1, c1) << '\n';
+	cout << "S(c1, c2) = " << S(c1, c2) << '\n';	
+	cout << "S(c2, c1) = " << S(c2, c1) << '\n';
+
+	cout << "\nT(p1, p1) = " << T(p1, p1) << '\n';
+	cout << "T(p1, p2) = " << T(p1, p2) << '\n';
+	cout << "T(p2, p1) = " << T(p2, p1) << '\n';
+	cout << "T(p1, q1) = " << T(p1, q1) << '\n';
+	cout << "T(q1, p1) = " << T(q1, p1) << '\n';
+	cout << "\nT(c1, c1) = " << T(c1, c1) << '\n';
+	cout << "T(c1, c2) = " << T(c1, c2) << '\n';	
+	cout << "T(c2, c1) = " << T(c2, c1) << '\n';
 }	

@@ -1,8 +1,11 @@
+---------------------------------------------------------------
 libgau - Library for Gaussian basis functions
 ---------------------------------------------------------------
 gf.hpp - Class for:
 
-	Primitive gaussians (PGF)
+	Primitive Gaussian Functions (PGFs)
+
+	Class : PGF
 
 	Attributes:
 	exp : exponent
@@ -13,14 +16,15 @@ gf.hpp - Class for:
 	m   : angular momentum associated with y
 	n   : angular momentum associated with z
 	N   : normalization constant
+	-------------------------------------------------------
+	Contracted Gaussian Functions (CGFs)
 
-	Contracted gaussians (CGF)
+	Class : CGF
 
 	Attributes:
 	len       : length of contraction
 	pgfs[len] : primitive gaussians
 	d[len]    : contraction coefficients
 	N	  : normalization constant
----------------------------------------------------------------
 
-todo: standard basis set library
+---------------------------------------------------------------

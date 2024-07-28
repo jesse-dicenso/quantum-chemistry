@@ -1,10 +1,9 @@
 #ifndef ZEROEHEADERDEF
 #define ZEROEHEADERDEF
 
-#include "../libgfs/gf.hpp"
-#include "../libmath/miscmath.hpp"
+#include "../libgf/gf.hpp"
 
-double overlap(PGF A, PGF B);
-double overlap(CGF A, CGF B);
+double S(PGF A, PGF B);
+double S(CGF A, CGF B);
 
 #endif
