@@ -11,56 +11,43 @@
 
 class PGF{
 	public:
-		PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln);
-		PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln, double nrm);
+		PGF(double exponent, std::vector<double> pos, std::vector<int> shl);
+		PGF(double exponent, std::vector<double> pos, std::vector<int> shl, double Nrm);
 		
+		double exp;
 		std::vector<double> xyz;
+		std::vector<int> shell;
+		double N;
 
-		double getexp();
-		int getl();
-		int getm();
-		int getn();
 		double getN();
 		void setN(double nrm);
 
-		void printpgf();
 		friend bool operator== (const PGF &p1, const PGF &p2);
 
-	private:
-		double exp;
-		int l;
-		int m;
-		int n;
-		double N;
 };
 
 class CGF{
 	public:
-		CGF(int lenC, std::vector<PGF> pgfC, std::vector<double> dC);
+		CGF(std::vector<PGF> pgfC, std::vector<double> dC);
 		
-		int getlen();
-		std::vector<PGF> getpgf();
-		std::vector<double> getd();
-		double getN();
-		void printcgf();
-		friend bool operator== (const CGF &c1, const CGF &c2);
-
-	private:
 		int len;
 		std::vector<PGF> pgf;
 		std::vector<double> d;
 		double N;
+		
+		friend bool operator== (const CGF &c1, const CGF &c2);
 };
 
-// Functions for Gaussian Product Theorem
+// Hermite Gaussian Expansion Coefficients
+double E(int i, int j, int t, double a, double b, double QAB);
 
-// fk: returns components of coefficients
+// components of coefficients
 // for contractions of arbitrary angular momentum
 // in Gaussian Product Theorem
 double fk(int k, int y1, int y2, double PA, double PB);
 
 // Product Constant
-double K(PGF p1, PGF p2);
+std::vector<double> K(PGF p1, PGF p2);
 
 // New Center
 std::vector<double> P(PGF p1, PGF p2);

@@ -2,83 +2,29 @@
 
 // class PGF
 
-// Constructor : automatically normalizes PGF
-PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln){
-	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
+PGF::PGF(double exponent, std::vector<double> pos, std::vector<int> shl){
 	assert(pos.size()==3);
+	assert(shl.size()==3);
+	assert((shl[0] >= 0) && (shl[1] >= 0) && (shl[2] >=0));
 	exp = exponent;
 	xyz = pos;
-	l = Ll;
-	m = Lm;
-	n = Ln;
-
-	if((l==0) && (m==0) && (n==0)){
-		N = pow(2.0 * exp / M_PI, 0.75);
-	}
-	else{
-		double dfl = 1.0;
-		double dfm = 1.0;
-		double dfn = 1.0;
-		if(l > 0){
-			dfl = dfact(2*l-1);
-		}
-		if(m > 0){
-			dfm = dfact(2*m-1);
-		}
-		if(n > 0){
-			dfn = dfact(2*n-1);
-		}
-		N = pow(2.0 * exp / M_PI, 0.75) * pow(pow(4*exp, l+m+n)/(dfl*dfm*dfn), 0.5);
-	}
+	shell = shl;
+		
+	N = pow((2/M_PI),0.75) * pow(2,(shell[0]+shell[1]+shell[2])) * pow(exp,(2*(shell[0]+shell[1]+shell[2])+3)/4.0) / sqrt(dfact(2*shell[0]-1)*dfact(2*shell[1]-1)*dfact(2*shell[2]-1));
 }
 
-// Constructor : give N
-PGF::PGF(double exponent, std::vector<double> pos, int Ll, int Lm, int Ln, double nrm){
-	assert((Ll >= 0) && (Lm >= 0) && (Ln >=0));
+PGF::PGF(double exponent, std::vector<double> pos, std::vector<int> shl, double Nrm){
 	assert(pos.size()==3);
+	assert(shl.size()==3);
+	assert((shl[0] >= 0) && (shl[1] >= 0) && (shl[2] >=0));
 	exp = exponent;
 	xyz = pos;
-	l = Ll;
-	m = Lm;
-	n = Ln;
-	N = nrm;
-}
-
-int PGF::getl(){
-	return l;
-}
-
-int PGF::getm(){
-	return m;
-}
-
-int PGF::getn(){
-	return n;
-}
-
-double PGF::getN(){
-	return N;
-}
-
-double PGF::getexp(){
-	return exp;
-}
-
-void PGF::setN(double nrm){
-	N = nrm;
-}
-
-void PGF::printpgf(){
-	std::cout << "Start PGF\n";
-	std::cout << "   Exponent: " << exp << '\n';
-	std::cout << "   Center (x, y, z): " << std::setprecision(15) << xyz[0] << ", " << std::setprecision(15) << xyz[1] << ", " << std::setprecision(15) << xyz[2] << '\n';
-	std::cout << "   Angular momenta (l, m, n): " << l << ", " << m << ", " << n << '\n';
-	std::cout << "   Normalization constant: " << N << '\n';
-	std::cout << "End PGF\n";
+	shell = shl;
+	N = Nrm;
 }
 
 bool operator== (const PGF &p1, const PGF &p2){
-	if((p1.exp==p2.exp) && (p1.xyz==p2.xyz) && (p1.l==p2.l) && (p1.m==p2.m) && (p1.n==p2.n)){
+	if((p1.exp==p2.exp) && (p1.xyz==p2.xyz) && (p1.shell==p2.shell)){
 		return true;
 	}
 	else{
@@ -88,86 +34,37 @@ bool operator== (const PGF &p1, const PGF &p2){
 
 // class CGF
 
-CGF::CGF(int lenC, std::vector<PGF> pgfC, std::vector<double> dC){
-	assert((lenC == pgfC.size()) && (lenC == dC.size()));
+CGF::CGF(std::vector<PGF> pgfC, std::vector<double> dC){
+	assert(pgfC.size() == dC.size());
 	// Center and angular momenta of each PGF must be the same!
-	for(int h = 1; h < lenC; h++){
-		assert((pgfC[0].xyz[0]==pgfC[h].xyz[0]) && (pgfC[0].xyz[1]==pgfC[h].xyz[1]) && (pgfC[0].xyz[2]==pgfC[h].xyz[2]));
-		assert((pgfC[0].getl()==pgfC[h].getl()) && (pgfC[0].getm()==pgfC[h].getm()) && (pgfC[0].getn()==pgfC[h].getn()));
+	for(int h = 1; h < len; h++){
+		for(int f = 0; f < 3; f++){	
+			assert(pgfC[0].xyz[f]==pgfC[h].xyz[f]);
+			assert(pgfC[0].shell[f]==pgfC[h].shell[f]);
+		}
 	}
-		
-	len = lenC;
+
+	len = pgfC.size();
 	pgf = pgfC;
 	d = dC;
-	if((pgf[0].getl()==0) && (pgf[0].getm()==0) && (pgf[0].getn()==0)){
-		double sum = 0.0;
-		for(int i = 0; i < len; i++){
-			for(int j = 0; j < len; j++){
-				sum += d[i]*d[j] / pow((pgf[i].getexp() + pgf[j].getexp()), 1.5);
-			}
-		}
-		N = pow(M_PI, -0.75) / pow(sum, 0.5);
-	}
-	else{
-		double sum = 0.0;
-		double temp;
-		double lt = pgf[0].getl();
-		double mt = pgf[0].getm();
-		double nt = pgf[0].getn();
-		double dfl = 1.0;
-		double dfm = 1.0;
-		double dfn = 1.0;
-		if(lt > 0){
-			dfl = dfact(2*lt-1);
-		}
-		if(mt > 0){
-			dfm = dfact(2*mt-1);
-		}
-		if(nt > 0){
-			dfn = dfact(2*nt-1);
-		}
-		for(int i = 0; i < len; i++){
-			for(int j = 0; j < len; j++){
-				sum += d[i]*d[j] / pow((pgf[i].getexp() + pgf[j].getexp()), (1.5 + lt + mt + nt));
-			}
-		}
-		temp = pow(pow(2, (lt + mt + nt)) / (pow(M_PI, 1.5) * dfl * dfm * dfn), 0.5);
-		N = temp / pow(sum, 0.5);
-	}
-}
 
-int CGF::getlen(){
-	return len;
-}
-
-std::vector<PGF> CGF::getpgf(){
-	return pgf;
-}
-
-std::vector<double> CGF::getd(){
-	return d;
-}
-
-double CGF::getN(){
-	return N;
-}
-
-void CGF::printcgf(){
-	std::cout << "Start CGF\n";
-	std::cout << "Contraction Length: " << len << '\n';
-	std::cout << "Normalization constant: " << std::setprecision(15) << N << '\n';
-	std::cout << "Center (x, y, z): " << std::setprecision(15) << pgf[0].xyz[0] << ", " << std::setprecision(15) << pgf[0].xyz[1] << ", "  << std::setprecision(15) << pgf[0].xyz[2] << '\n';
-	std::cout << "Angular momenta (l, m, n): " << pgf[0].getl() << ", " << pgf[0].getm() << ", " << pgf[0].getn() << '\n';
+	double sum = 0;
 	for(int i = 0; i < len; i++){
-		std::cout << "   PGF " << i << '\n';
-		std::cout << "      d = " << d[i] << '\n';
-		std::cout << "      Exponent: " << pgf[i].getexp() << '\n';
+		for(int j = 0; j < len; j++){
+			sum += d[i]*d[j] / pow((pgf[i].exp + pgf[j].exp), (1.5 + pgf[0].shell[0]+pgf[0].shell[1]+pgf[0].shell[2]));
+		}
 	}
-	std::cout << "End CGF\n";
+	N = 1 / sqrt(pow(M_PI, 1.5) * dfact(2*pgf[0].shell[0]-1) 
+				    * dfact(2*pgf[0].shell[1]-1)
+				    * dfact(2*pgf[0].shell[2]-1) 
+				    * sum / pow(2, (pgf[0].shell[0]+pgf[0].shell[1]+pgf[0].shell[2])));
+	for(int j = 0; j < len; j++){
+		d[j] *= N;
+	}
 }
 
 bool operator== (const CGF &c1, const CGF &c2){
-	if((c1.len == c2.len) && (c1.N == c2.N) && (c1.d == c2.d) && (c1.pgf == c2.pgf)){
+	if((c1.len == c2.len) && (c1.d == c2.d) && (c1.pgf == c2.pgf)){
 		return true;
 	}
 	else{
@@ -176,6 +73,23 @@ bool operator== (const CGF &c1, const CGF &c2){
 }
 
 // misc functions related to PGF/CGF
+
+double E(int i, int j, int t, double a, double b, double QAB){
+	assert((i>=0) && (j>=0));
+	double p = a + b;
+	if((t < 0) || (t > (i+j))){
+		return 0;
+	}
+	else if((t==0) || ((i+j)==0)){
+		return exp(-a*b*QAB*QAB/p);
+	}
+	else if(j==0){
+		return E(i-1, j, t-1, a, b, QAB)/(2*p) - (b*QAB/p)*E(i-1, j, t, a, b, QAB) + (t+1)*E(i-1, j, t+1, a, b, QAB);
+	}
+	else{
+		return E(i, j-1, t-1, a, b, QAB)/(2*p) + (a*QAB/p)*E(i, j-1, t, a, b, QAB) + (t+1)*E(i, j-1, t+1, a, b, QAB);
+	}
+}
 
 double fk(int k, int y1, int y2, double PA, double PB){
         double sum = 0;
@@ -189,20 +103,19 @@ double fk(int k, int y1, int y2, double PA, double PB){
         return sum;
 }
 
-double K(PGF p1, PGF p2){
-	std::vector<double> AB(3);
+std::vector<double> K(PGF p1, PGF p2){
+	std::vector<double> vec(3);
+	double mu = p1.exp*p2.exp/(p1.exp+p2.exp);
 	for(int i = 0; i < 3; i++){
-		AB[i] = p1.xyz[i] - p2.xyz[i];
+		vec[i] = exp(-mu*(p1.xyz[i]-p2.xyz[i])*(p1.xyz[i]-p2.xyz[i]));
 	}
-	return exp(-(p1.getexp()*p2.getexp()/(p1.getexp()+p2.getexp()))*dot(AB,AB));
+	return vec;
 }
 
 std::vector<double> P(PGF p1, PGF p2){
 	std::vector<double> vec(3);
-	double a = p1.getexp();
-	double b = p2.getexp();
 	for(int i = 0; i < 3; i++){
-		vec[i] = (a*p1.xyz[i]+b*p2.xyz[i])/(a+b);
+		vec[i] = (p1.exp*p1.xyz[i]+p2.exp*p2.xyz[i])/(p1.exp+p2.exp);
 	}
 	return vec;
 }
