@@ -9,21 +9,33 @@
 #include <iostream>
 #include <vector>
 
-class GF{
+class PGF{
 	public:
-		GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl);
+		PGF(double exponent, std::vector<double> pos, std::vector<int> shl);
+		PGF(double exponent, std::vector<double> pos, std::vector<int> shl, double Nrm);
 		
-		std::vector<double> exps;
-		std::vector<double> d;
+		double exp;
 		std::vector<double> xyz;
 		std::vector<int> shell;
-		
-		std::vector<double> N;
+		double N;
 
+		double getN();
 		void setN(double nrm);
 
-		friend bool operator== (const GF &g1, const GF &g2);
+		friend bool operator== (const PGF &p1, const PGF &p2);
 
+};
+
+class CGF{
+	public:
+		CGF(std::vector<PGF> pgfC, std::vector<double> dC);
+		
+		int len;
+		std::vector<PGF> pgf;
+		std::vector<double> d;
+		double N;
+		
+		friend bool operator== (const CGF &c1, const CGF &c2);
 };
 
 // Hermite Gaussian Expansion Coefficients
@@ -35,9 +47,9 @@ double E(int i, int j, int t, double a, double b, double QAB);
 //double fk(int k, int y1, int y2, double PA, double PB);
 
 // Product Constant
-//std::vector<double> K(GF g1, GF g2);
+std::vector<double> K(PGF p1, PGF p2);
 
 // New Center
-//std::vector<double> P(GF g1, GF g2);
+std::vector<double> P(PGF p1, PGF p2);
 
 #endif

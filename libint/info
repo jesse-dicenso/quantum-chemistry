@@ -8,17 +8,17 @@ Note :  all functions accept either all PGFs or all CGFs.
 ---------------------------------------------------------------
 1e.hpp - header file for computing one-electron integrals
 
-S(A, B) : computes overlap integral of 2 basis functions
-	  (2 PGFs or 2 CGFs).
-T(A, B) : computes kinetic energy integral of 2 basis
-	  functions.
-V(A, B) : computes nuclear attraction integrals of 2
-	  basis functions.
+S(g1, g2)  : computes overlap integral of 2 general basis 
+	   functions (uses Sp auxiliary function).
+T(g1, g2)  : computes kinetic energy integral of 2 basis
+	   functions.
+V(g1, g2)  : computes nuclear attraction integrals of 2
+	   basis functions.
 
 ---------------------------------------------------------------
 2e.hpp - header file for computing two-electron integrals
 
-G(A, B, C, D) : computes two-electron integral of 4 basis
-		functions.
+G(g1, g2, g3, g4) : computes two-electron integral of 4 basis
+		    functions.
 
 ---------------------------------------------------------------

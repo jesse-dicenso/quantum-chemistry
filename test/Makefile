@@ -10,8 +10,8 @@ gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 test.o: test.cpp ../libint/1e.hpp 
 	g++ -c -O test.cpp
 
-test: gf.o miscmath.o 1e.o test.o
-	g++ -O -o test gf.o miscmath.o 1e.o test.o
+test: miscmath.o gf.o 1e.o test.o
+	g++ -O -o test miscmath.o gf.o 1e.o test.o
 
 clean:
 	rm -f *.o test
