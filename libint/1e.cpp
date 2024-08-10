@@ -18,27 +18,35 @@ double S(GF g1, GF g2){
         return sum;
 }
 
-/*
-double T(PGF A, PGF B){
-	return 0;
+double Tp(std::vector<int> L1, std::vector<int> L2, double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
+	double Ix = exp2*(2*L2[0]+1)*Sp(L1,L2,exp1,exp2,xyz1,xyz2) 
+		  - 2*exp2*exp2*Sp(L1,{(L2[0]+2),L2[1],L2[2]},exp1,exp2,xyz1,xyz2) 
+		  - 0.5*L2[0]*(L2[0]-1)*Sp(L1,{(L2[0]-2+abs(L2[0]-2))/2,L2[1],L2[2]},exp1,exp2,xyz1,xyz2);
+	double Iy = exp2*(2*L2[1]+1)*Sp(L1,L2,exp1,exp2,xyz1,xyz2) 
+		  - 2*exp2*exp2*Sp(L1,{L2[0],(L2[1]+2),L2[2]},exp1,exp2,xyz1,xyz2) 
+		  - 0.5*L2[1]*(L2[1]-1)*Sp(L1,{L2[0],(L2[1]-2+abs(L2[1]-2))/2,L2[2]},exp1,exp2,xyz1,xyz2);
+	double Iz = exp2*(2*L2[2]+1)*Sp(L1,L2,exp1,exp2,xyz1,xyz2) 
+		  - 2*exp2*exp2*Sp(L1,{L2[0],L2[1],(L2[2]+2)},exp1,exp2,xyz1,xyz2) 
+		  - 0.5*L2[2]*(L2[2]-1)*Sp(L1,{L2[0],L2[1],(L2[2]-2+abs(L2[2]-2))/2},exp1,exp2,xyz1,xyz2);
+	return (Ix + Iy + Iz);
 }
 
-double T(CGF A, CGF B){
+double T(GF g1, GF g2){
         double sum = 0;
-        for(int i = 0; i < A.len; i++){
-                for(int j = 0; j < B.len; j++){
-                        sum += A.d[i] * B.d[j] * (T(A.pgf[i], B.pgf[j]) / (A.pgf[i].N * B.pgf[j].N));
+        for(int i = 0; i < g1.exps.size(); i++){
+                for(int j = 0; j < g2.exps.size(); j++){
+			sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Tp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz);
                 }
         }
-        return (A.N * B.N * sum);
+        return sum;
 }
-
-double V(PGF A, PGF B){
+/*
+double V(GF g1, GF g2){
 
 	return 0;
 }
 
-double V(CGF A, CGF B){
+double V(GF g1, GF g2){
 
 	return 0;
 }
