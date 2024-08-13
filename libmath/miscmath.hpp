@@ -5,9 +5,10 @@
 #include <cmath>
 #include <vector>
 
-int fact(int n);
-int dfact(int n);
+double long fact(double long n);
+double long dfact(double long n);
 int binomial(int n, int k);
 double dot(std::vector<double> a, std::vector<double> b);
+double boys(int n, double x);
 
 #endif

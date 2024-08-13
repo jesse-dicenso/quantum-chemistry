@@ -1,6 +1,6 @@
 #include "miscmath.hpp"
 
-int fact(int n){
+double long fact(double long n){
 	assert(n >= 0);
 	if(n==0){
 		return 1;
@@ -13,15 +13,15 @@ int fact(int n){
 	}
 }
 
-int dfact(int n){
-	assert((n >= 0) || (n%2!=0));
+double long dfact(double long n){
+	assert((n >= 0) || ((int)n%2!=0));
 	if(n==0){
 		return 1;
 	}
 	else if(n==1){
 		return 1;
 	}
-	else if(n > 0){
+	else if(n>1){
 		return n*dfact(n-2);
 	}
 	else{
@@ -42,21 +42,25 @@ double dot(std::vector<double> a, std::vector<double> b){
 	}
 	return sum;
 }
-/*
-double E(int i, int j, int t, double a, double b, double QAB){
-	assert((i>=0) && (j>=0));
-	double p = a + b;
-	if((t < 0) || (t > (i+j))){
-		return 0;
+
+double boys(int n, double x){
+	assert((x >= 0) && (n >= 0));
+	if(x < 0.18){
+		double sum = 0;
+		for(int k = 0; k < 7; k++){
+			sum += pow(-x, k)/(fact(k)*(2*n + 2*k + 1));
+		}
+		return sum;
 	}
-	else if((t==0) || ((i+j)==0)){
-		return exp(-a*b*QAB*QAB/p);
-	}
-	else if(i>0){
-		return E(i-1, j, t-1, a, b, QAB)/(2*p) - (b*QAB/p)*E(i-1, j, t, a, b, QAB) + (t+1)*E(i-1, j, t+1, a, b, QAB);
+	else if(x > 19.35){
+		return dfact(2*n-1)*sqrt(M_PI/pow(x, 2*n+1))/pow(2, n+1);
 	}
 	else{
-		return E(i, j-1, t-1, a, b, QAB)/(2*p) + (a*QAB/p)*E(i, j-1, t, a, b, QAB) + (t+1)*E(i, j-1, t+1, a, b, QAB);
+		// J. Chem. Theory Comput. 2017, 13, 3636−3649
+		double sum = 0;
+		for(int k = 0; k < 51; k++){
+			sum += dfact(2*n-1)*pow(2*x, k)/dfact(2*n+2*k+1);
+		}
+		return exp(-x)*sum;
 	}
 }
-*/

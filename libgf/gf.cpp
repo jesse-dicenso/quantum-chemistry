@@ -88,12 +88,12 @@ std::vector<double> K(PGF p1, PGF p2){
 	}
 	return vec;
 }
+*/
 
-std::vector<double> P(PGF p1, PGF p2){
+std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
 	std::vector<double> vec(3);
 	for(int i = 0; i < 3; i++){
-		vec[i] = (p1.exp*p1.xyz[i]+p2.exp*p2.xyz[i])/(p1.exp+p2.exp);
+		vec[i] = (exp1*xyz1[i]+exp2*xyz2[i])/(exp1+exp2);
 	}
 	return vec;
 }
-*/

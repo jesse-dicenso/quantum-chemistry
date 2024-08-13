@@ -38,6 +38,6 @@ double E(int i, int j, int t, double a, double b, double QAB);
 //std::vector<double> K(GF g1, GF g2);
 
 // New Center
-//std::vector<double> P(GF g1, GF g2);
+std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2);
 
 #endif
