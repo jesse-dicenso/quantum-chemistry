@@ -67,28 +67,6 @@ double E(int i, int j, int t, double a, double b, double QAB){
 		return E(i, j-1, t-1, a, b, QAB)/(2*p) + (a*QAB/p)*E(i, j-1, t, a, b, QAB) + (t+1)*E(i, j-1, t+1, a, b, QAB);
 	}
 }
-/*
-double fk(int k, int y1, int y2, double PA, double PB){
-        double sum = 0;
-        for(int i = 0; i <= y1; i++){
-                for(int j = 0; j <= y2; j++){
-                        if((i+j)==k){
-                                sum += pow(PA,(y1-i))*pow(PB,(y2-j))*binomial(y1,i)*binomial(y2,j);
-                        }
-                }
-        }
-        return sum;
-}
-
-std::vector<double> K(PGF p1, PGF p2){
-	std::vector<double> vec(3);
-	double mu = p1.exp*p2.exp/(p1.exp+p2.exp);
-	for(int i = 0; i < 3; i++){
-		vec[i] = exp(-mu*(p1.xyz[i]-p2.xyz[i])*(p1.xyz[i]-p2.xyz[i]));
-	}
-	return vec;
-}
-*/
 
 std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
 	std::vector<double> vec(3);

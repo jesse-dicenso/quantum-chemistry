@@ -42,20 +42,33 @@ double T(GF g1, GF g2){
 }
 
 double R(int n, int t, int u, int v, double p, double XPC, double YPC, double ZPC, double RPC){
+	assert((n>=0) && (t>=0) && (u>=0) && (v>=0));
 	if((t+u+v)==0){
 		return pow(-2*p, n) * boys(n, p*RPC*RPC);
 	}
-	else if((u+v)==0){
-		if(t > 1){return (t-1)*R(n+1,t-2,u,v,p,XPC,YPC,ZPC,RPC) + XPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}
-		else{return XPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}
+	else if(t!=0){
+		if(t > 1){
+			return (t-1)*R(n+1,t-2,u,v,p,XPC,YPC,ZPC,RPC) + XPC*R(n+1,t-1,u,v,p,XPC,YPC,ZPC,RPC);
+		}
+		else{
+			return XPC*R(n+1,t-1,u,v,p,XPC,YPC,ZPC,RPC);
+		}
 	}
-	else if((t+v)==0){
-		if(u > 1){return (u-1)*R(n+1,t,u-2,v,p,XPC,YPC,ZPC,RPC) + YPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}
-		else{return YPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}	
+	else if(u!=0){
+		if(u > 1){
+			return (u-1)*R(n+1,t,u-2,v,p,XPC,YPC,ZPC,RPC) + YPC*R(n+1,t,u-1,v,p,XPC,YPC,ZPC,RPC);
+		}
+		else{
+			return YPC*R(n+1,t,u-1,v,p,XPC,YPC,ZPC,RPC);
+		}	
 	}
 	else{
-		if(v > 1){return (v-1)*R(n+1,t,u,v-2,p,XPC,YPC,ZPC,RPC) + ZPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}
-		else{return ZPC*R(n+1,t,u,v,p,XPC,YPC,ZPC,RPC);}	
+		if(v > 1){
+			return (v-1)*R(n+1,t,u,v-2,p,XPC,YPC,ZPC,RPC) + ZPC*R(n+1,t,u,v-1,p,XPC,YPC,ZPC,RPC);
+		}
+		else{
+			return ZPC*R(n+1,t,u,v-1,p,XPC,YPC,ZPC,RPC);
+		}
 	}
 }
 

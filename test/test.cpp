@@ -3,6 +3,7 @@
 using namespace std;
 
 int main(){
+	cout << setprecision(15);
 	vector<double> a({0.168856,0.623913,3.42525});
 	vector<double> d({0.444635,0.535328,0.154329});
 	// Water
@@ -12,11 +13,11 @@ int main(){
 	// H2
 	vector<double> ctr1({0.0, 1.4, 0.0});
 	vector<double> ctr2({0.0, 0.0, 0.0});	
-	vector<int> Ls({0,0,0});
+	vector<int> Ls({1,0,0});
 
 	GF g1(a,d,ctr1,Ls);
 	GF g2(a,d,ctr2,Ls);
-	
+/*
 	cout << "S = [ " << S(g1, g1); 
 	cout <<      " " << S(g1, g2) << " ]\n"; 
 	cout << "    [ " << S(g2, g1); 
@@ -35,8 +36,13 @@ int main(){
 	cout << "V112 = -" << V(g2, g1, ctr2) << '\n';
 	cout << "V112 = -" << V(g1, g2, ctr2) << '\n';
 	cout << "V112 = -" << V(g2, g2, ctr2) << "\n\n";
-	
+*/	
 	cout << "g1111 = " << G(g1, g1, g1, g1) << '\n';
 	cout << "g1122 = " << G(g1, g1, g2, g2) << '\n';
-	cout << "g2222 = " << G(g2, g2, g2, g2) << '\n';
+	cout << "g2111 = " << G(g2, g1, g1, g1) << '\n';
+	cout << "g2121 = " << G(g2, g1, g2, g1) << '\n';
+	
+	//for(int i = 0; i < 1e6; i++){
+	//	cout << G(g1, g2, g1, g2) << '\n';
+	//}
 }	
