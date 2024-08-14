@@ -1,4 +1,4 @@
-#include "../libint/buildmatrix.hpp"
+#include "../libint/2e.hpp"
 #include "../libmol/mol.hpp"
 
 using namespace std;
@@ -38,6 +38,8 @@ int main(){
 	Matrix Tij = kinetic(water.AOs);
 	Matrix Vij = nuclear(water.AOs, water.Zvals, water.xyz);
 
+	vector<vector<vector<vector<double>>>> eris = ERIs(water.AOs);
+
 	cout << "***********" << '\n';
 	cout << "* OVERLAP *" << '\n';
 	cout << "***********" << '\n';
@@ -64,5 +66,5 @@ int main(){
 			cout << "V" << i << j << " = " << Vij.matrix[i][j] << '\n';
 		}
 	}
-	cout << '\n';
+	cout << '\n' << nucrepl(water.Zvals, water.xyz) << '\n';
 }	

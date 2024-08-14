@@ -1,5 +1,29 @@
 #include "2e.hpp"
 
+ERI::ERI(int p, int q, int r, int s){
+	a = p;
+	b = q;
+	c = r;
+	d = s;
+	eri = 0;
+}
+
+bool ERI::isEqual(ERI e2){
+	// 8 permutational symmetries
+	if(((a==e2.b) && (b==e2.a) && (c==e2.c) && (d==e2.d)) ||
+	   ((a==e2.b) && (b==e2.a) && (c==e2.d) && (d==e2.c)) ||
+	   ((a==e2.a) && (b==e2.b) && (c==e2.d) && (d==e2.c)) ||
+	   ((a==e2.c) && (b==e2.d) && (c==e2.a) && (d==e2.b)) ||
+	   ((a==e2.c) && (b==e2.d) && (c==e2.b) && (d==e2.a)) ||
+	   ((a==e2.d) && (b==e2.c) && (c==e2.b) && (d==e2.a)) ||
+	   ((a==e2.d) && (b==e2.c) && (c==e2.a) && (d==e2.b))){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
 double Gp(std::vector<int> L1, std::vector<int> L2, std::vector<int> L3, std::vector<int> L4, double exp1, double exp2, double exp3, double exp4, std::vector<double> xyz1, std::vector<double> xyz2, std::vector<double> xyz3, std::vector<double> xyz4){
 	double p = exp1 + exp2;
 	double q = exp3 + exp4;
@@ -49,4 +73,37 @@ double G(GF g1, GF g2, GF g3, GF g4){
                 }
         }
         return sum;
+}
+
+std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> phis){
+	int size = phis.size();
+	std::vector<ERI> eris;
+	std::vector<std::vector<std::vector<std::vector<double>>>> result(size);
+	ERI e0(0, 0, 0, 0);
+	e0.eri = G(phis[0], phis[0], phis[0], phis[0]);
+	for(int i = 1; i < size; i++){
+		result[i].resize(size);
+		for(int j = 1; j < size; j++){
+			result[i][j].resize(size);
+			for(int k = 1; k < size; k++){
+				result[i][j][k].resize(size);
+				for(int l = 1; l < size; l++){
+					ERI eijkl(i, j, k, l);
+					bool eql = false;
+					for(int m = 0; m < eris.size(); m++){
+						if(eijkl.isEqual(eris[m])){
+							eql = true;
+							eijkl.eri = eris[m].eri;
+						}
+					}
+					if(!eql){
+						eijkl.eri = G(phis[i], phis[j], phis[k], phis[l]);
+					}
+					eris.push_back(eijkl);
+					result[i][j][k][l] = eijkl.eri; 
+				}
+			}
+		}
+	}
+	return result;
 }

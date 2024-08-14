@@ -15,6 +15,9 @@ T(g1, g2)  : computes kinetic energy integral of 2 basis
 V(g1, g2)  : computes nuclear attraction integrals of 2
 	   basis functions.
 
+Contains additional functions for building matrices with
+the Matrix class (../libmath/linalg.hpp).
+
 ---------------------------------------------------------------
 2e.hpp - header file for computing two-electron integrals
 
