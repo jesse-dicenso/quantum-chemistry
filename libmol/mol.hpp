@@ -3,7 +3,6 @@
 
 #include "../libgf/gf.hpp"
 
-#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -11,14 +10,14 @@
 class Molecule{
 	public:
 		Molecule(const char *file);
-		~Molecule();
 
 		int Natoms;
-		int charge;
-		int* Zvals;
+		std::vector<int> Zvals;
 		int Nelec;
-		double** xyz;
-		GF** MO;
+		std::vector<std::vector<double>> xyz;
+		std::vector<GF> AOs;
 };
+
+std::vector<GF> AOfunctions(std::string basis, int Zval, std::vector<double> xyz);
 
 #endif

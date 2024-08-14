@@ -1,10 +1,11 @@
 #include "../libint/buildmatrix.hpp"
+#include "../libmol/mol.hpp"
 
 using namespace std;
 
 int main(){
 	cout << setprecision(15);
-	// STO-3G //
+	/*// STO-3G //
 	// * H *
 	// 1s
 	vector<double> aH1s({0.168856,0.623913,3.42525});
@@ -19,9 +20,10 @@ int main(){
 	// 2p	
 	vector<double> dO2p({0.1559162750,0.6076837186,0.3919573931});
 	// Water
-	vector<double> ctr1({0.0, 1.4194772274, -0.87926122007});	// H
-	vector<double> ctr2({0.0, -1.4194772274, -0.87926122007});	// H
-	vector<double> ctr3({0.0, 0.0, 0.21981483259});			// O
+	vector<double> ctr1({0.0, 0.0, 0.21981483259});			// O
+	vector<double> ctr2({0.0, 1.4194772274, -0.87926122007});	// H
+	vector<double> ctr3({0.0, -1.4194772274, -0.87926122007});	// H
+	vector<int> Z({8,1,1});
 	// H2
 	//vector<double> ctr1({0.0, 1.4, 0.0});
 	//vector<double> ctr2({0.0, 0.0, 0.0});	
@@ -29,23 +31,12 @@ int main(){
 	vector<int> Lpx({1,0,0});
 	vector<int> Lpy({0,1,0});
 	vector<int> Lpz({0,0,1});
+	*/
+	Molecule water("water.inp");	
 	
-	vector<int> Z({8,1,1});
-	vector<vector<double>> pos({ctr3,ctr1,ctr2});
-
-	GF g1(aO1s,dO1s,ctr3,Ls);
-	GF g2(aO2sp,dO2s,ctr3,Ls);
-	GF g3(aO2sp,dO2p,ctr3,Lpx);
-	GF g4(aO2sp,dO2p,ctr3,Lpy);
-	GF g5(aO2sp,dO2p,ctr3,Lpz);
-	GF g6(aH1s,dH1s,ctr1,Ls);
-	GF g7(aH1s,dH1s,ctr2,Ls);
-
-	vector<GF> gfs({g1,g2,g3,g4,g5,g6,g7});
-	
-	Matrix Sij = overlap(gfs);
-	Matrix Tij = kinetic(gfs);
-	Matrix Vij = nuclear(gfs, Z, pos);
+	Matrix Sij = overlap(water.AOs);
+	Matrix Tij = kinetic(water.AOs);
+	Matrix Vij = nuclear(water.AOs, water.Zvals, water.xyz);
 
 	cout << "***********" << '\n';
 	cout << "* OVERLAP *" << '\n';
@@ -55,6 +46,7 @@ int main(){
 			cout << "S" << i << j << " = " << Sij.matrix[i][j] << '\n';
 		}
 	}
+	cout << '\n';
 	cout << "***********" << '\n';
 	cout << "* KINETIC *" << '\n';
 	cout << "***********" << '\n';
@@ -63,6 +55,7 @@ int main(){
 			cout << "T" << i << j << " = " << Tij.matrix[i][j] << '\n';
 		}
 	}
+	cout << '\n';
 	cout << "***********" << '\n';
 	cout << "* NUCLEAR *" << '\n';
 	cout << "***********" << '\n';
@@ -71,4 +64,5 @@ int main(){
 			cout << "V" << i << j << " = " << Vij.matrix[i][j] << '\n';
 		}
 	}
+	cout << '\n';
 }	

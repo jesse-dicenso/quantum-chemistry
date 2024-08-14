@@ -16,11 +16,14 @@ gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 buildmatrix.o: ../libint/buildmatrix.cpp ../libint/buildmatrix.hpp
 	g++ -c -O ../libint/buildmatrix.cpp
 
-test.o: test.cpp ../libint/2e.hpp 
+mol.o: ../libmol/mol.cpp ../libmol/mol.hpp ../libgf/gf.hpp
+	g++ -c -O ../libmol/mol.cpp
+
+test.o: test.cpp ../libint/2e.hpp ../libmol/mol.hpp
 	g++ -c -O test.cpp
 
-test: miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o test.o
-	g++ -O -o test miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o test.o
+test: miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o mol.o test.o
+	g++ -O -o test miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o mol.o test.o
 
 clean:
 	rm -f *.o
