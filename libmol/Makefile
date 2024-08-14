@@ -6,3 +6,6 @@ test.o: test.cpp mol.hpp
 
 test: mol.o test.o
 	g++ -O -o test mol.o test.o
+
+clean:
+	rm -f *.o

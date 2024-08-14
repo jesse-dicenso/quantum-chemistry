@@ -1,6 +1,9 @@
 miscmath.o: ../libmath/miscmath.cpp ../libmath/miscmath.hpp
 	g++ -c -O ../libmath/miscmath.cpp
 
+linalg.o: ../libmath/linalg.cpp ../libmath/linalg.hpp
+	g++ -c -O ../libmath/linalg.cpp
+
 gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 	g++ -c -O ../libgf/gf.cpp
 
@@ -10,11 +13,14 @@ gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 2e.o: ../libint/2e.cpp ../libint/2e.hpp ../libint/1e.hpp
 	g++ -c -O ../libint/2e.cpp
 
+buildmatrix.o: ../libint/buildmatrix.cpp ../libint/buildmatrix.hpp
+	g++ -c -O ../libint/buildmatrix.cpp
+
 test.o: test.cpp ../libint/2e.hpp 
 	g++ -c -O test.cpp
 
-test: miscmath.o gf.o 1e.o 2e.o test.o
-	g++ -O -o test miscmath.o gf.o 1e.o 2e.o test.o
+test: miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o test.o
+	g++ -O -o test miscmath.o linalg.o gf.o 1e.o 2e.o buildmatrix.o test.o
 
 clean:
-	rm -f *.o test
+	rm -f *.o
