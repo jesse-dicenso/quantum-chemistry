@@ -1,9 +1,10 @@
 #include "linalg.hpp"
 #include <iostream>
-
+#include <iomanip>
 using namespace std;
 
 int main(){
+	cout << setprecision(15);
 	Matrix A(3,3);
 	A.matrix[0][0] = 12;
 	A.matrix[1][0] = 6;
@@ -15,11 +16,11 @@ int main(){
 	A.matrix[1][2] = -68;
 	A.matrix[2][2] = -41;
 
-	vector<Matrix> QR = QR_decomposition(A);
-	cout << "Q : \n";
+	vector<Matrix> QR = QR_diagonalize(A);
+	cout << "D : \n";
 	QR[0].printMatrix();
 	cout << '\n';
-	cout << "R : \n";
+	cout << "Q : \n";
 	QR[1].printMatrix();
 	cout << '\n';
 }

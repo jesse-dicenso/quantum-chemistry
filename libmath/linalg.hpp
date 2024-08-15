@@ -37,6 +37,6 @@ double dot(const Matrix A, const Matrix B);
 // QR algorithm via Householder Reflections
 Matrix H(const Matrix u);
 std::vector<Matrix> QR_decomposition(const Matrix A);
-Matrix QR_diagonalize(const Matrix A);
+std::vector<Matrix> QR_diagonalize(const Matrix A);
 
 #endif
