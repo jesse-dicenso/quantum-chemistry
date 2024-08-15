@@ -79,15 +79,15 @@ std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> 
 	int size = phis.size();
 	std::vector<ERI> eris;
 	std::vector<std::vector<std::vector<std::vector<double>>>> result(size);
-	ERI e0(0, 0, 0, 0);
-	e0.eri = G(phis[0], phis[0], phis[0], phis[0]);
-	for(int i = 1; i < size; i++){
+	//ERI e0(0, 0, 0, 0);
+	//e0.eri = G(phis[0], phis[0], phis[0], phis[0]);
+	for(int i = 0; i < size; i++){
 		result[i].resize(size);
-		for(int j = 1; j < size; j++){
+		for(int j = 0; j < size; j++){
 			result[i][j].resize(size);
-			for(int k = 1; k < size; k++){
+			for(int k = 0; k < size; k++){
 				result[i][j][k].resize(size);
-				for(int l = 1; l < size; l++){
+				for(int l = 0; l < size; l++){
 					ERI eijkl(i, j, k, l);
 					bool eql = false;
 					for(int m = 0; m < eris.size(); m++){
@@ -106,4 +106,21 @@ std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> 
 		}
 	}
 	return result;
+}
+
+Matrix G(Matrix P, std::vector<std::vector<std::vector<std::vector<double>>>> g){
+	Matrix M(P.rows, P.cols);
+	double sum;
+	for(int mu = 0; mu < M.rows; mu++){
+		for(int nu = 0; nu < M.rows; nu++){
+			sum = 0;
+			for(int ld = 0; ld < M.rows; ld++){
+				for(int sg = 0; sg < M.rows; sg++){
+					sum += P.matrix[ld][sg] * (g[mu][nu][sg][ld] - 0.5*g[mu][ld][sg][nu]);
+				}
+			}
+			M.matrix[mu][nu] = sum;
+		}
+	}
+	return M;
 }

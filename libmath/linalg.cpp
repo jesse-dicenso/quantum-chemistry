@@ -42,8 +42,9 @@ Matrix::~Matrix(){
 
 void Matrix::printMatrix(){
 	for(int i = 0; i < rows; i++){
+		std::cout << "     ";
 		for(int j = 0; j < cols; j++){
-			std::cout << matrix[i][j] << "    ";
+			std::cout << matrix[i][j] << std::setw(20);
 		}
 		std::cout << '\n';
 	}
@@ -237,38 +238,42 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 }
 
 // Returns {D, Q} for square matrix
-std::vector<Matrix> QR_diagonalize(const Matrix A){
+std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol_add, const double tol_rat, const int maxiter){
 	Matrix diag = A;
-	Matrix temp = diag;
+	Matrix temp;
 	Matrix QT = I(diag.rows, diag.cols);
 	std::vector<Matrix> QR(2);
 	
-	const double tol = 1e-15;
 	int count = 0;
 	int good_count = 0;
 	bool good = false;
 
-	while((!good) && (count < 200)){
+	double nce_add = 2;
+	double nce_rat = 2;
+	while((!good) && (count < maxiter)){
 		QR = QR_decomposition(diag);
 		temp = transpose(QR[0]) * diag * QR[0];
 		
 		for(int i = 0; i < diag.rows; i++){
-			if((abs(temp.matrix[i][i]-diag.matrix[i][i])<tol   ) && 
-			   (abs(temp.matrix[i][i]/diag.matrix[i][i])<(1+tol) && 
-			   (abs(temp.matrix[i][i]/diag.matrix[i][i])>(1-tol)))){
+			nce_add = abs((temp.matrix[i][i]-diag.matrix[i][i])/((temp.matrix[i][i]+diag.matrix[i][i])/2));
+			nce_rat = abs(temp.matrix[i][i]/diag.matrix[i][i]);
+			std::cout << count << "   " << nce_add << '\n';
+			std::cout << count << "   " << nce_rat << '\n';
+			if((nce_add < tol_add) && (nce_rat < (1+tol_rat)) && (nce_rat > (1-tol_rat))){
 				good_count++;
 			}
 		}
+		std::cout << "good: " << good_count << '\n';
 		if(good_count==diag.rows){
 			good = true;
-		}		
+		}
 		
 		diag = temp;
 		QT = transpose(QR[0]) * QT;
 		good_count = 0;
 		count+=1;
 	}
-	assert(count < 200);
+	assert(count < maxiter);
 	
 	for(int j = 0; j < diag.rows; j++){
 		for(int k = 0; k < diag.cols; k++){
@@ -279,7 +284,17 @@ std::vector<Matrix> QR_diagonalize(const Matrix A){
 	}
 
 	Matrix Q = transpose(QT);
-	QR[0] = diag;
-	QR[1] = Q;
-	return QR;
+
+	std::vector<Matrix> result({diag, Q});
+	return result;
+}
+
+Matrix inv_sqrt(const Matrix A){
+	assert(A.rows==A.cols);
+	std::vector<Matrix> QR = QR_diagonalize(A);
+	for(int i = 0; i < QR[0].rows; i++){
+		assert(QR[0].matrix[i][i] > 0);
+		QR[0].matrix[i][i] = 1 / sqrt(QR[0].matrix[i][i]);
+	}
+	return QR[1] * QR[0] * transpose(QR[1]);
 }

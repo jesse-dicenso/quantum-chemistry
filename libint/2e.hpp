@@ -23,4 +23,6 @@ double G(GF g1, GF g2, GF g3, GF g4);
 
 std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> phis);
 
+Matrix G(Matrix P, std::vector<std::vector<std::vector<std::vector<double>>>> g);
+
 #endif
