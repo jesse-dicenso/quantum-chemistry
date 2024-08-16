@@ -1,11 +1,12 @@
 #include "mol.hpp"
 
-Molecule::Molecule(const char *file){
+Molecule::Molecule(std::string file){
 	std::ifstream read(file);
 	assert(read.good());
 
 	Nelec = 0;
-	read >> Natoms;
+	read >> Natoms >> charge;
+	Nelec = -charge;
 	Zvals.resize(Natoms);
 	xyz.resize(Natoms);
 	for(int i = 0; i < Natoms; i++){
@@ -44,6 +45,18 @@ std::vector<GF> AOfunctions(std::string basis, int Zval, std::vector<double> pos
 			std::vector<double> d1s({0.444635,0.535328,0.154329});
 			GF H1s(a1s, d1s, pos, Ls);
 			orbitals.push_back(H1s);
+		}
+		// * He * //
+		else if(Zval==2){
+			// 1s
+			// Basis set exchange:
+			//std::vector<double> a1s({0.6362421394e1,0.1158922999e1,0.3136497915});
+			//std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
+			// Szabo-Ostlund:
+			std::vector<double> a1s({0.480844,1.776691,9.753934});
+			std::vector<double> d1s({0.444635,0.535328,0.154329});
+			GF He1s(a1s, d1s, pos, Ls);
+			orbitals.push_back(He1s);
 		}
 		// * C * //
 		else if(Zval==6){

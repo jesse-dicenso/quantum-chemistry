@@ -19,7 +19,7 @@ class Matrix{
 		double **matrix;
 		bool isSymmetric;
 		
-		void printMatrix();
+		void printMatrix(int w=20);
 		Matrix getrow(int i);
 		Matrix getcol(int i);
 
@@ -32,13 +32,15 @@ class Matrix{
 };
 
 Matrix I(int r, int c);
+Matrix zero(int r, int c);
+
 Matrix transpose(const Matrix A);
 double dot(const Matrix A, const Matrix B);
 
 // QR algorithm via Householder Reflections
 Matrix H(const Matrix u);
 std::vector<Matrix> QR_decomposition(const Matrix A);
-std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol_add=1e-14, const double tol_rat=1e-8, const int maxiter=100);
+std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol=1e-8, const int maxiter=500);
 
 Matrix inv_sqrt(const Matrix A);
 

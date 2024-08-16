@@ -79,8 +79,6 @@ std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> 
 	int size = phis.size();
 	std::vector<ERI> eris;
 	std::vector<std::vector<std::vector<std::vector<double>>>> result(size);
-	//ERI e0(0, 0, 0, 0);
-	//e0.eri = G(phis[0], phis[0], phis[0], phis[0]);
 	for(int i = 0; i < size; i++){
 		result[i].resize(size);
 		for(int j = 0; j < size; j++){

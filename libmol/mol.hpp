@@ -9,10 +9,11 @@
 
 class Molecule{
 	public:
-		Molecule(const char *file);
+		Molecule(std::string file);
 
 		int Natoms;
 		std::vector<int> Zvals;
+		int charge;
 		int Nelec;
 		std::vector<std::vector<double>> xyz;
 		std::vector<GF> AOs;

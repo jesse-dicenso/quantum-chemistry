@@ -40,14 +40,14 @@ Matrix::~Matrix(){
 	delete[] matrix;
 }
 
-void Matrix::printMatrix(){
+void Matrix::printMatrix(int w){
 	for(int i = 0; i < rows; i++){
-		std::cout << "     ";
 		for(int j = 0; j < cols; j++){
-			std::cout << matrix[i][j] << std::setw(20);
+			std::cout << std::setw(w) << matrix[i][j] << std::setw(w);
 		}
 		std::cout << '\n';
 	}
+	std::cout << '\n';
 }
 
 Matrix Matrix::operator-() const{
@@ -160,9 +160,19 @@ Matrix I(int r, int c){
 	assert(r==c);
 	Matrix identity(r, c);
 	for(int i = 0; i < r; i++){
-		identity.matrix[i][i] = 1;
+		identity.matrix[i][i] = 1.0;
 	}
 	return identity;
+}
+
+Matrix zero(int r, int c){
+	Matrix z(r, c);
+	for(int i = 0; i < r; i++){
+		for(int j = 0; j < c; j++){
+			z.matrix[i][i] = 0.0;
+		}
+	}
+	return z;
 }
 
 double dotproduct(const Matrix A, const Matrix B){
@@ -189,7 +199,7 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 	Matrix Aq = A;
 	Matrix AI = I(A.cols, A.cols);
 	double alpha;
-	
+	double s;
 	for(int i = 0; i < (A.cols-1); i++){
 		Matrix Ap((A.rows-i),(A.cols-i));
 		for(int j = 0; j < (A.cols-i); j++){
@@ -198,8 +208,14 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 			}
 		}
 		// Form Householder matrix
-		alpha = -sqrt(dotproduct(transpose(Ap.getcol(0)),Ap.getcol(0)));
 		Matrix u = Ap.getcol(0);
+		if(u.matrix[0][0] <= 0){
+			s = -1;
+		}
+		else{
+			s = 1;
+		}
+		alpha = s*sqrt(dotproduct(transpose(u),u));
 		u.matrix[0][0] += alpha;
 		Matrix Householder = H(u);
 		
@@ -238,36 +254,30 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 }
 
 // Returns {D, Q} for square matrix
-std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol_add, const double tol_rat, const int maxiter){
+std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int maxiter){
 	Matrix diag = A;
-	Matrix temp;
+	Matrix temp(diag.rows, diag.cols);	
 	Matrix QT = I(diag.rows, diag.cols);
-	std::vector<Matrix> QR(2);
 	
 	int count = 0;
 	int good_count = 0;
 	bool good = false;
 
-	double nce_add = 2;
-	double nce_rat = 2;
 	while((!good) && (count < maxiter)){
-		QR = QR_decomposition(diag);
+		std::vector<Matrix> QR = QR_decomposition(diag);
 		temp = transpose(QR[0]) * diag * QR[0];
 		
 		for(int i = 0; i < diag.rows; i++){
-			nce_add = abs((temp.matrix[i][i]-diag.matrix[i][i])/((temp.matrix[i][i]+diag.matrix[i][i])/2));
-			nce_rat = abs(temp.matrix[i][i]/diag.matrix[i][i]);
-			std::cout << count << "   " << nce_add << '\n';
-			std::cout << count << "   " << nce_rat << '\n';
-			if((nce_add < tol_add) && (nce_rat < (1+tol_rat)) && (nce_rat > (1-tol_rat))){
+			if((fabs(temp.matrix[i][i]-diag.matrix[i][i]) < tol) && 
+			   (fabs(temp.matrix[i][i]/diag.matrix[i][i]) < (1+tol)) && 
+			   (fabs(temp.matrix[i][i]/diag.matrix[i][i]) > (1-tol))){
 				good_count++;
 			}
 		}
-		std::cout << "good: " << good_count << '\n';
 		if(good_count==diag.rows){
 			good = true;
 		}
-		
+			
 		diag = temp;
 		QT = transpose(QR[0]) * QT;
 		good_count = 0;
