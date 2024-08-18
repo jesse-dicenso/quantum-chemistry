@@ -41,8 +41,10 @@ std::vector<GF> AOfunctions(std::string basis, int Zval, std::vector<double> pos
 		// * H * //
 		if(Zval==1){
 			// 1s
-			std::vector<double> a1s({0.168856,0.623913,3.42525});
-			std::vector<double> d1s({0.444635,0.535328,0.154329});
+			//std::vector<double> a1s({0.168856,0.623913,3.42525});
+			//std::vector<double> d1s({0.444635,0.535328,0.154329});
+			std::vector<double> a1s({0.3425250914e1,0.6239137298,0.1688554040});
+			std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
 			GF H1s(a1s, d1s, pos, Ls);
 			orbitals.push_back(H1s);
 		}

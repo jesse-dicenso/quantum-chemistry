@@ -4,19 +4,20 @@ using namespace std;
 
 Matrix density_matrix(Matrix C, int N);
 double E0(Matrix P, Matrix Hcore, Matrix F);
+vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 
-int main(){
+int main(int argc, char* argv[]){
 	cout << fixed;
-	cout << setprecision(10);
 	cout << scientific;
 
-	string input;
-	const double eps = 1e-6;
-	const int max_cycles = 50;
+	ofstream out("outfile.dat");
+	auto coutbuf = cout.rdbuf(out.rdbuf());
 
-	cout << "Input file:\n";
+	string input;
+	const double eps = 1e-32;
+	const int max_cycles = 500;
+
 	cin >> input;
-	//input = "H2O.inp";
 
 	int N;
 	int K;
@@ -51,7 +52,7 @@ int main(){
 	cout << "*                  *\n";
 	cout << "********************\n\n";
 	cout << "JESSE DICENSO   \n";
-	cout << "SUMMER 2024     \n\n";
+	cout << "SUMMER 2024     \n\n\n";
 
 	cout << "Reading input file...\n\n";
 	
@@ -59,9 +60,10 @@ int main(){
 	N = M.Nelec;
 	K = M.AOs.size();
 
-	cout << "basis      STO-3G\n";
-	cout << "eps        " << eps << '\n';
-	cout << "max_cycles " << max_cycles << "\n\n";
+	cout << "\tbasis      STO-3G\n";
+	cout << "\teps        " << setprecision(2) << eps << '\n';
+	cout << "\tmax_cycles " << max_cycles << "\n\n";
+	cout << setprecision(10);
 	cout << "--------------------------------------------------------------\n";
 	cout << "Z" << setw(20) << "x (Bohr)" << setw(20) << "y (Bohr)" << setw(20) <<  "z (Bohr)" << '\n';
 	cout << "--------------------------------------------------------------\n";
@@ -98,19 +100,20 @@ int main(){
 	hcore.printMatrix();
 
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
-	cout << "------------------------------------------\n\n";
+	cout << "--------------------------------------------\n\n";
 	cout << "              *************\n";
 	cout << "              * BEGIN SCF *\n";
 	cout << "              *************\n\n";
-	cout << "------------------------------------------\n";
-	cout << "N" << setw(20) << "E" <<  setw(20) << "err" << '\n';
-	cout << "------------------------------------------\n";
+	cout << "--------------------------------------------\n";
+	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << '\n';
+	cout << "--------------------------------------------\n";
 
 	Matrix x = inv_sqrt(s);
 
 	Matrix p = zero(K,K);
-	Matrix g = G(p, eris);
-	Matrix f = hcore + g;
+	Matrix g = zero(K,K);
+	Matrix f = hcore;
+	Eo = E0(p, hcore, f);
 	
 	Matrix fo = transpose(x) * f * x;
 	temp_e_c = QR_diagonalize(fo);
@@ -120,7 +123,8 @@ int main(){
 
 	Matrix c = x * co;
 	p = density_matrix(c, N);
-	
+
+	cout.flush();	
 	while((abs(err) > eps) && (cycles <= max_cycles)){
 		g = G(p, eris);
 		f = hcore + g;
@@ -135,17 +139,18 @@ int main(){
 		
 		c = x * co;
 		p = density_matrix(c, N);
-		
-		cout << cycles << setw(20) << Eo << setw(20) << err << '\n';
+	
+		cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << '\n';
+		cout.flush();
 		cycles+=1;
 	}
 	cout << "------------------------------------------\n";
-	cout << '\n';
 
 	if(cycles > max_cycles){
 		cout << "No convergence after " << max_cycles << " cycles!" << '\n';
 	}
 	else{
+		cout << "Convergence criterion met; exiting SCF loop.\n\n";
 		E_tot = Eo + nuc;
 
 		cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
@@ -155,6 +160,29 @@ int main(){
 		
 		cout << "Orbital Energies\n";
 		e.printMatrix();
+
+		cout << "Final Density Matrix\n";
+		p.printMatrix();
+
+		vector<double> lpa = Lowdin_PA(M, p, s);
+		cout << "Lowdin Population Analysis\n";
+		cout << "-----------------------\n";
+		cout << setw(3) << "idx" << setw(20) << "charge\n";
+		cout << "-----------------------\n";
+		double sum_chg = 0;
+		cout << setprecision(4);
+		for(int i = 0; i < M.Zvals.size(); i++){
+			cout << setw(3) << i  << setw(20) << lpa[i] << '\n';
+			sum_chg += lpa[i];
+		}
+		cout << "-----------------------\n";
+		cout << "Sum of atomic charges = " << sum_chg << "\n\n";
+
+		cout << "\n***************************************\n";
+		cout <<   "*                                     *\n";
+		cout <<   "*     Thank you, have a nice day!     *\n";
+		cout <<   "*                                     *\n";
+		cout <<   "***************************************\n\n";
 	}
 }
 
@@ -180,4 +208,20 @@ double E0(Matrix P, Matrix Hcore, Matrix F){
 		}
 	}
 	return 0.5 * sum;
+}
+
+vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
+	vector<double> LPA(M.Zvals.size());
+	Matrix ShPSh = sqrt(S) * P * sqrt(S);
+	for(int i = 0; i < M.Zvals.size(); i++){
+		double sum = 0;
+		vector<int> positions;
+		for(int j = 0; j < M.AOs.size(); j++){
+			if(M.AOs[j].xyz==M.xyz[i]){
+				sum += ShPSh.matrix[j][j];
+			}
+		}
+		LPA[i] = M.Zvals[i] - sum;
+	}
+	return LPA;
 }

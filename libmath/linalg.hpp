@@ -40,8 +40,9 @@ double dot(const Matrix A, const Matrix B);
 // QR algorithm via Householder Reflections
 Matrix H(const Matrix u);
 std::vector<Matrix> QR_decomposition(const Matrix A);
-std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol=1e-8, const int maxiter=500);
+std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol=1e-8, const int maxiter=1500);
 
+Matrix sqrt(const Matrix A);
 Matrix inv_sqrt(const Matrix A);
 
 #endif

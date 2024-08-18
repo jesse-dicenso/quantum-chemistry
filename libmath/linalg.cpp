@@ -194,12 +194,13 @@ Matrix H(const Matrix u){
 // Householder Reflections, returns {Q, R} for square matrices
 std::vector<Matrix> QR_decomposition(const Matrix A){
 	assert(A.rows==A.cols);
-	std::vector<Matrix> Qs;
-
+	
 	Matrix Aq = A;
 	Matrix AI = I(A.cols, A.cols);
+	Matrix QT = I(A.cols, A.cols);
 	double alpha;
 	double s;
+	
 	for(int i = 0; i < (A.cols-1); i++){
 		Matrix Ap((A.rows-i),(A.cols-i));
 		for(int j = 0; j < (A.cols-i); j++){
@@ -207,20 +208,18 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 				Ap.matrix[j][k] = Aq.matrix[j+i][k+i];
 			}
 		}
-		// Form Householder matrix
 		Matrix u = Ap.getcol(0);
 		if(u.matrix[0][0] <= 0){
-			s = -1;
-		}
-		else{
 			s = 1;
 		}
+		else{
+			s = -1;
+		}
 		alpha = s*sqrt(dotproduct(transpose(u),u));
-		u.matrix[0][0] += alpha;
+		u = I(Ap.cols, Ap.cols).getcol(0) * alpha - u;
 		Matrix Householder = H(u);
 		
 		Matrix Qi(A.cols, A.cols);
-		// Pad Qi with identity matrix
 		for(int l = 0; l < A.cols; l++){
 			for(int m = 0; m < A.cols; m++){
 				if((l < i) || (m < i)){
@@ -234,28 +233,17 @@ std::vector<Matrix> QR_decomposition(const Matrix A){
 		
 		Aq = Qi * Aq;
 		
-		Qs.push_back(Qi);
-	}
-	// Form Q, R
-	Matrix Q = Qs[Qs.size()-1];
-	for(int n = (Qs.size()-2); n >= 0; n--){
-		Q = Qs[n]*Q;
-	}
-	
-	// Form R
-	Matrix R = A;
-	for(int o = 0; o < Qs.size(); o++){
-		R = Qs[o]*R;
+		QT = Qi * QT;
 	}
 
-	std::vector<Matrix> result({Q, R});
-
+	std::vector<Matrix> result({transpose(QT), QT*A});
 	return result;
 }
 
 // Returns {D, Q} for square matrix
 std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int maxiter){
 	Matrix diag = A;
+	Matrix shift = zero(diag.rows, diag.cols);
 	Matrix temp(diag.rows, diag.cols);	
 	Matrix QT = I(diag.rows, diag.cols);
 	
@@ -263,27 +251,44 @@ std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int m
 	int good_count = 0;
 	bool good = false;
 
-	while((!good) && (count < maxiter)){
+	while((!good) && (count <= maxiter)){
+		//std::cout << "diag " << count << '\n';
+		//diag.printMatrix();
+
 		std::vector<Matrix> QR = QR_decomposition(diag);
-		temp = transpose(QR[0]) * diag * QR[0];
-		
+		temp = QR[1] * QR[0];
+
+		// check off-diagonal elements	
 		for(int i = 0; i < diag.rows; i++){
-			if((fabs(temp.matrix[i][i]-diag.matrix[i][i]) < tol) && 
-			   (fabs(temp.matrix[i][i]/diag.matrix[i][i]) < (1+tol)) && 
-			   (fabs(temp.matrix[i][i]/diag.matrix[i][i]) > (1-tol))){
+			for(int j = 0; j < i; j++){
+				if(fabs(diag.matrix[i][j])<tol){
+					good_count++;
+				}
+			}
+		}
+		/*
+		// check diagonal elements
+		for(int i = 0; i < diag.rows; i++){
+			if((fabs((temp.matrix[i][i]-diag.matrix[i][i])/(temp.matrix[i][i]+diag.matrix[i][i])/2))<tol){
 				good_count++;
 			}
 		}
+		*/
+		if(good_count==(diag.rows*(diag.rows-1)/2)){
+			good = true;
+		}
+		/*
 		if(good_count==diag.rows){
 			good = true;
 		}
+		*/
 			
 		diag = temp;
 		QT = transpose(QR[0]) * QT;
 		good_count = 0;
 		count+=1;
 	}
-	assert(count < maxiter);
+	assert(count <= maxiter);
 	
 	for(int j = 0; j < diag.rows; j++){
 		for(int k = 0; k < diag.cols; k++){
@@ -297,6 +302,16 @@ std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int m
 
 	std::vector<Matrix> result({diag, Q});
 	return result;
+}
+
+Matrix sqrt(const Matrix A){
+	assert(A.rows==A.cols);
+	std::vector<Matrix> QR = QR_diagonalize(A);
+	for(int i = 0; i < QR[0].rows; i++){
+		assert(QR[0].matrix[i][i] > 0);
+		QR[0].matrix[i][i] = sqrt(QR[0].matrix[i][i]);
+	}
+	return QR[1] * QR[0] * transpose(QR[1]);
 }
 
 Matrix inv_sqrt(const Matrix A){
