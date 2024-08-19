@@ -1,10 +1,16 @@
 #include "hartree-fock.hpp"
+#include <bits/stdc++.h>
 
 using namespace std;
 
 Matrix density_matrix(Matrix C, int N);
 double E0(Matrix P, Matrix Hcore, Matrix F);
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
+vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
+
+vector<int> e_order(Matrix E);
+Matrix e_reorder(Matrix E, vector<int> idx);
+Matrix c_reorder(Matrix C, vector<int> idx);
 
 int main(int argc, char* argv[]){
 	cout << fixed;
@@ -13,11 +19,15 @@ int main(int argc, char* argv[]){
 	ofstream out("outfile.dat");
 	auto coutbuf = cout.rdbuf(out.rdbuf());
 
-	string input;
-	const double eps = 1e-32;
-	const int max_cycles = 500;
+	string infile;
+	double eps;
+	int max_cycles;
+	string pop;
 
-	cin >> input;
+	cin >> infile;
+	cin >> eps;
+	cin >> max_cycles;
+	cin >> pop;
 
 	int N;
 	int K;
@@ -56,13 +66,14 @@ int main(int argc, char* argv[]){
 
 	cout << "Reading input file...\n\n";
 	
-	Molecule M(input);
+	Molecule M(infile);
 	N = M.Nelec;
 	K = M.AOs.size();
 
 	cout << "\tbasis      STO-3G\n";
 	cout << "\teps        " << setprecision(2) << eps << '\n';
-	cout << "\tmax_cycles " << max_cycles << "\n\n";
+	cout << "\tmax_cycles " << max_cycles << '\n';
+	cout << "\tpopulation " << pop << "\n\n";
 	cout << setprecision(10);
 	cout << "--------------------------------------------------------------\n";
 	cout << "Z" << setw(20) << "x (Bohr)" << setw(20) << "y (Bohr)" << setw(20) <<  "z (Bohr)" << '\n';
@@ -100,7 +111,6 @@ int main(int argc, char* argv[]){
 	hcore.printMatrix();
 
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
-	cout << "--------------------------------------------\n\n";
 	cout << "              *************\n";
 	cout << "              * BEGIN SCF *\n";
 	cout << "              *************\n\n";
@@ -119,9 +129,14 @@ int main(int argc, char* argv[]){
 	temp_e_c = QR_diagonalize(fo);
 
 	Matrix e = temp_e_c[0];
+	vector e_o = e_order(e);
+	e = e_reorder(e, e_o);
+
 	Matrix co = temp_e_c[1];
 
 	Matrix c = x * co;
+	c = c_reorder(c, e_o);
+
 	p = density_matrix(c, N);
 
 	cout.flush();	
@@ -135,9 +150,12 @@ int main(int argc, char* argv[]){
 		fo = transpose(x) * f * x;
 		temp_e_c = QR_diagonalize(fo);
 		e = temp_e_c[0];
+		e_o = e_order(e);
+		e = e_reorder(e, e_o);
 		co = temp_e_c[1];
 		
 		c = x * co;
+		c = c_reorder(c, e_o);
 		p = density_matrix(c, N);
 	
 		cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << '\n';
@@ -164,18 +182,26 @@ int main(int argc, char* argv[]){
 		cout << "Final Density Matrix\n";
 		p.printMatrix();
 
-		vector<double> lpa = Lowdin_PA(M, p, s);
-		cout << "Lowdin Population Analysis\n";
-		cout << "-----------------------\n";
-		cout << setw(3) << "idx" << setw(20) << "charge\n";
-		cout << "-----------------------\n";
-		double sum_chg = 0;
-		cout << setprecision(4);
-		for(int i = 0; i < M.Zvals.size(); i++){
-			cout << setw(3) << i  << setw(20) << lpa[i] << '\n';
-			sum_chg += lpa[i];
+		vector<double> pa(M.Zvals.size());
+		if(pop=="lowdin"){
+			pa = Lowdin_PA(M, p, s);
+			cout << "Löwdin Population Analysis\n";
 		}
-		cout << "-----------------------\n";
+		else if(pop=="mulliken"){
+			pa = Mulliken_PA(M, p, s);
+			cout << "Mulliken Population Analysis\n";
+		}
+		cout << "=======================\n";
+		cout << setw(3) << "idx" << setw(21) << "charge\n";
+		cout << "=======================\n";
+		double sum_chg = 0;
+		cout << fixed;
+		cout << setprecision(10);
+		for(int i = 0; i < M.Zvals.size(); i++){
+			cout << setw(3) << i+1 << setw(20) << pa[i] << '\n';
+			sum_chg += pa[i];
+		}
+		cout << "=======================\n";
 		cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 
 		cout << "\n***************************************\n";
@@ -210,6 +236,41 @@ double E0(Matrix P, Matrix Hcore, Matrix F){
 	return 0.5 * sum;
 }
 
+vector<int> e_order(Matrix E){
+	vector<int> list_idx(E.cols);
+	vector<double> list_e(E.cols);
+	for(int i = 0; i < E.cols; i++){
+		list_e[i] = E.matrix[i][i];
+	}
+	sort(list_e.begin(), list_e.end());
+	for(int j = 0; j < E.cols; j++){
+		for(int k = 0; k < E.cols; k++){
+			if(list_e[j] == E.matrix[k][k]){
+				list_idx[j] = k;
+			}
+		}
+	}
+	return list_idx;
+}
+
+Matrix e_reorder(Matrix E, vector<int> idx){
+	Matrix e_ordered(E.rows, E.cols);
+	for(int i = 0; i < E.cols; i++){
+		e_ordered.matrix[i][i] = E.matrix[idx[i]][idx[i]];
+	}
+	return e_ordered;
+}
+
+Matrix c_reorder(Matrix C, vector<int> idx){
+	Matrix c_ordered(C.rows, C.cols);
+	for(int i = 0; i < C.cols; i++){
+		for(int j = 0; j < C.rows; j++){
+			c_ordered.matrix[j][i] = C.matrix[j][idx[i]];
+		}
+	}
+	return c_ordered;
+}
+
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
 	vector<double> LPA(M.Zvals.size());
 	Matrix ShPSh = sqrt(S) * P * sqrt(S);
@@ -224,4 +285,20 @@ vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
 		LPA[i] = M.Zvals[i] - sum;
 	}
 	return LPA;
+}
+
+vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
+	vector<double> MPA(M.Zvals.size());
+	Matrix PS = P * S;
+	for(int i = 0; i < M.Zvals.size(); i++){
+		double sum = 0;
+		vector<int> positions;
+		for(int j = 0; j < M.AOs.size(); j++){
+			if(M.AOs[j].xyz==M.xyz[i]){
+				sum += PS.matrix[j][j];
+			}
+		}
+		MPA[i] = M.Zvals[i] - sum;
+	}
+	return MPA;
 }
