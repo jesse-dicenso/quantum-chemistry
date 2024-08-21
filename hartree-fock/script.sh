@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Input file
-infile="H2.inp"
+infile="H2O.inp"
 # SCF Loop
-eps="1e-8"
+eps="1e-6"
 max_cycles="50"
 # Population Analysis: "lowdin", "mulliken"
 pop="lowdin"

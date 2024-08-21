@@ -8,10 +8,6 @@ double E0(Matrix P, Matrix Hcore, Matrix F);
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
 
-vector<int> e_order(Matrix E);
-Matrix e_reorder(Matrix E, vector<int> idx);
-Matrix c_reorder(Matrix C, vector<int> idx);
-
 int main(int argc, char* argv[]){
 	cout << fixed;
 	cout << scientific;
@@ -24,10 +20,15 @@ int main(int argc, char* argv[]){
 	int max_cycles;
 	string pop;
 
-	cin >> infile;
-	cin >> eps;
-	cin >> max_cycles;
-	cin >> pop;
+	//cin >> infile;
+	//cin >> eps;
+	//cin >> max_cycles;
+	//cin >> pop;
+
+	infile = "H2O.inp";
+	eps = 1e-6;
+	max_cycles = 50;
+	pop = "lowdin";
 
 	int N;
 	int K;
@@ -64,16 +65,16 @@ int main(int argc, char* argv[]){
 	cout << "JESSE DICENSO   \n";
 	cout << "SUMMER 2024     \n\n\n";
 
-	cout << "Reading input file...\n\n";
+	cout << "Reading input...\n\n";
 	
 	Molecule M(infile);
 	N = M.Nelec;
 	K = M.AOs.size();
-
-	cout << "\tbasis      STO-3G\n";
-	cout << "\teps        " << setprecision(2) << eps << '\n';
-	cout << "\tmax_cycles " << max_cycles << '\n';
-	cout << "\tpopulation " << pop << "\n\n";
+	cout << "\tinfile\t\t" << infile << '\n';
+	cout << "\tbasis\t\tSTO-3G\n";
+	cout << "\teps\t\t" << setprecision(2) << eps << '\n';
+	cout << "\tmax_cycles\t" << max_cycles << '\n';
+	cout << "\tpopulation\t" << pop << "\n\n";
 	cout << setprecision(10);
 	cout << "--------------------------------------------------------------\n";
 	cout << "Z" << setw(20) << "x (Bohr)" << setw(20) << "y (Bohr)" << setw(20) <<  "z (Bohr)" << '\n';
@@ -90,25 +91,19 @@ int main(int argc, char* argv[]){
 	
 	eris = ERIs(M.AOs);
 
-	Matrix s = overlap(M.AOs);
+	Matrix* s = new Matrix(K, K);
+	Matrix* t = new Matrix(K, K);
+	Matrix* v = new Matrix(K, K);
+	Matrix* hcore = new Matrix(K, K);
 	
-	cout << "OVERLAP\n";
-	s.printMatrix();
+	(*s) = overlap(M.AOs);
+	(*t) = kinetic(M.AOs);
+	(*v) = nuclear(M.AOs, M.Zvals, M.xyz);
 	
-	Matrix t = kinetic(M.AOs);
+	(*hcore) = (*t) + (*v);
 	
-	cout << "KINETIC ENERGY\n";
-	t.printMatrix();
-	
-	Matrix v = nuclear(M.AOs, M.Zvals, M.xyz);
-	
-	cout << "NUCLEAR ATTRACTION\n";
-	v.printMatrix();
-	
-	Matrix hcore = t + v;
-	
-	cout << "CORE HAMILTONIAN\n";
-	hcore.printMatrix();
+	delete t;
+	delete v;
 
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
 	cout << "              *************\n";
@@ -118,45 +113,46 @@ int main(int argc, char* argv[]){
 	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << '\n';
 	cout << "--------------------------------------------\n";
 
-	Matrix x = inv_sqrt(s);
+	Matrix* x  = new Matrix(K, K);
+	Matrix* p  = new Matrix(K, K);
+	Matrix* g  = new Matrix(K, K);
+	Matrix* f  = new Matrix(K, K);
+	Matrix* fo = new Matrix(K, K);
+	Matrix* e  = new Matrix(K, K);
+	Matrix* co = new Matrix(K, K);
+	Matrix* c  = new Matrix(K, K);
 
-	Matrix p = zero(K,K);
-	Matrix g = zero(K,K);
-	Matrix f = hcore;
-	Eo = E0(p, hcore, f);
+	(*x) = m_inv_sqrt(*s);
+
+	(*f) = (*hcore);
+	Eo = E0(*p, *hcore, *f);
 	
-	Matrix fo = transpose(x) * f * x;
-	temp_e_c = QR_diagonalize(fo);
+	(*fo) = transpose(*x) * (*f) * (*x);
+	temp_e_c = diagonalize(*fo);
 
-	Matrix e = temp_e_c[0];
-	vector e_o = e_order(e);
-	e = e_reorder(e, e_o);
+	(*e) = temp_e_c[0];
 
-	Matrix co = temp_e_c[1];
+	(*co) = temp_e_c[1];
 
-	Matrix c = x * co;
-	c = c_reorder(c, e_o);
+	(*c) = (*x) * (*co);
 
-	p = density_matrix(c, N);
+	(*p) = density_matrix(*c, N);
 
 	cout.flush();	
 	while((abs(err) > eps) && (cycles <= max_cycles)){
-		g = G(p, eris);
-		f = hcore + g;
-		temp_Eo = E0(p, hcore, f);
+		(*g) = G(*p, eris);
+		(*f) = (*hcore) + (*g);
+		temp_Eo = E0(*p, *hcore, *f);
 		err = temp_Eo - Eo;
 		Eo = temp_Eo;
 
-		fo = transpose(x) * f * x;
-		temp_e_c = QR_diagonalize(fo);
-		e = temp_e_c[0];
-		e_o = e_order(e);
-		e = e_reorder(e, e_o);
-		co = temp_e_c[1];
+		(*fo) = transpose(*x) * (*f) * (*x);
+		temp_e_c = diagonalize(*fo);
+		(*e) = temp_e_c[0];
+		(*co) = temp_e_c[1];
 		
-		c = x * co;
-		c = c_reorder(c, e_o);
-		p = density_matrix(c, N);
+		(*c) = (*x) * (*co);
+		(*p) = density_matrix(*c, N);
 	
 		cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << '\n';
 		cout.flush();
@@ -174,21 +170,21 @@ int main(int argc, char* argv[]){
 		cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
 
 		cout << "MO coefficients\n";
-		c.printMatrix();
+		(*c).printMatrix();
 		
 		cout << "Orbital Energies\n";
-		e.printMatrix();
+		(*e).printMatrix();
 
 		cout << "Final Density Matrix\n";
-		p.printMatrix();
+		(*p).printMatrix();
 
 		vector<double> pa(M.Zvals.size());
 		if(pop=="lowdin"){
-			pa = Lowdin_PA(M, p, s);
+			pa = Lowdin_PA(M, *p, *s);
 			cout << "Löwdin Population Analysis\n";
 		}
 		else if(pop=="mulliken"){
-			pa = Mulliken_PA(M, p, s);
+			pa = Mulliken_PA(M, *p, *s);
 			cout << "Mulliken Population Analysis\n";
 		}
 		cout << "=======================\n";
@@ -209,7 +205,17 @@ int main(int argc, char* argv[]){
 		cout <<   "*     Thank you, have a nice day!     *\n";
 		cout <<   "*                                     *\n";
 		cout <<   "***************************************\n\n";
+
 	}
+	delete s;
+	delete x;
+	delete p;
+	delete g;
+	delete f;
+	delete fo;
+	delete e;
+	delete co;
+	delete c;
 }
 
 Matrix density_matrix(Matrix C, int N){
@@ -236,44 +242,9 @@ double E0(Matrix P, Matrix Hcore, Matrix F){
 	return 0.5 * sum;
 }
 
-vector<int> e_order(Matrix E){
-	vector<int> list_idx(E.cols);
-	vector<double> list_e(E.cols);
-	for(int i = 0; i < E.cols; i++){
-		list_e[i] = E.matrix[i][i];
-	}
-	sort(list_e.begin(), list_e.end());
-	for(int j = 0; j < E.cols; j++){
-		for(int k = 0; k < E.cols; k++){
-			if(list_e[j] == E.matrix[k][k]){
-				list_idx[j] = k;
-			}
-		}
-	}
-	return list_idx;
-}
-
-Matrix e_reorder(Matrix E, vector<int> idx){
-	Matrix e_ordered(E.rows, E.cols);
-	for(int i = 0; i < E.cols; i++){
-		e_ordered.matrix[i][i] = E.matrix[idx[i]][idx[i]];
-	}
-	return e_ordered;
-}
-
-Matrix c_reorder(Matrix C, vector<int> idx){
-	Matrix c_ordered(C.rows, C.cols);
-	for(int i = 0; i < C.cols; i++){
-		for(int j = 0; j < C.rows; j++){
-			c_ordered.matrix[j][i] = C.matrix[j][idx[i]];
-		}
-	}
-	return c_ordered;
-}
-
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
 	vector<double> LPA(M.Zvals.size());
-	Matrix ShPSh = sqrt(S) * P * sqrt(S);
+	Matrix ShPSh = m_sqrt(S) * P * m_sqrt(S);
 	for(int i = 0; i < M.Zvals.size(); i++){
 		double sum = 0;
 		vector<int> positions;
