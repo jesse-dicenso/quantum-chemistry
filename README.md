@@ -4,8 +4,11 @@ This is a simple Hartree-Fock program that I wrote during Summer 2024. It is abl
 Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically for DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems). Everything else, including a class for matrices, was written by me!
 
 ## Current capabilities:
+
 -Basis Sets: STO-3G
+
 -SCF Algorithms: fixed-point, DIIS
+
 -Population Analyses: Lowdin, Mulliken
 
 Currently, the basis sets are only implemented for H, He, C, and O; I am still working on implementing a system so basis sets may be read in from files.
