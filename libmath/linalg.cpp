@@ -175,6 +175,15 @@ Matrix zero(int r, int c){
 	return z;
 }
 
+double Tr(Matrix A){
+	assert(A.rows==A.cols);
+	double sum = 0;
+	for(int i = 0; i < A.rows; i++){
+		sum += A.matrix[i][i];
+	}
+	return sum;
+}
+
 std::vector<Matrix> diagonalize(Matrix A){
 	assert(A.rows==A.cols);
 	// * DSYEV options * //
@@ -252,6 +261,57 @@ Matrix m_inv_sqrt(const Matrix A){
 		QR[0].matrix[i][i] = 1 / sqrt(QR[0].matrix[i][i]);
 	}
 	return QR[1] * QR[0] * transpose(QR[1]);
+}
+
+std::vector<double> sym_linear_solve(Matrix A, Matrix B){
+	assert(A.rows==A.cols);
+	assert((B.rows==A.rows) && (B.cols==1));
+	// * DSYSV options * //
+	char uplo = 'U';		// upper triangular
+	int n = A.cols;			// A matrix size
+	int nrhs = 1;			// 1 column B matrix
+	std::vector<double> a(n*n);	// A matrix, column-major
+	for(int i = 0; i < n; i++){
+		for(int j = 0; j < n; j++){
+			a[i+n*j] = A.matrix[i][j];
+		}
+	}
+	int lda = n;			// leading dimension of A
+	std::vector<int> ipiv(n);	// Details of D
+	std::vector<double> b(n);	// B matrix, column-major
+	for(int i = 0; i < n; i++){
+		b[i] = B.matrix[i][0];
+	}
+	int ldb = n;			// leading dimension of B
+	int info;			// successful if info == 0
+	
+	// workspace query
+	double works;
+	int lwork = -1;
+	dsysv_(&uplo, &n, &nrhs, a.data(), &lda, ipiv.data(), b.data(), &ldb, &works, &lwork, &info);
+	
+	if(info != 0){
+		std::cerr << "Workspace query err, info = " << info << '\n';
+		return {};
+	}
+
+	lwork = (int)works;
+	if(lwork <= 0){
+		std::cerr << "Illegal lwork value, info = " << info << '\n';
+		return {};
+	}
+
+	assert(lwork>0);
+	std::vector<double> work(lwork);
+
+	// Solve AX = B
+	dsysv_(&uplo, &n, &nrhs, a.data(), &lda, ipiv.data(), b.data(), &ldb, work.data(), &lwork, &info);
+	if(info != 0){
+		std::cerr << "info != 0\n";
+		return {};
+	}
+	
+	return b;
 }
 
 /*

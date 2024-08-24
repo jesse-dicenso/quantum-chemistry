@@ -10,6 +10,7 @@
 // LAPACK function for computing eigenvalues/eigenvectors
 extern "C" {
 	void dsyev_(char* JOBZ, char* UPLO, int* N, double* A, int* LDA, double* W, double* WORK, int* LWORK, int* INFO);
+	void dsysv_(char* UPLO, int* N, int* NRHS, double* A, int* LDA, int* IPIV, double* B, int* LDB, double* WORK, int* LWORK, int* INFO);
 }
 
 class Matrix{
@@ -41,9 +42,13 @@ Matrix zero(int r, int c);
 
 Matrix transpose(const Matrix A);
 
+double Tr(Matrix A);
+
 std::vector<Matrix> diagonalize(Matrix A);
 Matrix m_sqrt(const Matrix A);
 Matrix m_inv_sqrt(const Matrix A);
+
+std::vector<double> sym_linear_solve(Matrix A, Matrix B);
 
 /*
 This was an interesting exploration into numerical linear algebra; it technically works but fails 

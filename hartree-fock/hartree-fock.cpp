@@ -2,8 +2,6 @@
 
 using namespace std;
 
-Matrix density_matrix(Matrix C, int N);
-double E0(Matrix P, Matrix Hcore, Matrix F);
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
 void print_orbitals(Matrix E, Matrix C, int N, int K);
@@ -16,11 +14,13 @@ int main(int argc, char* argv[]){
 	auto coutbuf = cout.rdbuf(out.rdbuf());
 
 	string infile;
+	int sps;
 	double eps;
 	int max_cycles;
 	string pop;
 
 	cin >> infile;
+	cin >> sps;
 	cin >> eps;
 	cin >> max_cycles;
 	cin >> pop;
@@ -67,6 +67,17 @@ int main(int argc, char* argv[]){
 	K = M.AOs.size();
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tbasis\t\tSTO-3G\n";
+	cout << "\tsps\t\t" << sps << ' ';
+	if(sps==0){
+		cout << "(fixed-point)\n";
+	}
+	else if(sps>0){
+		cout << "(DIIS)\n";
+	}
+	else{
+		cerr << "ERR: Unknown SCF algorithm\n";
+		return 0;
+	}
 	cout << "\teps\t\t" << setprecision(2) << eps << '\n';
 	cout << "\tmax_cycles\t" << max_cycles << '\n';
 	cout << "\tpopulation\t" << pop << "\n\n";
@@ -93,13 +104,13 @@ int main(int argc, char* argv[]){
 	cout << "              *************\n";
 	cout << "              * BEGIN SCF *\n";
 	cout << "              *************\n\n";
-	cout << "--------------------------------------------\n";
-	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << '\n';
-	cout << "--------------------------------------------\n";
+	cout << "----------------------------------------------------\n";
+	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << setw(10) << "step\n";
+	cout << "----------------------------------------------------\n";
 
+	Matrix x = m_inv_sqrt(s);
 	Matrix p(K, K);
 	Matrix g(K, K);
-	Matrix x = m_inv_sqrt(s);
 	Matrix f = hcore;
 	Eo = E0(p, hcore, f);
 	Matrix fo = transpose(x) * f * x;
@@ -110,29 +121,37 @@ int main(int argc, char* argv[]){
 	p = density_matrix(c, N);
 
 	cout.flush();	
-	while((abs(err) > eps) && (cycles <= max_cycles)){
-		g = G(p, eris);
-		f = hcore + g;
-		temp_Eo = E0(p, hcore, f);
-		err = temp_Eo - Eo;
-		Eo = temp_Eo;
-
-		fo = transpose(x) * f * x;
-		temp_e_c = diagonalize(fo);
-		e = temp_e_c[0];
-		co = temp_e_c[1];
-		
-		c = x * co;
-		p = density_matrix(c, N);
 	
-		cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << '\n';
-		cout.flush();
-		cycles+=1;
+	if(sps==0){
+		while((abs(err) > eps) && (cycles <= max_cycles)){
+			FPI(hcore, eris, x, &p, &g, &f, &fo, &e, &co, &c, &Eo, &err, N);
+			cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
+			cout.flush();
+			cycles+=1;
+		}
 	}
-	cout << "------------------------------------------\n";
+	else{
+		vector<Matrix> SPf(sps, zero(K, K));
+		vector<Matrix> SPe(sps, zero(K, K));
+		while((abs(err) > eps) && (cycles <= max_cycles)){
+			DIIS(s, hcore, eris, x, &p, &g, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps);
+			cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
+			if(cycles < sps){
+				cout << setw(10) << "fp\n";
+			}
+			else{
+				cout << setw(10) << "diis\n";
+			}
+			cout.flush();
+			cycles+=1;
+		}
+
+	}
+	cout << "----------------------------------------------------\n";
 
 	if(cycles > max_cycles){
-		cout << "No convergence after " << max_cycles << " cycles!" << '\n';
+		cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
+		return 0;
 	}
 	else{
 		cout << "Convergence criterion met; exiting SCF loop.\n\n";
@@ -173,30 +192,6 @@ int main(int argc, char* argv[]){
 		cout <<   "***************************************\n\n";
 
 	}
-}
-
-Matrix density_matrix(Matrix C, int N){
-	Matrix P(C.rows, C.cols);
-	for(int i = 0; i < C.rows; i++){
-		for(int j = 0; j < C.cols; j++){
-			double sum = 0;
-			for(int a = 0; a < N/2; a++){
-				sum += C.matrix[i][a]*C.matrix[j][a];
-			} 
-			P.matrix[i][j] = 2*sum;
-		}
-	}
-	return P;
-}
-
-double E0(Matrix P, Matrix Hcore, Matrix F){
-	double sum = 0;
-	for(int i = 0; i < P.rows; i++){
-		for(int j = 0; j < P.cols; j++){
-			sum += P.matrix[j][i]*(Hcore.matrix[i][j]+F.matrix[i][j]);
-		}
-	}
-	return 0.5 * sum;
 }
 
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
@@ -256,7 +251,7 @@ void print_orbitals(Matrix E, Matrix C, int N, int K){
 		for(int j = 0; j < K; j++){
 			cout << C.matrix[j][i] << setw(20);
 			count++;
-			if(count>=4){
+			if(count>=5){
 				cout << '\n' << setw(25);
 				count = 0;
 			}
@@ -271,7 +266,7 @@ void print_orbitals(Matrix E, Matrix C, int N, int K){
 			for(int j = 0; j < K; j++){
 				cout << C.matrix[j][i] << setw(20);
 				count++;
-				if(count>=4){
+				if(count>=5){
 					cout << '\n' << setw(25);
 					count = 0;
 			}
