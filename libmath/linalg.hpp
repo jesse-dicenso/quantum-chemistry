@@ -7,6 +7,11 @@
 #include <iomanip>
 #include <vector>
 
+// LAPACK function for computing eigenvalues/eigenvectors
+extern "C" {
+	void dsyev_(char* JOBZ, char* UPLO, int* N, double* A, int* LDA, double* W, double* WORK, int* LWORK, int* INFO);
+}
+
 class Matrix{
 	public:
 		Matrix(int r, int c, bool sym=false);
@@ -35,14 +40,19 @@ Matrix I(int r, int c);
 Matrix zero(int r, int c);
 
 Matrix transpose(const Matrix A);
-double dot(const Matrix A, const Matrix B);
 
-// QR algorithm via Householder Reflections
+std::vector<Matrix> diagonalize(Matrix A);
+Matrix m_sqrt(const Matrix A);
+Matrix m_inv_sqrt(const Matrix A);
+
+/*
+This was an interesting exploration into numerical linear algebra; it technically works but fails 
+to converge for larger matrices. It was a good learning experience, but LAPACK is better!
+
+double dot(const Matrix A, const Matrix B);
 Matrix H(const Matrix u);
 std::vector<Matrix> QR_decomposition(const Matrix A);
 std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol=1e-8, const int maxiter=1500);
-
-Matrix sqrt(const Matrix A);
-Matrix inv_sqrt(const Matrix A);
+*/
 
 #endif

@@ -1,5 +1,4 @@
 #include "hartree-fock.hpp"
-#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -7,6 +6,7 @@ Matrix density_matrix(Matrix C, int N);
 double E0(Matrix P, Matrix Hcore, Matrix F);
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
+void print_orbitals(Matrix E, Matrix C, int N, int K);
 
 int main(int argc, char* argv[]){
 	cout << fixed;
@@ -20,15 +20,10 @@ int main(int argc, char* argv[]){
 	int max_cycles;
 	string pop;
 
-	//cin >> infile;
-	//cin >> eps;
-	//cin >> max_cycles;
-	//cin >> pop;
-
-	infile = "H2O.inp";
-	eps = 1e-6;
-	max_cycles = 50;
-	pop = "lowdin";
+	cin >> infile;
+	cin >> eps;
+	cin >> max_cycles;
+	cin >> pop;
 
 	int N;
 	int K;
@@ -63,7 +58,7 @@ int main(int argc, char* argv[]){
 	cout << "*                  *\n";
 	cout << "********************\n\n";
 	cout << "JESSE DICENSO   \n";
-	cout << "SUMMER 2024     \n\n\n";
+	cout << "SUMMER 2024     \n\n";
 
 	cout << "Reading input...\n\n";
 	
@@ -87,23 +82,12 @@ int main(int argc, char* argv[]){
 	
 	nuc = nucrepl(M.Zvals, M.xyz);	
 
-	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
+	cout << "Nuclear Repulsion Energy (Ha) = " << nuc << '\n';
 	
 	eris = ERIs(M.AOs);
-
-	Matrix* s = new Matrix(K, K);
-	Matrix* t = new Matrix(K, K);
-	Matrix* v = new Matrix(K, K);
-	Matrix* hcore = new Matrix(K, K);
 	
-	(*s) = overlap(M.AOs);
-	(*t) = kinetic(M.AOs);
-	(*v) = nuclear(M.AOs, M.Zvals, M.xyz);
-	
-	(*hcore) = (*t) + (*v);
-	
-	delete t;
-	delete v;
+	Matrix s = overlap(M.AOs);
+	Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
 
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
 	cout << "              *************\n";
@@ -113,46 +97,33 @@ int main(int argc, char* argv[]){
 	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << '\n';
 	cout << "--------------------------------------------\n";
 
-	Matrix* x  = new Matrix(K, K);
-	Matrix* p  = new Matrix(K, K);
-	Matrix* g  = new Matrix(K, K);
-	Matrix* f  = new Matrix(K, K);
-	Matrix* fo = new Matrix(K, K);
-	Matrix* e  = new Matrix(K, K);
-	Matrix* co = new Matrix(K, K);
-	Matrix* c  = new Matrix(K, K);
-
-	(*x) = m_inv_sqrt(*s);
-
-	(*f) = (*hcore);
-	Eo = E0(*p, *hcore, *f);
-	
-	(*fo) = transpose(*x) * (*f) * (*x);
-	temp_e_c = diagonalize(*fo);
-
-	(*e) = temp_e_c[0];
-
-	(*co) = temp_e_c[1];
-
-	(*c) = (*x) * (*co);
-
-	(*p) = density_matrix(*c, N);
+	Matrix p(K, K);
+	Matrix g(K, K);
+	Matrix x = m_inv_sqrt(s);
+	Matrix f = hcore;
+	Eo = E0(p, hcore, f);
+	Matrix fo = transpose(x) * f * x;
+	temp_e_c = diagonalize(fo);
+	Matrix e = temp_e_c[0];
+	Matrix co = temp_e_c[1];
+	Matrix c = x * co;
+	p = density_matrix(c, N);
 
 	cout.flush();	
 	while((abs(err) > eps) && (cycles <= max_cycles)){
-		(*g) = G(*p, eris);
-		(*f) = (*hcore) + (*g);
-		temp_Eo = E0(*p, *hcore, *f);
+		g = G(p, eris);
+		f = hcore + g;
+		temp_Eo = E0(p, hcore, f);
 		err = temp_Eo - Eo;
 		Eo = temp_Eo;
 
-		(*fo) = transpose(*x) * (*f) * (*x);
-		temp_e_c = diagonalize(*fo);
-		(*e) = temp_e_c[0];
-		(*co) = temp_e_c[1];
+		fo = transpose(x) * f * x;
+		temp_e_c = diagonalize(fo);
+		e = temp_e_c[0];
+		co = temp_e_c[1];
 		
-		(*c) = (*x) * (*co);
-		(*p) = density_matrix(*c, N);
+		c = x * co;
+		p = density_matrix(c, N);
 	
 		cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << '\n';
 		cout.flush();
@@ -168,24 +139,19 @@ int main(int argc, char* argv[]){
 		E_tot = Eo + nuc;
 
 		cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
-
-		cout << "MO coefficients\n";
-		(*c).printMatrix();
 		
-		cout << "Orbital Energies\n";
-		(*e).printMatrix();
-
-		cout << "Final Density Matrix\n";
-		(*p).printMatrix();
+		print_orbitals(e, c, N, K);
 
 		vector<double> pa(M.Zvals.size());
 		if(pop=="lowdin"){
-			pa = Lowdin_PA(M, *p, *s);
-			cout << "Löwdin Population Analysis\n";
+			pa = Lowdin_PA(M, p, s);
+			cout << "=======================\n";
+			cout << "Löwdin Pop. Analysis\n";
 		}
 		else if(pop=="mulliken"){
-			pa = Mulliken_PA(M, *p, *s);
-			cout << "Mulliken Population Analysis\n";
+			pa = Mulliken_PA(M, p, s);
+			cout << "=======================\n";
+			cout << "Mulliken Pop. Analysis\n";
 		}
 		cout << "=======================\n";
 		cout << setw(3) << "idx" << setw(21) << "charge\n";
@@ -207,15 +173,6 @@ int main(int argc, char* argv[]){
 		cout <<   "***************************************\n\n";
 
 	}
-	delete s;
-	delete x;
-	delete p;
-	delete g;
-	delete f;
-	delete fo;
-	delete e;
-	delete co;
-	delete c;
 }
 
 Matrix density_matrix(Matrix C, int N){
@@ -272,4 +229,56 @@ vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 		MPA[i] = M.Zvals[i] - sum;
 	}
 	return MPA;
+}
+
+void print_orbitals(Matrix E, Matrix C, int N, int K){
+	cout << "********************\n";
+	cout << "* Orbital Energies *\n";
+	cout << "********************\n\n";
+	cout << "Occupied:\n";
+	for(int i = 0; i < N/2; i++){
+		cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n';
+	}
+	if((K-N/2)>0){
+		cout << "Virtual:\n";
+		for(int i = N/2; i < K; i++){
+			cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n'; 
+		}
+	}
+	cout << '\n';
+	cout << "************************\n";
+	cout << "* Orbital Coefficients *\n";
+	cout << "************************\n\n";
+	cout << "Occupied:\n";
+	int count = 0;
+	for(int i = 0; i < N/2; i++){
+		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+		for(int j = 0; j < K; j++){
+			cout << C.matrix[j][i] << setw(20);
+			count++;
+			if(count>=4){
+				cout << '\n' << setw(25);
+				count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+	}
+	if((K-N/2)>0){
+		cout << "Virtual:\n";
+		for(int i = N/2; i < K; i++){
+			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+			for(int j = 0; j < K; j++){
+				cout << C.matrix[j][i] << setw(20);
+				count++;
+				if(count>=4){
+					cout << '\n' << setw(25);
+					count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+		}
+	}
+	cout << '\n';
 }

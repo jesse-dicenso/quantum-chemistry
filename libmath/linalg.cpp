@@ -175,6 +175,88 @@ Matrix zero(int r, int c){
 	return z;
 }
 
+std::vector<Matrix> diagonalize(Matrix A){
+	assert(A.rows==A.cols);
+	// * DSYEV options * //
+	char jobz = 'V';		// eigenvalues & eigenvectors
+	char uplo = 'U';		// upper triangular
+	int n = A.cols;			// matrix size	
+	std::vector<double> a(n*n);	// matrix, column-major
+	for(int i = 0; i < n; i++){
+		for(int j = 0; j < n; j++){
+			a[i+n*j] = A.matrix[i][j];
+		}
+	}
+	int lda = n;			// leading dimension
+	std::vector<double> w(n);	// eigenvalues
+	int info;			// successful if info == 0
+	
+	// workspace query
+	double works;
+	int lwork = -1;
+	dsyev_(&jobz, &uplo, &n, a.data(), &lda, w.data(), &works, &lwork, &info);
+	
+	if(info != 0){
+		std::cerr << "Workspace query err, info = " << info << '\n';
+		return {};
+	}
+
+	lwork = (int)works;
+	if(lwork <= 0){
+		std::cerr << "Illegal lwork value, info = " << info << '\n';
+		return {};
+	}
+
+	assert(lwork>0);
+	std::vector<double> work(lwork);
+
+	// Calculate eigenvalues/vectors
+	dsyev_(&jobz, &uplo, &n, a.data(), &lda, w.data(), work.data(), &lwork, &info);	
+	if(info != 0){
+		std::cerr << "info != 0\n";
+		return {};
+	}
+
+	// Return output as Matrix types
+	Matrix diag(n, n);
+	for(int i = 0; i < diag.rows; i++){
+		diag.matrix[i][i] = w[i];
+	}
+	
+	Matrix Q(n, n);
+	for(int i = 0; i < n; i++){
+		for(int j = 0; j < n; j++){
+			Q.matrix[i][j] = a[i+n*j];
+		}
+	}	
+
+	std::vector<Matrix> result({diag, Q});
+	return result;
+}
+
+Matrix m_sqrt(const Matrix A){
+	assert(A.rows==A.cols);
+	std::vector<Matrix> QR = diagonalize(A);
+	for(int i = 0; i < QR[0].rows; i++){
+		assert(QR[0].matrix[i][i] > 0);
+		QR[0].matrix[i][i] = sqrt(QR[0].matrix[i][i]);
+	}
+	return QR[1] * QR[0] * transpose(QR[1]);
+}
+
+Matrix m_inv_sqrt(const Matrix A){
+	assert(A.rows==A.cols);
+	std::vector<Matrix> QR = diagonalize(A);
+	for(int i = 0; i < QR[0].rows; i++){
+		assert(QR[0].matrix[i][i] > 0);
+		QR[0].matrix[i][i] = 1 / sqrt(QR[0].matrix[i][i]);
+	}
+	return QR[1] * QR[0] * transpose(QR[1]);
+}
+
+/*
+Old routines that fail to converge for large matrices.
+
 double dotproduct(const Matrix A, const Matrix B){
 	assert((A.rows==1) && (B.cols==1) && (A.cols==B.rows));
 	double sum = 0;
@@ -183,7 +265,6 @@ double dotproduct(const Matrix A, const Matrix B){
 	}
 	return sum;
 }
-
 Matrix H(const Matrix u){
 	// u is a column vector
 	assert(u.cols==1);
@@ -266,22 +347,10 @@ std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int m
 				}
 			}
 		}
-		/*
-		// check diagonal elements
-		for(int i = 0; i < diag.rows; i++){
-			if((fabs((temp.matrix[i][i]-diag.matrix[i][i])/(temp.matrix[i][i]+diag.matrix[i][i])/2))<tol){
-				good_count++;
-			}
-		}
-		*/
+
 		if(good_count==(diag.rows*(diag.rows-1)/2)){
 			good = true;
 		}
-		/*
-		if(good_count==diag.rows){
-			good = true;
-		}
-		*/
 			
 		diag = temp;
 		QT = transpose(QR[0]) * QT;
@@ -303,23 +372,4 @@ std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol, const int m
 	std::vector<Matrix> result({diag, Q});
 	return result;
 }
-
-Matrix sqrt(const Matrix A){
-	assert(A.rows==A.cols);
-	std::vector<Matrix> QR = QR_diagonalize(A);
-	for(int i = 0; i < QR[0].rows; i++){
-		assert(QR[0].matrix[i][i] > 0);
-		QR[0].matrix[i][i] = sqrt(QR[0].matrix[i][i]);
-	}
-	return QR[1] * QR[0] * transpose(QR[1]);
-}
-
-Matrix inv_sqrt(const Matrix A){
-	assert(A.rows==A.cols);
-	std::vector<Matrix> QR = QR_diagonalize(A);
-	for(int i = 0; i < QR[0].rows; i++){
-		assert(QR[0].matrix[i][i] > 0);
-		QR[0].matrix[i][i] = 1 / sqrt(QR[0].matrix[i][i]);
-	}
-	return QR[1] * QR[0] * transpose(QR[1]);
-}
+*/
