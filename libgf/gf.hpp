@@ -29,14 +29,6 @@ class GF{
 // Hermite Gaussian Expansion Coefficients
 double E(int i, int j, int t, double a, double b, double QAB);
 
-// components of coefficients
-// for contractions of arbitrary angular momentum
-// in Gaussian Product Theorem
-//double fk(int k, int y1, int y2, double PA, double PB);
-
-// Product Constant
-//std::vector<double> K(GF g1, GF g2);
-
 // New Center
 std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2);
 

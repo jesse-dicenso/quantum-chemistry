@@ -4,7 +4,7 @@ using namespace std;
 
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
-void print_orbitals(Matrix E, Matrix C, int N, int K);
+void R_print_orbitals(Matrix E, Matrix C, int N, int K);
 
 int main(int argc, char* argv[]){
 	cout << fixed;
@@ -14,12 +14,14 @@ int main(int argc, char* argv[]){
 	auto coutbuf = cout.rdbuf(out.rdbuf());
 
 	string infile;
+	string basis_set;
 	int sps;
 	double eps;
 	int max_cycles;
 	string pop;
 
 	cin >> infile;
+	cin >> basis_set;
 	cin >> sps;
 	cin >> eps;
 	cin >> max_cycles;
@@ -27,9 +29,9 @@ int main(int argc, char* argv[]){
 
 	int N;
 	int K;
+	bool r;
 	int cycles = 1;
 	double err = eps + 1;
-	vector<Matrix> temp_e_c;
 	vector<vector<vector<vector<double>>>> eris;
 
 	double nuc;
@@ -42,7 +44,6 @@ int main(int argc, char* argv[]){
 	// t		// kinetic			//
 	// v		// nuclear attraction		//
 	// hcore	// core Hamiltonian		//
-	// g		// two-electron fock component	//
 	// x		// orthogonalization (symmetric)//
 	// p		// density			//
 	// c		// coefficient			//
@@ -62,9 +63,11 @@ int main(int argc, char* argv[]){
 
 	cout << "Reading input...\n\n";
 	
-	Molecule M(infile);
+	Molecule M(infile, basis_set);
 	N = M.Nelec;
 	K = M.AOs.size();
+	mspin = M.spin;
+	r = M.R;
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tbasis\t\tSTO-3G\n";
 	cout << "\tsps\t\t" << sps << ' ';
@@ -97,9 +100,6 @@ int main(int argc, char* argv[]){
 	
 	eris = ERIs(M.AOs);
 	
-	Matrix s = overlap(M.AOs);
-	Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
-
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
 	cout << "              *************\n";
 	cout << "              * BEGIN SCF *\n";
@@ -107,91 +107,165 @@ int main(int argc, char* argv[]){
 	cout << "----------------------------------------------------\n";
 	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << setw(10) << "step\n";
 	cout << "----------------------------------------------------\n";
-
-	Matrix x = m_inv_sqrt(s);
-	Matrix p(K, K);
-	Matrix g(K, K);
-	Matrix f = hcore;
-	Eo = E0(p, hcore, f);
-	Matrix fo = transpose(x) * f * x;
-	temp_e_c = diagonalize(fo);
-	Matrix e = temp_e_c[0];
-	Matrix co = temp_e_c[1];
-	Matrix c = x * co;
-	p = density_matrix(c, N);
-
 	cout.flush();	
+
+	Matrix s = overlap(M.AOs);
+	Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
+	Matrix x = m_inv_sqrt(s);
 	
-	if(sps==0){
-		while((abs(err) > eps) && (cycles <= max_cycles)){
-			FPI(hcore, eris, x, &p, &g, &f, &fo, &e, &co, &c, &Eo, &err, N);
-			cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
-			cout.flush();
-			cycles+=1;
-		}
-	}
-	else{
-		vector<Matrix> SPf(sps, zero(K, K));
-		vector<Matrix> SPe(sps, zero(K, K));
-		while((abs(err) > eps) && (cycles <= max_cycles)){
-			DIIS(s, hcore, eris, x, &p, &g, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps);
-			cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-			if(cycles < sps){
-				cout << setw(10) << "fp\n";
-			}
-			else{
-				cout << setw(10) << "diis\n";
-			}
-			cout.flush();
-			cycles+=1;
-		}
-
-	}
-	cout << "----------------------------------------------------\n";
-
-	if(cycles > max_cycles){
-		cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
-		return 0;
-	}
-	else{
-		cout << "Convergence criterion met; exiting SCF loop.\n\n";
-		E_tot = Eo + nuc;
-
-		cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
+	// Restricted
+	if(r){
+		vector<Matrix> temp_e_c;
 		
-		print_orbitals(e, c, N, K);
+		Matrix* p  = new Matrix(K, K);
+		Matrix* f  = new Matrix(K, K);
+		Matrix* fo = new Matrix(K, K);
+		Matrix* e  = new Matrix(K, K);
+		Matrix* co = new Matrix(K, K);
+		Matrix* c  = new Matrix(K, K);
+		
+		*f = R_F(hcore, *p, eris);
+		Eo = R_E0(*p, hcore, *f);
+		*fo = transpose(x) * (*f) * x;
+		temp_e_c = diagonalize(*fo);
+		*e = temp_e_c[0];
+		*co = temp_e_c[1];
+		*c = x * (*co);
+		*p = R_density_matrix(*c, N);
 
-		vector<double> pa(M.Zvals.size());
-		if(pop=="lowdin"){
-			pa = Lowdin_PA(M, p, s);
+		if(sps==0){
+			while((abs(err) > eps) && (cycles <= max_cycles)){
+				R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N);
+				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
+				cout.flush();
+				cycles+=1;
+			}
+		}
+		else{
+			vector<Matrix> SPf(sps, zero(K, K));
+			vector<Matrix> SPe(sps, zero(K, K));
+			while((abs(err) > eps) && (cycles <= max_cycles)){
+				R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps);
+				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
+				if(cycles < sps){
+					cout << setw(10) << "fp\n";
+				}
+				else{
+					cout << setw(10) << "diis\n";
+				}
+				cout.flush();
+				cycles+=1;
+			}
+
+		}
+		cout << "----------------------------------------------------\n";
+
+		if(cycles > max_cycles){
+			delete p;
+			delete f;
+			delete fo;
+			delete e;
+			delete co;
+			delete c;
+			cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
+			return 0;
+		}
+		else{
+			cout << "Convergence criterion met; exiting SCF loop.\n\n";
+			E_tot = Eo + nuc;
+
+			cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
+		
+			R_print_orbitals(*e, *c, N, K);
+
+			vector<double> pa(M.Zvals.size());
+			if(pop=="lowdin"){
+				pa = Lowdin_PA(M, *p, s);
+				cout << "=======================\n";
+				cout << "Löwdin Pop. Analysis\n";
+			}
+			else if(pop=="mulliken"){
+				pa = Mulliken_PA(M, *p, s);
+				cout << "=======================\n";
+				cout << "Mulliken Pop. Analysis\n";
+			}
 			cout << "=======================\n";
-			cout << "Löwdin Pop. Analysis\n";
-		}
-		else if(pop=="mulliken"){
-			pa = Mulliken_PA(M, p, s);
+			cout << setw(3) << "idx" << setw(21) << "charge\n";
 			cout << "=======================\n";
-			cout << "Mulliken Pop. Analysis\n";
+			double sum_chg = 0;
+			cout << fixed;
+			cout << setprecision(10);
+			for(int i = 0; i < M.Zvals.size(); i++){
+				cout << setw(3) << i+1 << setw(20) << pa[i] << '\n';
+				sum_chg += pa[i];
+			}
+			cout << "=======================\n";
+			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 		}
-		cout << "=======================\n";
-		cout << setw(3) << "idx" << setw(21) << "charge\n";
-		cout << "=======================\n";
-		double sum_chg = 0;
-		cout << fixed;
-		cout << setprecision(10);
-		for(int i = 0; i < M.Zvals.size(); i++){
-			cout << setw(3) << i+1 << setw(20) << pa[i] << '\n';
-			sum_chg += pa[i];
-		}
-		cout << "=======================\n";
-		cout << "Sum of atomic charges = " << sum_chg << "\n\n";
-
-		cout << "\n***************************************\n";
-		cout <<   "*                                     *\n";
-		cout <<   "*     Thank you, have a nice day!     *\n";
-		cout <<   "*                                     *\n";
-		cout <<   "***************************************\n\n";
-
+		delete p;
+		delete f;
+		delete fo;
+		delete e;
+		delete co;
+		delete c;
 	}
+	// Unrestricted
+	else{
+		int Na = (N+mspin)/2;
+		int Nb = (N-mspin)/2;
+		vector<Matrix> temp_e_c_a;
+		vector<Matrix> temp_e_c_b;
+		
+		Matrix* pt  = new Matrix(K, K);
+		Matrix* pa  = new Matrix(K, K);
+		Matrix* pb  = new Matrix(K, K);
+		Matrix* fa  = new Matrix(K, K);
+		Matrix* fb  = new Matrix(K, K);
+		Matrix* fao = new Matrix(K, K);
+		Matrix* fbo = new Matrix(K, K);
+		Matrix* ea  = new Matrix(K, K);
+		Matrix* eb  = new Matrix(K, K);
+		Matrix* cao = new Matrix(K, K);
+		Matrix* cbo = new Matrix(K, K);
+		Matrix* ca  = new Matrix(K, K);
+		Matrix* cb  = new Matrix(K, K);
+		
+		*fa = UR_F(hcore, *pt, *pb, eris);
+		*fb = UR_F(hcore, *pt, *pa, eris);
+		Eo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
+		*fao = transpose(x) * (*fa) * x;
+		*fbo = transpose(x) * (*fb) * x;
+		temp_e_c_a = diagonalize(*fao);
+		temp_e_c_b = diagonalize(*fbo);
+		*ea = temp_e_c_a[0];
+		*cao = temp_e_c_a[1];
+		*eb = temp_e_c_b[0];
+		*cbo = temp_e_c_b[1];
+		*ca = x * (*cao);
+		*cb = x * (*cbo);
+		*pa = UR_density_matrix(*ca, Na);
+		*pb = UR_density_matrix(*cb, Nb);
+
+		delete pt;
+		delete pa;
+		delete pb;
+		delete fa;
+		delete fb;
+		delete foa;
+		delete fob;
+		delete ea;
+		delete eb;
+		delete coa;
+		delete cob;
+		delete ca;
+		delete cb;
+	}
+
+	cout << "\n***************************************\n";
+	cout <<   "*                                     *\n";
+	cout <<   "*     Thank you, have a nice day!     *\n";
+	cout <<   "*                                     *\n";
+	cout <<   "***************************************\n\n";
 }
 
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
@@ -226,7 +300,7 @@ vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 	return MPA;
 }
 
-void print_orbitals(Matrix E, Matrix C, int N, int K){
+void R_print_orbitals(Matrix E, Matrix C, int N, int K){
 	cout << "********************\n";
 	cout << "* Orbital Energies *\n";
 	cout << "********************\n\n";

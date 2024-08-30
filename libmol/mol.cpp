@@ -1,11 +1,11 @@
 #include "mol.hpp"
 
-Molecule::Molecule(std::string file){
+Molecule::Molecule(std::string file, std::string bfs){
 	std::ifstream read(file);
 	assert(read.good());
 
 	Nelec = 0;
-	read >> Natoms >> charge;
+	read >> Natoms >> charge >> spin;
 	Nelec = -charge;
 	Zvals.resize(Natoms);
 	xyz.resize(Natoms);
@@ -14,13 +14,15 @@ Molecule::Molecule(std::string file){
 		read >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
 		Nelec += Zvals[i];
 	}
-	// closed shell only, for now
-	assert((Nelec%2)==0);	
-
-	std::string basis;
-	read >> basis;
+	if(((Nelec%2)==0) && (spin==0)){
+		R = true;
+	}
+	else{
+		R = false;
+	}
 	read.close();
 
+	basis = bfs;
 	std::vector<GF> temp;	
 	for(int j = 0; j < Natoms; j++){
 		temp = AOfunctions(basis, Zvals[j], xyz[j]);
@@ -30,19 +32,17 @@ Molecule::Molecule(std::string file){
 	}
 }
 
-std::vector<GF> AOfunctions(std::string basis, int Zval, std::vector<double> pos){
+std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 	std::vector<int> Ls ({0,0,0});
 	std::vector<int> Lpx({1,0,0});
 	std::vector<int> Lpy({0,1,0});
 	std::vector<int> Lpz({0,0,1});
 	// only STO-3G available now...sorry
-	assert(basis=="STO-3G");
+	assert(bfs=="STO-3G");
 	std::vector<GF> orbitals;
 		// * H * //
 		if(Zval==1){
 			// 1s
-			//std::vector<double> a1s({0.168856,0.623913,3.42525});
-			//std::vector<double> d1s({0.444635,0.535328,0.154329});
 			std::vector<double> a1s({0.3425250914e1,0.6239137298,0.1688554040});
 			std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
 			GF H1s(a1s, d1s, pos, Ls);

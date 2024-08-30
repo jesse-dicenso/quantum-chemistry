@@ -24,4 +24,6 @@ hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libscf/scf.hpp
 
 hartree-fock: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scf.o hartree-fock.o
 	g++ -O -o hartree-fock miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scf.o hartree-fock.o -llapack -lblas
+
+clean:
 	rm -f *.o

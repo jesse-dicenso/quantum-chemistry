@@ -9,16 +9,19 @@
 
 class Molecule{
 	public:
-		Molecule(std::string file);
+		Molecule(std::string file, std::string bfs);
 
 		int Natoms;
 		std::vector<int> Zvals;
 		int charge;
 		int Nelec;
+		int spin;
+		std::string basis;
+		bool R;
 		std::vector<std::vector<double>> xyz;
 		std::vector<GF> AOs;
 };
 
-std::vector<GF> AOfunctions(std::string basis, int Zval, std::vector<double> xyz);
+std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> xyz);
 
 #endif

@@ -105,20 +105,3 @@ std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(std::vector<GF> 
 	}
 	return result;
 }
-
-Matrix G(Matrix P, std::vector<std::vector<std::vector<std::vector<double>>>> g){
-	Matrix M(P.rows, P.cols);
-	double sum;
-	for(int mu = 0; mu < M.rows; mu++){
-		for(int nu = 0; nu < M.rows; nu++){
-			sum = 0;
-			for(int ld = 0; ld < M.rows; ld++){
-				for(int sg = 0; sg < M.rows; sg++){
-					sum += P.matrix[ld][sg] * (g[mu][nu][sg][ld] - 0.5*g[mu][ld][sg][nu]);
-				}
-			}
-			M.matrix[mu][nu] = sum;
-		}
-	}
-	return M;
-}
