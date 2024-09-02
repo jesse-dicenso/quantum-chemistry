@@ -34,6 +34,8 @@ int main(int argc, char* argv[]){
 	int Na;
 	int Nb;
 	bool r;
+	double S2_e;
+	double S2_UHF;
 	int cycles = 1;
 	double err = eps + 1;
 	vector<vector<vector<vector<double>>>> eris;
@@ -73,6 +75,7 @@ int main(int argc, char* argv[]){
 	nupdown = M.NUPDOWN;
 	Na = (N+nupdown)/2;
 	Nb = (N-nupdown)/2;
+	S2_e = 0.5*(Na-Nb)*(0.5*(Na-Nb)+1);
 	r = M.R;
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tbasis\t\tSTO-3G\n";
@@ -98,8 +101,8 @@ int main(int argc, char* argv[]){
 		cout << M.Zvals[i] << setw(20) << M.xyz[i][0] << setw(20) << M.xyz[i][1] << setw(20) << M.xyz[i][2] << '\n';
 	}
 	cout << "--------------------------------------------------------------\n";
-	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n\n"; 
-	
+	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n"; 
+	cout << "Exact <S^2> = " << S2_e << "\n\n";
 	nuc = nucrepl(M.Zvals, M.xyz);	
 
 	cout << "Nuclear Repulsion Energy (Ha) = " << nuc << '\n';
@@ -282,7 +285,21 @@ int main(int argc, char* argv[]){
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
 			E_tot = Eo + nuc;
 
-			cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
+			S2_UHF = S2_e + Nb;
+			for(int i = 0; i < N; i++){
+				for(int j = 0; j < N; j++){
+					double tempsum;
+					for(int mu = 0; mu < K; mu++){
+						for(int nu = 0; nu < K; nu++){
+							tempsum += (ca->matrix[mu][i])*(cb->matrix[nu][j])*(s.matrix[mu][nu]);
+						}
+					}
+					S2_UHF -= tempsum*tempsum;
+				}
+			}
+
+			cout << "Total E   (Ha)  = " << Eo + nuc << '\n';
+			cout << "Final UHF <S^2> = " << S2_UHF << "\n\n";
 		
 			UR_print_orbitals(*ea, *eb, *ca, *cb, Na, Nb, K);
 

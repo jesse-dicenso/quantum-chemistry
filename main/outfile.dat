@@ -25,6 +25,7 @@ Z            x (Bohr)            y (Bohr)            z (Bohr)
 1    0.0000000000e+00   -1.0195000000e+00   -1.7658300000e+00
 --------------------------------------------------------------
 Success! There are 9 electrons (5 alpha and 4 beta) and 8 basis functions.
+Exact <S^2> = 7.5000000000e-01
 
 Nuclear Repulsion Energy (Ha) = 9.6773061952e+00
 Using core Hamiltonian as initial guess to Fock matrix.
@@ -45,7 +46,8 @@ Using core Hamiltonian as initial guess to Fock matrix.
 ----------------------------------------------------
 Convergence criterion met; exiting SCF loop.
 
-Total energy (Ha) = -2.4354328188e+01
+Total E   (Ha)  = -2.4354328188e+01
+Final UHF <S^2> = -2.0992500012e+03
 
 ********************
 * Orbital Energies *

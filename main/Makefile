@@ -16,14 +16,20 @@ gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 mol.o: ../libmol/mol.cpp ../libmol/mol.hpp ../libgf/gf.hpp
 	g++ -c -O ../libmol/mol.cpp
 
-scf.o: ../libscf/scf.cpp ../libscf/scf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
-	g++ -c -O ../libscf/scf.cpp
+scfgen.o: ../libscf/scfgen.cpp ../libscf/scfgen.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
+	g++ -c -O ../libscf/scfgen.cpp
 
-hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libscf/scf.hpp
+scfrhf.o: ../libscf/scfrhf.cpp ../libscf/scfrhf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
+	g++ -c -O ../libscf/scfrhf.cpp
+
+scfuhf.o: ../libscf/scfuhf.cpp ../libscf/scfuhf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
+	g++ -c -O ../libscf/scfuhf.cpp
+
+hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libscf/scfgen.hpp ../libscf/scfrhf.hpp ../libscf/scfuhf.hpp
 	g++ -c -O hartree-fock.cpp
 
-hartree-fock: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scf.o hartree-fock.o
-	g++ -O -o hartree-fock miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scf.o hartree-fock.o -llapack -lblas
+hartree-fock: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o
+	g++ -O -o hartree-fock miscmath.o linalg.o gf.o 1e.o 2e.o mol.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o -llapack -lblas
 
 clean:
 	rm -f *.o
