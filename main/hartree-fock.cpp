@@ -44,6 +44,7 @@ int main(int argc, char* argv[]){
 	double Eo;
 	double temp_Eo;
 	double E_tot;
+	int icd = 0;
 
 	//////////////////////////////////////////////////
 	// s		// overlap			//
@@ -101,18 +102,17 @@ int main(int argc, char* argv[]){
 		cout << M.Zvals[i] << setw(20) << M.xyz[i][0] << setw(20) << M.xyz[i][1] << setw(20) << M.xyz[i][2] << '\n';
 	}
 	cout << "--------------------------------------------------------------\n";
-	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n"; 
-	cout << "Exact <S^2> = " << S2_e << "\n\n";
+	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n\n"; 
 	nuc = nucrepl(M.Zvals, M.xyz);	
 
-	cout << "Nuclear Repulsion Energy (Ha) = " << nuc << '\n';
+	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n";
 	
 	eris = ERIs(M.AOs);
 	
 	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
-	cout << "              *************\n";
-	cout << "              * BEGIN SCF *\n";
-	cout << "              *************\n\n";
+	cout << "                   *************\n";
+	cout << "                   * BEGIN SCF *\n";
+	cout << "                   *************\n\n";
 	cout << "----------------------------------------------------\n";
 	cout << setw(3) << "N" << setw(20) << "E" <<  setw(20) << "err" << setw(10) << "step\n";
 	cout << "----------------------------------------------------\n";
@@ -154,7 +154,10 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPf(sps, zero(K, K));
 			vector<Matrix> SPe(sps, zero(K, K));
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps);
+				R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps, &icd);
+				if(icd!=0){
+					break;
+				}
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
 				if(cycles < sps){
 					cout << setw(10) << "fp\n";
@@ -165,7 +168,16 @@ int main(int argc, char* argv[]){
 				cout.flush();
 				cycles+=1;
 			}
-
+			if(icd!=0){
+			int fpi_forced_three;
+				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
+					R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N);
+					cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
+					cout.flush();
+					fpi_forced_three+=1;
+					cycles+=1;
+				}
+			}
 		}
 		cout << "----------------------------------------------------\n";
 
@@ -183,7 +195,7 @@ int main(int argc, char* argv[]){
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
 			E_tot = Eo + nuc;
 
-			cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
+			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 		
 			R_print_orbitals(*e, *c, N, K);
 
@@ -298,8 +310,9 @@ int main(int argc, char* argv[]){
 				}
 			}
 
-			cout << "Total E   (Ha)  = " << Eo + nuc << '\n';
-			cout << "Final UHF <S^2> = " << S2_UHF << "\n\n";
+			cout << "Total E     = " << Eo + nuc << " Ha\n";
+			cout << "Exact <S^2> = " << S2_e << '\n';
+			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";
 		
 			UR_print_orbitals(*ea, *eb, *ca, *cb, Na, Nb, K);
 
@@ -381,9 +394,9 @@ vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 }
 
 void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
-	cout << "********************\n";
-	cout << "* Orbital Energies *\n";
-	cout << "********************\n\n";
+	cout << "***************\n";
+	cout << "* MO Energies *\n";
+	cout << "***************\n\n";
 	cout << "Occupied:\n";
 	for(int i = 0; i < Nocc/2; i++){
 		cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n';
@@ -395,9 +408,9 @@ void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
 		}
 	}
 	cout << '\n';
-	cout << "************************\n";
-	cout << "* Orbital Coefficients *\n";
-	cout << "************************\n\n";
+	cout << "*******************\n";
+	cout << "* MO Coefficients *\n";
+	cout << "*******************\n\n";
 	cout << "Occupied:\n";
 	int count = 0;
 	for(int i = 0; i < Nocc/2; i++){
@@ -433,9 +446,9 @@ void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
 }
 
 void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb){
-	cout << "********************\n";
-	cout << "* Orbital Energies *\n";
-	cout << "********************\n\n";
+	cout << "***************\n";
+	cout << "* MO Energies *\n";
+	cout << "***************\n\n";
 	cout << "Occupied (alpha):\n";
 	for(int i = 0; i < Nocca; i++){
 		cout << setw(4) << 'E' << i+1 << setw(20) << Ea.matrix[i][i] << '\n';
@@ -458,9 +471,9 @@ void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, in
 		}
 	}
 	cout << '\n';
-	cout << "************************\n";
-	cout << "* Orbital Coefficients *\n";
-	cout << "************************\n\n";
+	cout << "*******************\n";
+	cout << "* MO Coefficients *\n";
+	cout << "*******************\n\n";
 	cout << "Occupied (alpha):\n";
 	int count = 0;
 	for(int i = 0; i < Nocca; i++){

@@ -59,7 +59,7 @@ void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vect
 	*p   = R_density_matrix(*c, N);
 }
 
-void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps){
+void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd){
 	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
@@ -81,7 +81,6 @@ void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 		double errmax;
 	
 		*f   = R_F(hcore, *p, eris);
-		*Eo  = R_E0(*p, hcore, *f);
 		
 		// Store f, update error vectors
 		for(int j = 0; j < sps-1; j++){
@@ -102,7 +101,6 @@ void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 				}
 			}
 		}
-		*err = errmax;
 
 		// Set up linear system and solve for weights
 		Matrix LHS(sps+1, sps+1);
@@ -121,7 +119,15 @@ void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 		}
 		Matrix RHS(sps+1, 1);
 		RHS.matrix[sps][0] = -1;
-		weights = sym_linear_solve(LHS, RHS);
+		weights = sym_linear_solve(LHS, RHS, icd);
+		if(*icd!=0){
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
+			std::cout.flush();
+			return;
+		}
+		
+		*Eo  = R_E0(*p, hcore, *f);
+		*err = errmax;
 		
 		// Build fock matrix from previous fock matrices and weights
 		*f = zero(p->rows, p->cols);

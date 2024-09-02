@@ -48,7 +48,7 @@ std::vector<Matrix> diagonalize(Matrix A);
 Matrix m_sqrt(const Matrix A);
 Matrix m_inv_sqrt(const Matrix A);
 
-std::vector<double> sym_linear_solve(Matrix A, Matrix B);
+std::vector<double> sym_linear_solve(Matrix A, Matrix B, int* icd);
 
 /*
 This was an interesting exploration into numerical linear algebra; it technically works but fails 

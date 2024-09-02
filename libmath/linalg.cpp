@@ -263,7 +263,7 @@ Matrix m_inv_sqrt(const Matrix A){
 	return QR[1] * QR[0] * transpose(QR[1]);
 }
 
-std::vector<double> sym_linear_solve(Matrix A, Matrix B){
+std::vector<double> sym_linear_solve(Matrix A, Matrix B, int* icd){
 	assert(A.rows==A.cols);
 	assert((B.rows==A.rows) && (B.cols==1));
 	// * DSYSV options * //
@@ -306,11 +306,8 @@ std::vector<double> sym_linear_solve(Matrix A, Matrix B){
 
 	// Solve AX = B
 	dsysv_(&uplo, &n, &nrhs, a.data(), &lda, ipiv.data(), b.data(), &ldb, work.data(), &lwork, &info);
-	if(info != 0){
-		std::cerr << "info != 0\n";
-		return {};
-	}
-	
+	*icd = info;
+
 	return b;
 }
 
