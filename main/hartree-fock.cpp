@@ -4,7 +4,8 @@ using namespace std;
 
 vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
 vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
-void R_print_orbitals(Matrix E, Matrix C, int N, int K);
+void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb);
+void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb);
 
 int main(int argc, char* argv[]){
 	cout << fixed;
@@ -29,6 +30,9 @@ int main(int argc, char* argv[]){
 
 	int N;
 	int K;
+	int nupdown;
+	int Na;
+	int Nb;
 	bool r;
 	int cycles = 1;
 	double err = eps + 1;
@@ -66,7 +70,9 @@ int main(int argc, char* argv[]){
 	Molecule M(infile, basis_set);
 	N = M.Nelec;
 	K = M.AOs.size();
-	mspin = M.spin;
+	nupdown = M.NUPDOWN;
+	Na = (N+nupdown)/2;
+	Nb = (N-nupdown)/2;
 	r = M.R;
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tbasis\t\tSTO-3G\n";
@@ -92,7 +98,7 @@ int main(int argc, char* argv[]){
 		cout << M.Zvals[i] << setw(20) << M.xyz[i][0] << setw(20) << M.xyz[i][1] << setw(20) << M.xyz[i][2] << '\n';
 	}
 	cout << "--------------------------------------------------------------\n";
-	cout << "Success! There are " << N << " electrons and " << K << " basis functions.\n\n"; 
+	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n\n"; 
 	
 	nuc = nucrepl(M.Zvals, M.xyz);	
 
@@ -178,14 +184,14 @@ int main(int argc, char* argv[]){
 		
 			R_print_orbitals(*e, *c, N, K);
 
-			vector<double> pa(M.Zvals.size());
+			vector<double> popa(M.Zvals.size());
 			if(pop=="lowdin"){
-				pa = Lowdin_PA(M, *p, s);
+				popa = Lowdin_PA(M, *p, s);
 				cout << "=======================\n";
 				cout << "Löwdin Pop. Analysis\n";
 			}
 			else if(pop=="mulliken"){
-				pa = Mulliken_PA(M, *p, s);
+				popa = Mulliken_PA(M, *p, s);
 				cout << "=======================\n";
 				cout << "Mulliken Pop. Analysis\n";
 			}
@@ -196,8 +202,8 @@ int main(int argc, char* argv[]){
 			cout << fixed;
 			cout << setprecision(10);
 			for(int i = 0; i < M.Zvals.size(); i++){
-				cout << setw(3) << i+1 << setw(20) << pa[i] << '\n';
-				sum_chg += pa[i];
+				cout << setw(3) << i+1 << setw(20) << popa[i] << '\n';
+				sum_chg += popa[i];
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
@@ -211,8 +217,6 @@ int main(int argc, char* argv[]){
 	}
 	// Unrestricted
 	else{
-		int Na = (N+mspin)/2;
-		int Nb = (N-mspin)/2;
 		vector<Matrix> temp_e_c_a;
 		vector<Matrix> temp_e_c_b;
 		
@@ -245,22 +249,81 @@ int main(int argc, char* argv[]){
 		*cb = x * (*cbo);
 		*pa = UR_density_matrix(*ca, Na);
 		*pb = UR_density_matrix(*cb, Nb);
+		*pt = (*pa) + (*pb);
 
-		delete pt;
-		delete pa;
-		delete pb;
-		delete fa;
-		delete fb;
-		delete foa;
-		delete fob;
-		delete ea;
-		delete eb;
-		delete coa;
-		delete cob;
-		delete ca;
-		delete cb;
+		if(sps==0){
+			while((abs(err) > eps) && (cycles <= max_cycles)){
+				UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, &Eo, &err, N);
+				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
+				cout.flush();
+				cycles+=1;
+			}
+		}
+		
+		cout << "----------------------------------------------------\n";
+		if(cycles > max_cycles){
+			delete pt;
+			delete pa;
+			delete pb;
+			delete fa;
+			delete fb;
+			delete fao;
+			delete fbo;
+			delete ea;
+			delete eb;
+			delete cao;
+			delete cbo;
+			delete ca;
+			delete cb;
+			cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
+			return 0;
+		}
+		else{
+			cout << "Convergence criterion met; exiting SCF loop.\n\n";
+			E_tot = Eo + nuc;
+
+			cout << "Total energy (Ha) = " << Eo + nuc << "\n\n";
+		
+			UR_print_orbitals(*ea, *eb, *ca, *cb, Na, Nb, K);
+
+			vector<double> popa(M.Zvals.size());
+			if(pop=="lowdin"){
+				popa = Lowdin_PA(M, *pt, s);
+				cout << "=======================\n";
+				cout << "Löwdin Pop. Analysis\n";
+			}
+			else if(pop=="mulliken"){
+				popa = Mulliken_PA(M, *pt, s);
+				cout << "=======================\n";
+				cout << "Mulliken Pop. Analysis\n";
+			}
+			cout << "=======================\n";
+			cout << setw(3) << "idx" << setw(21) << "charge\n";
+			cout << "=======================\n";
+			double sum_chg = 0;
+			cout << fixed;
+			cout << setprecision(10);
+			for(int i = 0; i < M.Zvals.size(); i++){
+				cout << setw(3) << i+1 << setw(20) << popa[i] << '\n';
+				sum_chg += popa[i];
+			}
+			cout << "=======================\n";
+			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
+		}
+			delete pt;
+			delete pa;
+			delete pb;
+			delete fa;
+			delete fb;
+			delete fao;
+			delete fbo;
+			delete ea;
+			delete eb;
+			delete cao;
+			delete cbo;
+			delete ca;
+			delete cb;
 	}
-
 	cout << "\n***************************************\n";
 	cout <<   "*                                     *\n";
 	cout <<   "*     Thank you, have a nice day!     *\n";
@@ -300,17 +363,17 @@ vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 	return MPA;
 }
 
-void R_print_orbitals(Matrix E, Matrix C, int N, int K){
+void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
 	cout << "********************\n";
 	cout << "* Orbital Energies *\n";
 	cout << "********************\n\n";
 	cout << "Occupied:\n";
-	for(int i = 0; i < N/2; i++){
+	for(int i = 0; i < Nocc/2; i++){
 		cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n';
 	}
-	if((K-N/2)>0){
+	if(Kb>(Nocc/2)){
 		cout << "Virtual:\n";
-		for(int i = N/2; i < K; i++){
+		for(int i = Nocc/2; i < Kb; i++){
 			cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n'; 
 		}
 	}
@@ -320,9 +383,9 @@ void R_print_orbitals(Matrix E, Matrix C, int N, int K){
 	cout << "************************\n\n";
 	cout << "Occupied:\n";
 	int count = 0;
-	for(int i = 0; i < N/2; i++){
+	for(int i = 0; i < Nocc/2; i++){
 		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-		for(int j = 0; j < K; j++){
+		for(int j = 0; j < Kb; j++){
 			cout << C.matrix[j][i] << setw(20);
 			count++;
 			if(count>=5){
@@ -333,12 +396,107 @@ void R_print_orbitals(Matrix E, Matrix C, int N, int K){
 		count = 0;
 		cout << '\n';
 	}
-	if((K-N/2)>0){
+	if(Kb>(Nocc/2)){
 		cout << "Virtual:\n";
-		for(int i = N/2; i < K; i++){
+		for(int i = Nocc/2; i < Kb; i++){
 			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-			for(int j = 0; j < K; j++){
+			for(int j = 0; j < Kb; j++){
 				cout << C.matrix[j][i] << setw(20);
+				count++;
+				if(count>=5){
+					cout << '\n' << setw(25);
+					count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+		}
+	}
+	cout << '\n';
+}
+
+void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb){
+	cout << "********************\n";
+	cout << "* Orbital Energies *\n";
+	cout << "********************\n\n";
+	cout << "Occupied (alpha):\n";
+	for(int i = 0; i < Nocca; i++){
+		cout << setw(4) << 'E' << i+1 << setw(20) << Ea.matrix[i][i] << '\n';
+	}
+	if(Kb>Nocca){
+		cout << "Virtual (alpha):\n";
+		for(int i = Nocca; i < Kb; i++){
+			cout << setw(4) << 'E' << i+1 << setw(20) << Ea.matrix[i][i] << '\n'; 
+		}
+	}
+	cout << '\n';
+	cout << "Occupied (beta):\n";
+	for(int i = 0; i < Noccb; i++){
+		cout << setw(4) << 'E' << i+1 << setw(20) << Eb.matrix[i][i] << '\n';
+	}
+	if(Kb>Noccb){
+		cout << "Virtual (beta):\n";
+		for(int i = Noccb; i < Kb; i++){
+			cout << setw(4) << 'E' << i+1 << setw(20) << Eb.matrix[i][i] << '\n'; 
+		}
+	}
+	cout << '\n';
+	cout << "************************\n";
+	cout << "* Orbital Coefficients *\n";
+	cout << "************************\n\n";
+	cout << "Occupied (alpha):\n";
+	int count = 0;
+	for(int i = 0; i < Nocca; i++){
+		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+		for(int j = 0; j < Kb; j++){
+			cout << Ca.matrix[j][i] << setw(20);
+			count++;
+			if(count>=5){
+				cout << '\n' << setw(25);
+				count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+	}
+	if(Kb>Nocca){
+		cout << "Virtual (alpha):\n";
+		for(int i = Nocca; i < Kb; i++){
+			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+			for(int j = 0; j < Kb; j++){
+				cout << Ca.matrix[j][i] << setw(20);
+				count++;
+				if(count>=5){
+					cout << '\n' << setw(25);
+					count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+		}
+	}
+	cout << '\n';
+	cout << "Occupied (beta):\n";
+	count = 0;
+	for(int i = 0; i < Noccb; i++){
+		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+		for(int j = 0; j < Kb; j++){
+			cout << Cb.matrix[j][i] << setw(20);
+			count++;
+			if(count>=5){
+				cout << '\n' << setw(25);
+				count = 0;
+			}
+		}
+		count = 0;
+		cout << '\n';
+	}
+	if(Kb>Noccb){
+		cout << "Virtual (beta):\n";
+		for(int i = Noccb; i < Kb; i++){
+			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
+			for(int j = 0; j < Kb; j++){
+				cout << Cb.matrix[j][i] << setw(20);
 				count++;
 				if(count>=5){
 					cout << '\n' << setw(25);

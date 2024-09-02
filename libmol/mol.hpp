@@ -15,7 +15,7 @@ class Molecule{
 		std::vector<int> Zvals;
 		int charge;
 		int Nelec;
-		int spin;
+		int NUPDOWN;
 		std::string basis;
 		bool R;
 		std::vector<std::vector<double>> xyz;

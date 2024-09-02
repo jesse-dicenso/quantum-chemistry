@@ -5,7 +5,7 @@ Molecule::Molecule(std::string file, std::string bfs){
 	assert(read.good());
 
 	Nelec = 0;
-	read >> Natoms >> charge >> spin;
+	read >> Natoms >> charge >> NUPDOWN;
 	Nelec = -charge;
 	Zvals.resize(Natoms);
 	xyz.resize(Natoms);
@@ -14,7 +14,7 @@ Molecule::Molecule(std::string file, std::string bfs){
 		read >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
 		Nelec += Zvals[i];
 	}
-	if(((Nelec%2)==0) && (spin==0)){
+	if(((Nelec%2)==0) && (NUPDOWN==0)){
 		R = true;
 	}
 	else{

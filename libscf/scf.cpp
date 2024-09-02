@@ -96,21 +96,15 @@ double R_E0(Matrix P, Matrix Hcore, Matrix F){
 }
 
 void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N){
+	// Uses Ediff between iterations for error metric
 	std::vector<Matrix> tec(2);
+	double tEo;
 
-	//*g   = G(*p, eris);
-	*f   = R_F(hcore, *p, eris);
-	Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-	double errmax = ev.matrix[0][0];
-	for(int k = 0; k < ev.rows; k++){
-		for(int l = 0; l < ev.cols; l++){
-			if(fabs(ev.matrix[k][l]) > fabs(errmax)){
-				errmax = ev.matrix[k][l];
-			}
-		}
-	}
-	*err = errmax;
-	*Eo  = R_E0(*p, hcore, *f);
+	*f = R_F(hcore, *p, eris);
+	tEo  = R_E0(*p, hcore, *f);
+	*err = tEo - *Eo;
+	*Eo = tEo;
+
 	*fo  = transpose(x) * (*f) * x;
 	tec  = diagonalize(*fo);
 	*e   = tec[0];
@@ -120,6 +114,7 @@ void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vect
 }
 
 void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps){
+	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
 	if(i < sps){
@@ -214,7 +209,7 @@ Matrix UR_density_matrix(Matrix C, int N){
 }
 
 Matrix UR_F(Matrix Hcore, Matrix PT, Matrix Ps, std::vector<std::vector<std::vector<std::vector<double>>>> g){
-	Matrix G(P.rows, P.cols);
+	Matrix G(PT.rows, PT.cols);
 	double sum;
 	for(int mu = 0; mu < G.rows; mu++){
 		for(int nu = 0; nu < G.rows; nu++){
@@ -232,39 +227,42 @@ Matrix UR_F(Matrix Hcore, Matrix PT, Matrix Ps, std::vector<std::vector<std::vec
 
 double UR_E0(Matrix PT, Matrix Pa, Matrix Pb, Matrix Hcore, Matrix Fa, Matrix Fb){
 	double sum = 0;
-	for(int i = 0; i < P.rows; i++){
-		for(int j = 0; j < P.cols; j++){
+	for(int i = 0; i < PT.rows; i++){
+		for(int j = 0; j < PT.cols; j++){
 			sum += PT.matrix[j][i] * Hcore.matrix[i][j] + Pa.matrix[j][i] * Fa.matrix[i][j] + Pb.matrix[j][i] * Fb.matrix[i][j];
 		}
 	}
 	return 0.5 * sum;
 }
 
-/*
-void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int N){
-	std::vector<Matrix> tec(2);
+void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int N){
+	std::vector<Matrix> tec_a(2);
+	std::vector<Matrix> tec_b(2);
+	double tEo;
 
-	*f   = 
-	Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-	double errmax = ev.matrix[0][0];
-	for(int k = 0; k < ev.rows; k++){
-		for(int l = 0; l < ev.cols; l++){
-			if(fabs(ev.matrix[k][l]) > fabs(errmax)){
-				errmax = ev.matrix[k][l];
-			}
-		}
-	}
-	*err = errmax;
-	*Eo  = R_E0(*p, hcore, *f);
-	*fo  = transpose(x) * (*f) * x;
-	tec  = diagonalize(*fo);
-	*e   = tec[0];
-	*co  = tec[1];
-	*c   = x * (*co);
-	*p   = R_density_matrix(*c, N);
+	*fa = UR_F(hcore, *pt, *pb, eris);
+	*fb = UR_F(hcore, *pt, *pa, eris);
+	
+	tEo  = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
+	*err = tEo - *Eo;
+	*Eo = tEo;
+
+	*fao  = transpose(x) * (*fa) * x;
+	*fbo  = transpose(x) * (*fb) * x;
+	tec_a  = diagonalize(*fao);
+	tec_b  = diagonalize(*fbo);
+	*ea  = tec_a[0];
+	*cao = tec_a[1];
+	*eb  = tec_b[0];
+	*cbo = tec_b[1];
+	*ca  = x * (*cao);
+	*cb  = x * (*cbo);
+	*pa  = UR_density_matrix(*ca, N);
+	*pb  = UR_density_matrix(*cb, N);
+	*pt  = (*pa) + (*pb);
 }
-
-void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* foa, Matrix* fob, Matrix* ea, Matrix* eb, Matrix* coa, Matrix* cob, Matrix* ca, Matrix* cb, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps){
+/*
+void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* foa, Matrix* fob, Matrix* ea, Matrix* eb, Matrix* coa, Matrix* cob, Matrix* ca, Matrix* cb, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps){
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
 	if(i < sps){
@@ -341,5 +339,5 @@ void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::ve
 		*c   = x * (*co);
 		*p   = UR_density_matrix(*c, N);
 	}
-
-}*/
+}
+*/
