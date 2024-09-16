@@ -7,7 +7,7 @@
 #################################
 
 # input file name
-infile="H.inp"
+infile="CH3.inp"
 
 # calculation method (RHF, UHF)
 method="UHF"
