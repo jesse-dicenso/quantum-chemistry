@@ -46,8 +46,8 @@ void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 	std::vector<Matrix> tec_b(2);
 	double tEo;
 
-	*fa = UR_F(hcore, *pt, *pb, eris);
-	*fb = UR_F(hcore, *pt, *pa, eris);
+	*fa = UR_F(hcore, *pt, *pa, eris);
+	*fb = UR_F(hcore, *pt, *pb, eris);
 	
 	tEo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
 	*err = tEo - *Eo;
@@ -68,83 +68,148 @@ void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 	*pb  = UR_density_matrix(*cb, Nb);
 	*pt  = (*pa) + (*pb);
 }
-/*
-void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* foa, Matrix* fob, Matrix* ea, Matrix* eb, Matrix* coa, Matrix* cob, Matrix* ca, Matrix* cb, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps){
+
+void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i, Matrix* SPfa, Matrix* SPfb, Matrix* SPea, Matrix* SPeb, int sps, int* icd){
+	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
 	if(i < sps){
-		Matrix d = *p;
-		FPI(R, s, hcore, eris, x, p, g, f, fo, e, co, c, Eo, err, N);
+		Matrix da = *pa;
+		Matrix db = *pb;
+		UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb);
 		for(int j = 0; j < sps-1; j++){
-			SPf[j] = SPf[j+1];
-			SPe[j] = SPe[j+1];
+			SPfa[j] = SPfa[j+1];
+			SPfb[j] = SPfb[j+1];
+			SPea[j] = SPea[j+1];
+			SPeb[j] = SPeb[j+1];
 		}
-		SPf[sps-1] = *f;
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-		SPe[sps-1] = ev;
+		SPfa[sps-1] = *fa;
+		SPfb[sps-1] = *fb;
+		Matrix eva = transpose(x) * ((*fa) * (*pa) * s - s * (*pa) * (*fa)) * x;
+		Matrix evb = transpose(x) * ((*fb) * (*pb) * s - s * (*pb) * (*fb)) * x;
+		SPea[sps-1] = eva;
+		SPeb[sps-1] = evb;
 	}
 	else{
-		std::vector<Matrix> tec(2);
-		std::vector<double> weights(sps+1);
-		double tEo;
-		double errmax;
+		std::vector<Matrix> tec_a(2);
+		std::vector<Matrix> tec_b(2);
+		std::vector<double> weights_a(sps+1);
+		std::vector<double> weights_b(sps+1);
+		double errmax_a;
+		double errmax_b;
 	
-		*g   = G(*p, eris);
-		*f   = hcore + *g;
-		*Eo  = E0(*p, hcore, *f);
+		*fa = UR_F(hcore, *pt, *pa, eris);
+		*fb = UR_F(hcore, *pt, *pb, eris);
 		
-		// Store f, update error vectors
+		// Store fa, fb, update error vectors
 		for(int j = 0; j < sps-1; j++){
-			SPf[j] = SPf[j+1];
-			SPe[j] = SPe[j+1];
+			SPfa[j] = SPfa[j+1];
+			SPfb[j] = SPfb[j+1];
+			SPea[j] = SPea[j+1];
+			SPeb[j] = SPeb[j+1];
 		}
-		SPf[sps-1] = *f;
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-		SPe[sps-1] = ev;
+		SPfa[sps-1] = *fa;
+		SPfb[sps-1] = *fb;
+		Matrix eva = transpose(x) * ((*fa) * (*pa) * s - s * (*pa) * (*fa)) * x;
+		Matrix evb = transpose(x) * ((*fb) * (*pb) * s - s * (*pb) * (*fb)) * x;
+		SPea[sps-1] = eva;
+		SPeb[sps-1] = evb;
+		
+		errmax_a = SPea[0].matrix[0][0];
+		errmax_b = SPeb[0].matrix[0][0];
 
-		errmax = SPe[0].matrix[0][0];
 		for(int j = 0; j < sps; j++){
-			for(int k = 0; k < SPe[j].rows; k++){
-				for(int l = 0; l < SPe[j].cols; l++){
-					if(fabs(SPe[j].matrix[k][l]) > fabs(errmax)){
-						errmax = SPe[j].matrix[k][l];
+			for(int k = 0; k < SPea[j].rows; k++){
+				for(int l = 0; l < SPea[j].cols; l++){
+					if(fabs(SPea[j].matrix[k][l]) > fabs(errmax_a)){
+						errmax_a = SPea[j].matrix[k][l];
+					}
+				}
+			}
+			for(int k = 0; k < SPeb[j].rows; k++){
+				for(int l = 0; l < SPeb[j].cols; l++){
+					if(fabs(SPeb[j].matrix[k][l]) > fabs(errmax_b)){
+						errmax_b = SPeb[j].matrix[k][l];
 					}
 				}
 			}
 		}
-		*err = errmax;
-
+		
 		// Set up linear system and solve for weights
-		Matrix LHS(sps+1, sps+1);
-		for(int j = 0; j < LHS.rows; j++){
-			for(int k = 0; k < LHS.cols; k++){
-				if((j==LHS.rows-1) && (k==LHS.cols-1)){
-					LHS.matrix[j][k] = 0;
+		Matrix LHS_a(sps+1, sps+1);
+		for(int j = 0; j < LHS_a.rows; j++){
+			for(int k = 0; k < LHS_a.cols; k++){
+				if((j==LHS_a.rows-1) && (k==LHS_a.cols-1)){
+					LHS_a.matrix[j][k] = 0;
 				}
-				else if((j==LHS.rows-1) || (k==LHS.cols-1)){
-					LHS.matrix[j][k] = -1;
+				else if((j==LHS_a.rows-1) || (k==LHS_a.cols-1)){
+					LHS_a.matrix[j][k] = -1;
 				}
 				else{
-					LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
+					LHS_a.matrix[j][k] = Tr(SPea[j]*SPea[k]);
 				}
 			}
 		}
-		Matrix RHS(sps+1, 1);
-		RHS.matrix[sps][0] = -1;
-		weights = sym_linear_solve(LHS, RHS);
-		
-		// Build fock matrix from previous fock matrices and weights
-		*f = zero(p->rows, p->cols);
-		for(int j = 0; j < sps; j++){
-			*f = *f + SPf[j] * weights[j];
+		Matrix LHS_b(sps+1, sps+1);
+		for(int j = 0; j < LHS_b.rows; j++){
+			for(int k = 0; k < LHS_b.cols; k++){
+				if((j==LHS_b.rows-1) && (k==LHS_b.cols-1)){
+					LHS_b.matrix[j][k] = 0;
+				}
+				else if((j==LHS_b.rows-1) || (k==LHS_b.cols-1)){
+					LHS_b.matrix[j][k] = -1;
+				}
+				else{
+					LHS_b.matrix[j][k] = Tr(SPeb[j]*SPeb[k]);
+				}
+			}
 		}
 
-		*fo  = transpose(x) * (*f) * x;
-		tec  = diagonalize(*fo);
-		*e   = tec[0];
-		*co  = tec[1];
-		*c   = x * (*co);
-		*p   = UR_density_matrix(*c, N);
+		Matrix RHS_a(sps+1, 1);
+		RHS_a.matrix[sps][0] = -1;
+		Matrix RHS_b(sps+1, 1);
+		RHS_b.matrix[sps][0] = -1;
+
+		weights_a = sym_linear_solve(LHS_a, RHS_a, icd);
+		weights_b = sym_linear_solve(LHS_b, RHS_b, icd);
+		
+		if(*icd!=0){
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
+			std::cout.flush();
+			return;
+		}
+		
+		//double tEo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
+		//*err = tEo - *Eo;
+		*Eo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
+		
+		if(fabs(errmax_a) > fabs(errmax_b)){
+			*err = errmax_a;
+		}
+		else{
+			*err = errmax_b;
+		}	
+		
+		// Build fock matrices from previous fock matrices and weights
+		*fa = zero(pt->rows, pt->cols);
+		*fb = zero(pt->rows, pt->cols);
+		for(int j = 0; j < sps; j++){
+			*fa = *fa + SPfa[j] * weights_a[j];
+			*fb = *fb + SPfb[j] * weights_b[j];
+		}
+
+		*fao  = transpose(x) * (*fa) * x;
+		*fbo  = transpose(x) * (*fb) * x;
+		tec_a = diagonalize(*fao);
+		tec_b = diagonalize(*fbo);
+		*ea   = tec_a[0];
+		*eb   = tec_b[0];
+		*cao  = tec_a[1];
+		*cbo  = tec_b[1];
+		*ca   = x * (*cao);
+		*cb   = x * (*cbo);
+		*pa   = UR_density_matrix(*ca, Na);
+		*pb   = UR_density_matrix(*cb, Nb);
+		*pt   = *pa + *pb;
 	}
 }
-*/

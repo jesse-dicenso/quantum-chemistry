@@ -249,8 +249,8 @@ int main(int argc, char* argv[]){
 		Matrix ca (K, K);
 		Matrix cb (K, K);
 		
-		fa = UR_F(hcore, pt, pb, eris);
-		fb = UR_F(hcore, pt, pa, eris);
+		fa = UR_F(hcore, pt, pa, eris);
+		fb = UR_F(hcore, pt, pb, eris);
 		Eo = UR_E0(pt, pa, pb, hcore, fa, fb);
 		fao = transpose(x) * fa * x;
 		fbo = transpose(x) * fb * x;
@@ -272,6 +272,37 @@ int main(int argc, char* argv[]){
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
 				cout.flush();
 				cycles+=1;
+			}
+		}
+		else{
+			vector<Matrix> SPfa(sps, zero(K, K));
+			vector<Matrix> SPfb(sps, zero(K, K));
+			vector<Matrix> SPea(sps, zero(K, K));
+			vector<Matrix> SPeb(sps, zero(K, K));
+			while((abs(err) > eps) && (cycles <= max_cycles)){
+				UR_DIIS(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles, SPfa.data(), SPfb.data(), SPea.data(), SPeb.data(), sps, &icd);
+				if(icd!=0){
+					break;
+				}
+				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
+				if(cycles < sps){
+					cout << setw(10) << "fp\n";
+				}
+				else{
+					cout << setw(10) << "diis\n";
+				}
+				cout.flush();
+				cycles+=1;
+			}
+			if(icd!=0){
+			int fpi_forced_three;
+				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
+					UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb);
+					cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
+					cout.flush();
+					fpi_forced_three+=1;
+					cycles+=1;
+				}
 			}
 		}
 		
