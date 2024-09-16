@@ -15,6 +15,7 @@ int main(int argc, char* argv[]){
 	auto coutbuf = cout.rdbuf(out.rdbuf());
 
 	string infile;
+	string method;
 	string basis_set;
 	int sps;
 	double eps;
@@ -22,6 +23,7 @@ int main(int argc, char* argv[]){
 	string pop;
 
 	cin >> infile;
+	cin >> method;
 	cin >> basis_set;
 	cin >> sps;
 	cin >> eps;
@@ -74,11 +76,21 @@ int main(int argc, char* argv[]){
 	N = M.Nelec;
 	K = M.AOs.size();
 	nupdown = M.NUPDOWN;
+	if(method=="RHF"){
+		r = true;
+	}
+	else if(method=="UHF"){
+		r = false;
+	}
+	if(r && (nupdown!=0)){
+		cerr << "ERR: Restricted calculation cannot be performed for NUPDOWN!=0! (Try unrestricted...)\n";
+		return 0;
+	}
 	Na = (N+nupdown)/2;
 	Nb = (N-nupdown)/2;
 	S2_e = 0.5*(Na-Nb)*(0.5*(Na-Nb)+1);
-	r = M.R;
 	cout << "\tinfile\t\t" << infile << '\n';
+	cout << "\tmethod\t\t" << method << '\n';
 	cout << "\tbasis\t\tSTO-3G\n";
 	cout << "\tsps\t\t" << sps << ' ';
 	if(sps==0){
@@ -126,25 +138,25 @@ int main(int argc, char* argv[]){
 	if(r){
 		vector<Matrix> temp_e_c;
 		
-		Matrix* p  = new Matrix(K, K);
-		Matrix* f  = new Matrix(K, K);
-		Matrix* fo = new Matrix(K, K);
-		Matrix* e  = new Matrix(K, K);
-		Matrix* co = new Matrix(K, K);
-		Matrix* c  = new Matrix(K, K);
+		Matrix p (K, K);
+		Matrix f (K, K);
+		Matrix fo(K, K);
+		Matrix e (K, K);
+		Matrix co(K, K);
+		Matrix c (K, K);
 		
-		*f = R_F(hcore, *p, eris);
-		Eo = R_E0(*p, hcore, *f);
-		*fo = transpose(x) * (*f) * x;
-		temp_e_c = diagonalize(*fo);
-		*e = temp_e_c[0];
-		*co = temp_e_c[1];
-		*c = x * (*co);
-		*p = R_density_matrix(*c, N);
+		f = R_F(hcore, p, eris);
+		Eo = R_E0(p, hcore, f);
+		fo = transpose(x) * f * x;
+		temp_e_c = diagonalize(fo);
+		e = temp_e_c[0];
+		co = temp_e_c[1];
+		c = x * co;
+		p = R_density_matrix(c, N);
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N);
+				R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N);
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
 				cout.flush();
 				cycles+=1;
@@ -154,7 +166,7 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPf(sps, zero(K, K));
 			vector<Matrix> SPe(sps, zero(K, K));
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps, &icd);
+				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps, &icd);
 				if(icd!=0){
 					break;
 				}
@@ -171,7 +183,7 @@ int main(int argc, char* argv[]){
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, &Eo, &err, N);
+					R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N);
 					cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
 					cout.flush();
 					fpi_forced_three+=1;
@@ -182,12 +194,6 @@ int main(int argc, char* argv[]){
 		cout << "----------------------------------------------------\n";
 
 		if(cycles > max_cycles){
-			delete p;
-			delete f;
-			delete fo;
-			delete e;
-			delete co;
-			delete c;
 			cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
 			return 0;
 		}
@@ -197,16 +203,16 @@ int main(int argc, char* argv[]){
 
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 		
-			R_print_orbitals(*e, *c, N, K);
+			R_print_orbitals(e, c, N, K);
 
 			vector<double> popa(M.Zvals.size());
 			if(pop=="lowdin"){
-				popa = Lowdin_PA(M, *p, s);
+				popa = Lowdin_PA(M, p, s);
 				cout << "=======================\n";
 				cout << "Löwdin Pop. Analysis\n";
 			}
 			else if(pop=="mulliken"){
-				popa = Mulliken_PA(M, *p, s);
+				popa = Mulliken_PA(M, p, s);
 				cout << "=======================\n";
 				cout << "Mulliken Pop. Analysis\n";
 			}
@@ -223,52 +229,46 @@ int main(int argc, char* argv[]){
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 		}
-		delete p;
-		delete f;
-		delete fo;
-		delete e;
-		delete co;
-		delete c;
 	}
 	// Unrestricted
 	else{
 		vector<Matrix> temp_e_c_a;
 		vector<Matrix> temp_e_c_b;
 		
-		Matrix* pt  = new Matrix(K, K);
-		Matrix* pa  = new Matrix(K, K);
-		Matrix* pb  = new Matrix(K, K);
-		Matrix* fa  = new Matrix(K, K);
-		Matrix* fb  = new Matrix(K, K);
-		Matrix* fao = new Matrix(K, K);
-		Matrix* fbo = new Matrix(K, K);
-		Matrix* ea  = new Matrix(K, K);
-		Matrix* eb  = new Matrix(K, K);
-		Matrix* cao = new Matrix(K, K);
-		Matrix* cbo = new Matrix(K, K);
-		Matrix* ca  = new Matrix(K, K);
-		Matrix* cb  = new Matrix(K, K);
+		Matrix pt (K, K);
+		Matrix pa (K, K);
+		Matrix pb (K, K);
+		Matrix fa (K, K);
+		Matrix fb (K, K);
+		Matrix fao(K, K);
+		Matrix fbo(K, K);
+		Matrix ea (K, K);
+		Matrix eb (K, K);
+		Matrix cao(K, K);
+		Matrix cbo(K, K);
+		Matrix ca (K, K);
+		Matrix cb (K, K);
 		
-		*fa = UR_F(hcore, *pt, *pb, eris);
-		*fb = UR_F(hcore, *pt, *pa, eris);
-		Eo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
-		*fao = transpose(x) * (*fa) * x;
-		*fbo = transpose(x) * (*fb) * x;
-		temp_e_c_a = diagonalize(*fao);
-		temp_e_c_b = diagonalize(*fbo);
-		*ea = temp_e_c_a[0];
-		*cao = temp_e_c_a[1];
-		*eb = temp_e_c_b[0];
-		*cbo = temp_e_c_b[1];
-		*ca = x * (*cao);
-		*cb = x * (*cbo);
-		*pa = UR_density_matrix(*ca, Na);
-		*pb = UR_density_matrix(*cb, Nb);
-		*pt = (*pa) + (*pb);
+		fa = UR_F(hcore, pt, pb, eris);
+		fb = UR_F(hcore, pt, pa, eris);
+		Eo = UR_E0(pt, pa, pb, hcore, fa, fb);
+		fao = transpose(x) * fa * x;
+		fbo = transpose(x) * fb * x;
+		temp_e_c_a = diagonalize(fao);
+		temp_e_c_b = diagonalize(fbo);
+		ea = temp_e_c_a[0];
+		cao = temp_e_c_a[1];
+		eb = temp_e_c_b[0];
+		cbo = temp_e_c_b[1];
+		ca = x * cao;
+		cb = x * cbo;
+		pa = UR_density_matrix(ca, Na);
+		pb = UR_density_matrix(cb, Nb);
+		pt = pa + pb;
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, &Eo, &err, N);
+				UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb);
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
 				cout.flush();
 				cycles+=1;
@@ -277,33 +277,21 @@ int main(int argc, char* argv[]){
 		
 		cout << "----------------------------------------------------\n";
 		if(cycles > max_cycles){
-			delete pt;
-			delete pa;
-			delete pb;
-			delete fa;
-			delete fb;
-			delete fao;
-			delete fbo;
-			delete ea;
-			delete eb;
-			delete cao;
-			delete cbo;
-			delete ca;
-			delete cb;
 			cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
 			return 0;
 		}
 		else{
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
+			
 			E_tot = Eo + nuc;
 
 			S2_UHF = S2_e + Nb;
-			for(int i = 0; i < N; i++){
-				for(int j = 0; j < N; j++){
-					double tempsum;
+			for(int i = 0; i < Na; i++){
+				for(int j = 0; j < Nb; j++){
+					double tempsum = 0;
 					for(int mu = 0; mu < K; mu++){
 						for(int nu = 0; nu < K; nu++){
-							tempsum += (ca->matrix[mu][i])*(cb->matrix[nu][j])*(s.matrix[mu][nu]);
+							tempsum += (ca.matrix[mu][i])*(cb.matrix[nu][j])*(s.matrix[mu][nu]);
 						}
 					}
 					S2_UHF -= tempsum*tempsum;
@@ -314,16 +302,16 @@ int main(int argc, char* argv[]){
 			cout << "Exact <S^2> = " << S2_e << '\n';
 			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";
 		
-			UR_print_orbitals(*ea, *eb, *ca, *cb, Na, Nb, K);
+			UR_print_orbitals(ea, eb, ca, cb, Na, Nb, K);
 
 			vector<double> popa(M.Zvals.size());
 			if(pop=="lowdin"){
-				popa = Lowdin_PA(M, *pt, s);
+				popa = Lowdin_PA(M, pt, s);
 				cout << "=======================\n";
 				cout << "Löwdin Pop. Analysis\n";
 			}
 			else if(pop=="mulliken"){
-				popa = Mulliken_PA(M, *pt, s);
+				popa = Mulliken_PA(M, pt, s);
 				cout << "=======================\n";
 				cout << "Mulliken Pop. Analysis\n";
 			}
@@ -340,19 +328,6 @@ int main(int argc, char* argv[]){
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 		}
-			delete pt;
-			delete pa;
-			delete pb;
-			delete fa;
-			delete fb;
-			delete fao;
-			delete fbo;
-			delete ea;
-			delete eb;
-			delete cao;
-			delete cbo;
-			delete ca;
-			delete cb;
 	}
 	cout << "\n***************************************\n";
 	cout <<   "*                                     *\n";

@@ -14,12 +14,6 @@ Molecule::Molecule(std::string file, std::string bfs){
 		read >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
 		Nelec += Zvals[i];
 	}
-	if(((Nelec%2)==0) && (NUPDOWN==0)){
-		R = true;
-	}
-	else{
-		R = false;
-	}
 	read.close();
 
 	basis = bfs;

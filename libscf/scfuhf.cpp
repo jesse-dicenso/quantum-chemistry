@@ -15,20 +15,20 @@ Matrix UR_density_matrix(Matrix C, int N){
 }
 
 Matrix UR_F(Matrix Hcore, Matrix PT, Matrix Ps, std::vector<std::vector<std::vector<std::vector<double>>>> g){
-	Matrix G(PT.rows, PT.cols);
+	Matrix F(PT.rows, PT.cols);
 	double sum;
-	for(int mu = 0; mu < G.rows; mu++){
-		for(int nu = 0; nu < G.rows; nu++){
-			sum = 0;
-			for(int ld = 0; ld < G.rows; ld++){
-				for(int sg = 0; sg < G.rows; sg++){
-					sum += PT.matrix[ld][sg] * g[mu][nu][sg][ld] - Ps.matrix[ld][sg] * g[mu][ld][sg][nu];
+	for(int mu = 0; mu < F.rows; mu++){
+		for(int nu = 0; nu < F.rows; nu++){
+			sum = Hcore.matrix[mu][nu];
+			for(int ld = 0; ld < F.rows; ld++){
+				for(int sg = 0; sg < F.rows; sg++){
+					sum += (PT.matrix[ld][sg] * g[mu][nu][sg][ld]) - (Ps.matrix[ld][sg] * g[mu][ld][sg][nu]);
 				}
 			}
-			G.matrix[mu][nu] = sum;
+			F.matrix[mu][nu] = sum;
 		}
 	}
-	return Hcore + G;
+	return F;
 }
 
 double UR_E0(Matrix PT, Matrix Pa, Matrix Pb, Matrix Hcore, Matrix Fa, Matrix Fb){
@@ -41,7 +41,7 @@ double UR_E0(Matrix PT, Matrix Pa, Matrix Pb, Matrix Hcore, Matrix Fa, Matrix Fb
 	return 0.5 * sum;
 }
 
-void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int N){
+void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb){
 	std::vector<Matrix> tec_a(2);
 	std::vector<Matrix> tec_b(2);
 	double tEo;
@@ -63,8 +63,9 @@ void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 	*cbo = tec_b[1];
 	*ca  = x * (*cao);
 	*cb  = x * (*cbo);
-	*pa  = UR_density_matrix(*ca, N);
-	*pb  = UR_density_matrix(*cb, N);
+
+	*pa  = UR_density_matrix(*ca, Na);
+	*pb  = UR_density_matrix(*cb, Nb);
 	*pt  = (*pa) + (*pb);
 }
 /*

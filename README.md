@@ -1,3 +1,5 @@
+NOTE: UHF is having trouble! UHF has only fixed point iterations available (no DIIS yet) and does not yet work generally.
+
 ## Introduction
 This is a simple Hartree-Fock program that I wrote during Summer 2024. It is able to compute the RHF wavefunction of closed-shell atoms and molecules in 3D, along with some other quantities of interest. It uses the McMurchie-Davidson scheme for computing all molecular integrals.
 

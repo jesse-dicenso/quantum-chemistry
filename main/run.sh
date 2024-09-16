@@ -6,8 +6,13 @@
 #				#
 #################################
 
-# input file name and basis set
-infile="HeH+.inp"
+# input file name
+infile="H.inp"
+
+# calculation method (RHF, UHF)
+method="UHF"
+
+# basis set
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
@@ -23,4 +28,4 @@ max_cycles="50"
 pop="lowdin"
 
 echo "Running..."
-time { echo $infile; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./hartree-fock
+time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./hartree-fock

@@ -17,7 +17,6 @@ class Molecule{
 		int Nelec;
 		int NUPDOWN;
 		std::string basis;
-		bool R;
 		std::vector<std::vector<double>> xyz;
 		std::vector<GF> AOs;
 };
