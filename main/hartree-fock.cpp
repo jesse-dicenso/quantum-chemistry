@@ -114,14 +114,20 @@ int main(int argc, char* argv[]){
 		cout << M.Zvals[i] << setw(20) << M.xyz[i][0] << setw(20) << M.xyz[i][1] << setw(20) << M.xyz[i][2] << '\n';
 	}
 	cout << "--------------------------------------------------------------\n";
-	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n\n"; 
-	nuc = nucrepl(M.Zvals, M.xyz);	
-
-	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n";
+	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n"; 
+	nuc = nucrepl(M.Zvals, M.xyz);
+	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
 	
 	eris = ERIs(M.AOs);
-	
-	cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
+
+	if(r){
+		cout << "Performing restricted Hartree Fock...\n";	
+		cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
+	}
+	else{
+		cout << "Performing unrestricted Hartree Fock...\n";	
+		cout << "Using core Hamiltonian as initial guess to alpha/beta Fock matrices.\n\n";
+	}
 	cout << "                   *************\n";
 	cout << "                   * BEGIN SCF *\n";
 	cout << "                   *************\n\n";

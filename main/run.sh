@@ -16,10 +16,10 @@ method="UHF"
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps="3"
+sps="2"
 
 # convergence criterion (energy)
-eps="1e-6"
+eps="1e-8"
 
 # maximum number of scf iterations
 max_cycles="100"
