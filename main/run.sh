@@ -7,16 +7,16 @@
 #################################
 
 # input file name
-infile="CH3.inp"
+infile="H2O.inp"
 
 # calculation method (RHF, UHF)
-method="UHF"
+method="RHF"
 
 # basis set
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps="2"
+sps="0"
 
 # convergence criterion (energy)
 eps="1e-8"

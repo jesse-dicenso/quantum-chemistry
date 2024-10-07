@@ -1,15 +1,15 @@
-NOTE: UHF is having trouble! UHF has only fixed point iterations available (no DIIS yet) and does not yet work generally.
+NOTE: DIIS is acting strange for UHF, this will be fixed.
 
 ## Introduction
-This is a simple Hartree-Fock program that I wrote during Summer 2024. It is able to compute the RHF wavefunction of closed-shell atoms and molecules in 3D, along with some other quantities of interest. It uses the McMurchie-Davidson scheme for computing all molecular integrals.
+This is a simple Hartree-Fock program that I wrote during Summer 2024. It is able to compute the wavefunctions of open- and closed-shell atoms and molecules in 3D, along with some other quantities of interest. It uses the McMurchie-Davidson scheme for computing all molecular integrals.
 
-Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically for DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems). Everything else, including a class for matrices, was written by me!
+Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically for DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems, for DIIS). Everything else, including a class for matrices, was written by me!
 
 ## Current capabilities:
 
--Basis Sets: STO-3G
+-Basis Sets: STO-3G (more to come)
 
--SCF Algorithms: fixed-point, DIIS
+-SCF Algorithms: fixed-point, DIIS with variable subspace size
 
 -Population Analyses: Lowdin, Mulliken
 
@@ -37,4 +37,4 @@ bash run.sh
 ```
 and the program will begin. It may take awhile, but it will output to the file outfile.dat. Sample output files may be found in the directory /hartree-fock/sample_outputs.
 
-There may be some numerical instabilities, but it generally works well for small molecules.
+There may be some numerical instabilities, but it generally works well for small molecules. I have tested up to acetaldehyde, which converges using DIIS but not with basic fixed-point iterations.
