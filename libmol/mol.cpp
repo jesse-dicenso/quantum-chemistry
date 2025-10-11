@@ -1,11 +1,11 @@
 #include "mol.hpp"
 
 Molecule::Molecule(std::string file, std::string bfs){
-	std::ifstream read(file);
-	assert(read.good());
+	std::ifstream inpfile(file);
+	assert(inpfile.good());
 
 	Nelec = 0;
-	read >> Natoms >> charge >> NUPDOWN;
+	inpfile >> Natoms >> charge >> NUPDOWN;
 	Nelec = -charge;
 	Zvals.resize(Natoms);
 	xyz.resize(Natoms);
@@ -14,7 +14,7 @@ Molecule::Molecule(std::string file, std::string bfs){
 		read >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
 		Nelec += Zvals[i];
 	}
-	read.close();
+	inpfile.close();
 
 	basis = bfs;
 	std::vector<GF> temp;	
@@ -27,13 +27,64 @@ Molecule::Molecule(std::string file, std::string bfs){
 }
 
 std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
-	std::vector<int> Ls ({0,0,0});
-	std::vector<int> Lpx({1,0,0});
-	std::vector<int> Lpy({0,1,0});
-	std::vector<int> Lpz({0,0,1});
-	// only STO-3G available now...sorry
-	assert(bfs=="STO-3G");
+	// Element symbols ( elements[i] == elements[Zval-1] )
+	std::vector<std::string> elements = {
+    		"H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",
+    		"Na", "Mg", "Al", "Si", "P",  "S",  "Cl", "Ar", "K",  "Ca",
+    		"Sc", "Ti", "V",  "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
+    		"Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y",  "Zr",
+    		"Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn",
+    		"Sb", "Te", "I",  "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd",
+    		"Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
+    		"Lu", "Hf", "Ta", "W",  "Re", "Os", "Ir", "Pt", "Au", "Hg",
+    		"Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
+    		"Pa", "U",  "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",
+    		"Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds",
+    		"Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"
+	};
+	std::string element_symbol = elements[Zval-1];
+
+	// Cartesian angular momenta up to l=2; ( Ncl = (l+1)(l+2)/2 )
+	std::vector<int> Ls, Lpx, Lpy, Lpz, Ldx2, Ldy2, Ldz2, Lxy, Lyz, Lzx;
+	Ls   = {0,0,0};
+
+	Lpx  = {1,0,0}; 
+	Lpy  = {0,1,0}; 
+	Lpz  = {0,0,1};
+ 
+	Ldx2 = {2,0,0};
+	Ldy2 = {0,2,0};
+	Ldz2 = {0,0,2};
+	Ldxy = {1,1,0};
+	Ldyz = {0,1,1};
+	Ldzx = {1,0,1};
+	
+	// Read in basis set and construct AO functions
+	assert((bfs=="STO-3G") || (bfs=="def2-SVP"));
+	std::ifstream bfsfile(bfs+"/"+element_symbol);
+	assert(bfsfile.good());
+	
 	std::vector<GF> orbitals;
+
+	int numshells = 0;
+	bfsfile >> numshells;	
+	for(int i = 0; i < numshells; i++){
+		std::string shell;
+		int clen;
+		double zeta_scale;
+
+		bfsfile >> shell >> clen >> zeta_scale;
+		assert((shell=="S") || (shell=="SP") || (shell=="P") || (shell=="D") || (shell=="F"));
+		for(int j = 0; j < clen; j++){
+			if(shell!="SP"){
+				//
+			}
+		}
+	}	
+
+	bfsfile.close();
+
+	/*
 		// * H * //
 		if(Zval==1){
 			// 1s
@@ -94,5 +145,6 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 			orbitals.push_back(O2py);
 			orbitals.push_back(O2pz);
 		}
+	*/
 	return orbitals;
 }
