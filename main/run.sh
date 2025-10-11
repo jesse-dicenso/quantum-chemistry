@@ -7,7 +7,7 @@
 #################################
 
 # input file name
-infile="H2O.inp"
+infile="acetaldehyde.inp"
 
 # calculation method (RHF, UHF)
 method="RHF"
@@ -16,7 +16,7 @@ method="RHF"
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps="0"
+sps="3"
 
 # convergence criterion (energy)
 eps="1e-8"
