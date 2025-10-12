@@ -1,13 +1,7 @@
 #!/bin/bash
 
-#################################
-#				#
-#    	  *** INPUTS ***	#
-#				#
-#################################
-
 # input file name
-infile="acetaldehyde.inp"
+infile="H2O.inp"
 
 # calculation method (RHF, UHF)
 method="RHF"

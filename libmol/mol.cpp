@@ -68,9 +68,6 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 
 	int numshells = 0;
 	bfsfile >> numshells;
-	//
-	std::cout << element_symbol << " " << numshells << '\n';
-	//	
 	for(int i = 0; i < numshells; i++){
 		std::string shell;
 		int clen;

@@ -91,7 +91,7 @@ int main(int argc, char* argv[]){
 	S2_e = 0.5*(Na-Nb)*(0.5*(Na-Nb)+1);
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tmethod\t\t" << method << '\n';
-	cout << "\tbasis\t\tSTO-3G\n";
+	cout << "\tbasis\t\t"  << basis_set << '\n';
 	cout << "\tsps\t\t" << sps << ' ';
 	if(sps==0){
 		cout << "(fixed-point)\n";
@@ -117,6 +117,7 @@ int main(int argc, char* argv[]){
 	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n"; 
 	nuc = nucrepl(M.Zvals, M.xyz);
 	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
+    cout.flush();
 	
 	eris = ERIs(M.AOs);
 

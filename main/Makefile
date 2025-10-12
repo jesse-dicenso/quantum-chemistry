@@ -2,7 +2,7 @@ miscmath.o: ../libmath/miscmath.cpp ../libmath/miscmath.hpp
 	g++ -c -O ../libmath/miscmath.cpp
 
 linalg.o: ../libmath/linalg.cpp ../libmath/linalg.hpp
-	g++ -c -O -isysroot $(shell xcrun --show-sdk-path) ../libmath/linalg.cpp -llapack -lblas
+	g++ -c -O  ../libmath/linalg.cpp -llapack -lblas
 
 gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 	g++ -c -O ../libgf/gf.cpp
