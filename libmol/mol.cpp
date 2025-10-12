@@ -11,7 +11,7 @@ Molecule::Molecule(std::string file, std::string bfs){
 	xyz.resize(Natoms);
 	for(int i = 0; i < Natoms; i++){
 		xyz[i].resize(3);
-		read >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
+		inpfile >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
 		Nelec += Zvals[i];
 	}
 	inpfile.close();
@@ -45,7 +45,7 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 	std::string element_symbol = elements[Zval-1];
 
 	// Cartesian angular momenta up to l=2; ( Ncl = (l+1)(l+2)/2 )
-	std::vector<int> Ls, Lpx, Lpy, Lpz, Ldx2, Ldy2, Ldz2, Lxy, Lyz, Lzx;
+	std::vector<int> Ls, Lpx, Lpy, Lpz, Ldx2, Ldy2, Ldz2, Ldxy, Ldyz, Ldzx;
 	Ls   = {0,0,0};
 
 	Lpx  = {1,0,0}; 
@@ -61,13 +61,16 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 	
 	// Read in basis set and construct AO functions
 	assert((bfs=="STO-3G") || (bfs=="def2-SVP"));
-	std::ifstream bfsfile(bfs+"/"+element_symbol);
+	std::ifstream bfsfile("../libmol/"+bfs+"/"+element_symbol);
 	assert(bfsfile.good());
 	
 	std::vector<GF> orbitals;
 
 	int numshells = 0;
-	bfsfile >> numshells;	
+	bfsfile >> numshells;
+	//
+	std::cout << element_symbol << " " << numshells << '\n';
+	//	
 	for(int i = 0; i < numshells; i++){
 		std::string shell;
 		int clen;
@@ -75,14 +78,67 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 
 		bfsfile >> shell >> clen >> zeta_scale;
 		assert((shell=="S") || (shell=="SP") || (shell=="P") || (shell=="D") || (shell=="F"));
-		for(int j = 0; j < clen; j++){
-			if(shell!="SP"){
-				//
+
+		std::vector<double> zeta(clen), d(clen);
+
+		if(shell=="S"){
+			for(int j = 0; j < clen; j++){
+				bfsfile >> zeta[j] >> d[j];
+				zeta[j]*=zeta_scale;
 			}
+			GF S(zeta, d, pos, Ls);
+			orbitals.push_back(S);
+		}
+		else if(shell=="SP"){
+			std::vector<double> d2(clen);
+			for(int j = 0; j < clen; j++){
+				bfsfile >> zeta[j] >> d[j] >> d2[j];
+				zeta[j]*=zeta_scale;
+			}
+			GF S (zeta, d , pos, Ls );
+			GF Px(zeta, d2, pos, Lpx);
+			GF Py(zeta, d2, pos, Lpy);
+			GF Pz(zeta, d2, pos, Lpz);
+			orbitals.push_back(S );	
+			orbitals.push_back(Px);	
+			orbitals.push_back(Py);	
+			orbitals.push_back(Pz);	
+		}
+		else if(shell=="P"){
+			for(int j = 0; j < clen; j++){
+				bfsfile >> zeta[j] >> d[j];
+				zeta[j]*=zeta_scale;
+			}
+			GF Px(zeta, d, pos, Lpx);
+			GF Py(zeta, d, pos, Lpy);
+			GF Pz(zeta, d, pos, Lpz);
+			orbitals.push_back(Px);	
+			orbitals.push_back(Py);	
+			orbitals.push_back(Pz);	
+		}
+		else if(shell=="D"){
+			for(int j = 0; j < clen; j++){
+				bfsfile >> zeta[j] >> d[j];
+				zeta[j]*=zeta_scale;
+			}
+			GF Dx2(zeta, d, pos, Ldx2);
+			GF Dy2(zeta, d, pos, Ldy2);
+			GF Dz2(zeta, d, pos, Ldz2);
+			GF Dxy(zeta, d, pos, Ldxy);
+			GF Dyz(zeta, d, pos, Ldyz);
+			GF Dzx(zeta, d, pos, Ldzx);
+			orbitals.push_back(Dx2);	
+			orbitals.push_back(Dy2);	
+			orbitals.push_back(Dz2);	
+			orbitals.push_back(Dxy);	
+			orbitals.push_back(Dyz);	
+			orbitals.push_back(Dzx);	
 		}
 	}	
 
 	bfsfile.close();
+	
+	return orbitals;
 
 	/*
 		// * H * //
@@ -145,6 +201,6 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
 			orbitals.push_back(O2py);
 			orbitals.push_back(O2pz);
 		}
-	*/
 	return orbitals;
+	*/
 }

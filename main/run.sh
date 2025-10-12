@@ -13,13 +13,13 @@ infile="acetaldehyde.inp"
 method="RHF"
 
 # basis set
-basis="STO-3G"
+basis="def2-SVP"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
 sps="3"
 
 # convergence criterion (energy)
-eps="1e-8"
+eps="1e-6"
 
 # maximum number of scf iterations
 max_cycles="100"
