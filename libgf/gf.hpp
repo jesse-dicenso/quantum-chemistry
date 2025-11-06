@@ -20,7 +20,7 @@ class GF{
 		
 		std::vector<double> N;
 
-		void setN(double nrm);
+		double evaluate(double x, double y, double z) const;
 
 		friend bool operator== (const GF &g1, const GF &g2);
 

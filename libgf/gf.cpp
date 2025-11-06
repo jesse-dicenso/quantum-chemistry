@@ -40,6 +40,15 @@ GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<do
 	}
 }
 
+double GF::evaluate(double x, double y, double z) const{
+	double sum = 0;
+	double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
+	for(int i = 0; i < exps.size(); i++){
+		sum += N[i] * d[i] * exp(-exps[i]*r2);
+	}
+	return sum * pow(x-xyz[0], shell[0]) * pow(y-xyz[1], shell[1]) * pow(z-xyz[2], shell[2]);
+}
+
 bool operator== (const GF &g1, const GF &g2){
 	if((g1.exps==g2.exps) && (g1.d==g2.d) && (g1.xyz==g2.xyz) && (g1.shell==g2.shell)){
 		return true;

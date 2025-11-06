@@ -1,16 +1,16 @@
 #include "quadrature.hpp"
 
 // Lebedev quadrature of order 25, Gauss-Chebyshev quadrature of the second kind
-double lebedev_gauss_chebyshev(double (*func)(double, double, double), double bragg_slater_r, int gauss_chebyshev_n){
+double lebedev_gauss_chebyshev(double (*func)(double, double, double, void*), void* ctx, double c_x, double c_y, double c_z, double bragg_slater_r, int gauss_chebyshev_n){
 	double sum = 0;
 	double gauss_chebyshev_x, gauss_chebyshev_w, gauss_chebyshev_factor, r;
 	for(int i = 1; i <= gauss_chebyshev_n; i++){
 		gauss_chebyshev_x = std::cos(M_PI * i / (gauss_chebyshev_n + 1));
 		gauss_chebyshev_w = pow(std::sin(M_PI * i / (gauss_chebyshev_n + 1)), 2) * M_PI / (gauss_chebyshev_n + 1);
-		r = bragg_slater_r * (1 + gauss_chebyshev_x) / (1 - gauss_chebyshev_x);
+		r = (bragg_slater_r / 2) * (1 + gauss_chebyshev_x) / (1 - gauss_chebyshev_x);
 		gauss_chebyshev_factor = 2 * pow(r / sqrt(1 - gauss_chebyshev_x * gauss_chebyshev_x), 3);
 		for(int j = 0; j < lebedev_degree; j++){
-			sum += gauss_chebyshev_w * lebedev_w[j] * gauss_chebyshev_factor * func(lebedev_x[j]*r,lebedev_y[j]*r,lebedev_z[j]*r);
+			sum += gauss_chebyshev_w * lebedev_w[j] * gauss_chebyshev_factor * func(lebedev_x[j]*r+c_x,lebedev_y[j]*r+c_y,lebedev_z[j]*r+c_z, ctx);
 		}
 	}
 	return sum;

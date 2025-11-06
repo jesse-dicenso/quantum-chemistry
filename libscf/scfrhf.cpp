@@ -63,7 +63,7 @@ void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
-	if(i < sps){
+	if(i == 0){
 		Matrix d = *p;
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		for(int j = 0; j < sps-1; j++){
@@ -73,6 +73,20 @@ void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 		SPf[sps-1] = *f;
 		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
 		SPe[sps-1] = ev;
+	}
+	else if(i < sps){
+		/*
+		Matrix d = *p;
+		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
+		for(int j = 0; j < sps-1; j++){
+			SPf[j] = SPf[j+1];
+			SPe[j] = SPe[j+1];
+		}
+		SPf[sps-1] = *f;
+		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		SPe[sps-1] = ev;
+		*/
+		R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i-1, SPf, SPe, sps, icd);
 	}
 	else{
 		std::vector<Matrix> tec(2);

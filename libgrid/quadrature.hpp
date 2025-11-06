@@ -1,10 +1,9 @@
 #ifndef QUADRATUREHEADERDEF
 #define QUADRATUREHEADERDEF
 
-//#include "../libgf/gf.hpp"
 #include<cmath>
 
-double lebedev_gauss_chebyshev(double (*func)(double, double, double), double bragg_slater_r, int gauss_chebyshev_n);
+double lebedev_gauss_chebyshev(double (*func)(double, double, double, void*), void* ctx, double c_x, double c_y, double c_z, double bragg_slater_r, int gauss_chebyshev_n);
 
 // Lebedev points and weights for n = 25 (degree 230)
 // Weights already normalized by 4PI

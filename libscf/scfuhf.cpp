@@ -71,9 +71,7 @@ void UR_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vec
 
 void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i, Matrix* SPfa, Matrix* SPfb, Matrix* SPea, Matrix* SPeb, int sps, int* icd){
 	// Uses commutation of F and P for error metric
-	// Perform fixed-point iterations until iteration number
-	// equals the subspace size, then perform DIIS iterations
-	if(i < sps){
+	if(i == 0){
 		Matrix da = *pa;
 		Matrix db = *pb;
 		UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb);
@@ -89,6 +87,9 @@ void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::ve
 		Matrix evb = transpose(x) * ((*fb) * (*pb) * s - s * (*pb) * (*fb)) * x;
 		SPea[sps-1] = eva;
 		SPeb[sps-1] = evb;
+	}
+	else if(i < sps){
+		UR_DIIS(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb, i-1, SPfa, SPfb, SPea, SPeb, sps, icd);
 	}
 	else{
 		std::vector<Matrix> tec_a(2);
@@ -179,8 +180,6 @@ void UR_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::ve
 			return;
 		}
 		
-		//double tEo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
-		//*err = tEo - *Eo;
 		*Eo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
 		
 		if(fabs(errmax_a) > fabs(errmax_b)){

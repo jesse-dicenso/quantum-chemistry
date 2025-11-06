@@ -178,8 +178,11 @@ int main(int argc, char* argv[]){
 					break;
 				}
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-				if(cycles < sps){
+				if(cycles == 1){
 					cout << setw(10) << "fp\n";
+				}
+				else if(cycles-1 < sps){
+					cout << setw(9) << "diis" << cycles - 1 - sps << '\n';
 				}
 				else{
 					cout << setw(10) << "diis\n";
@@ -235,6 +238,12 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
+//
+			double I_density = integrate_R_density(M, p, 1.35, 100);
+			double trps = Tr(p*s);
+			cout << "Integral of density = " << I_density << "\n\n";
+			cout << "Trace of PS = " << trps << "\n\n";
+//
 		}
 	}
 	// Unrestricted
@@ -292,8 +301,19 @@ int main(int argc, char* argv[]){
 					break;
 				}
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
+				/*
 				if(cycles < sps){
 					cout << setw(10) << "fp\n";
+				}
+				else{
+					cout << setw(10) << "diis\n";
+				}
+				*/
+				if(cycles == 1){
+					cout << setw(10) << "fp\n";
+				}
+				else if(cycles-1 < sps){
+					cout << setw(9) << "diis" << cycles - 1 - sps << '\n';
 				}
 				else{
 					cout << setw(10) << "diis\n";
@@ -367,6 +387,7 @@ int main(int argc, char* argv[]){
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 		}
 	}
+
 	cout << "\n***************************************\n";
 	cout <<   "*                                     *\n";
 	cout <<   "*     Thank you, have a nice day!     *\n";
