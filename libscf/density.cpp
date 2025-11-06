@@ -12,18 +12,11 @@ double R_density(double x, double y, double z, const Molecule &mol, const Matrix
 
 	// atomic
 	if(mol.Natoms == 1){
-	/*
 		for(int i = 0; i < P.rows; i++){
 			for(int j = i+1; j < P.cols; j++){
 				density += 2 * P.matrix[i][j] * mol.AOs[i].evaluate(x, y, z) * mol.AOs[j].evaluate(x, y, z);
 			}
 			density += P.matrix[i][i] * pow(mol.AOs[i].evaluate(x, y, z), 2);
-		}
-	*/
-		for(int i = 0; i < P.rows; i++){
-			for(int j = 0; j < P.cols; j++){
-				density += P.matrix[i][j] * mol.AOs[i].evaluate(x, y, z) * mol.AOs[j].evaluate(x, y, z);
-			}
 		}
 		return density;
 	}
