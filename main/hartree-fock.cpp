@@ -92,7 +92,7 @@ int main(int argc, char* argv[]){
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tmethod\t\t" << method << '\n';
 	cout << "\tbasis\t\t"  << basis_set << '\n';
-	cout << "\tsps\t\t" << sps << ' ';
+	cout << "\tsps\t\t\t" << sps << ' ';
 	if(sps==0){
 		cout << "(fixed-point)\n";
 	}
@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
 		cerr << "ERR: Unknown SCF algorithm\n";
 		return 0;
 	}
-	cout << "\teps\t\t" << setprecision(2) << eps << '\n';
+	cout << "\teps\t\t\t" << setprecision(2) << eps << '\n';
 	cout << "\tmax_cycles\t" << max_cycles << '\n';
 	cout << "\tpopulation\t" << pop << "\n\n";
 	cout << setprecision(10);
@@ -238,12 +238,12 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
-//
+/*
 			double I_density = integrate_R_density(M, p, 1.35, 100);
 			double trps = Tr(p*s);
 			cout << "Integral of density = " << I_density << "\n\n";
 			cout << "Trace of PS = " << trps << "\n\n";
-//
+*/
 		}
 	}
 	// Unrestricted

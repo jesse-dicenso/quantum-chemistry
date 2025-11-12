@@ -26,7 +26,7 @@ Molecule::Molecule(std::string file, std::string bfs){
 	}
 }
 
-std::vector<GF> AOfunctions(std::string bfs, int Zval, std::vector<double> pos){
+std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& pos){
 	// Element symbols ( elements[i] == elements[Zval-1] )
 	std::vector<std::string> elements = {
     		"H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",

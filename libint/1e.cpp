@@ -1,6 +1,6 @@
 #include "1e.hpp"
 
-double Sp(std::vector<int> L1, std::vector<int> L2, double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
+double Sp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, double exp2, const std::vector<double>& xyz1, const std::vector<double>& xyz2){
 	std::vector<double> QAB({xyz1[0]-xyz2[0], xyz1[1]-xyz2[1], xyz1[2]-xyz2[2]});
 	return	E(L1[0], L2[0], 0, exp1, exp2, QAB[0]) * 
 		E(L1[1], L2[1], 0, exp1, exp2, QAB[1]) *
@@ -18,7 +18,7 @@ double S(GF g1, GF g2){
         return sum;
 }
 
-double Tp(std::vector<int> L1, std::vector<int> L2, double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
+double Tp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, double exp2, const std::vector<double>& xyz1, const std::vector<double>& xyz2){
 	double Ix = exp2*(2*L2[0]+1)*Sp(L1,L2,exp1,exp2,xyz1,xyz2) 
 		  - 2*exp2*exp2*Sp(L1,{(L2[0]+2),L2[1],L2[2]},exp1,exp2,xyz1,xyz2) 
 		  - 0.5*L2[0]*(L2[0]-1)*Sp(L1,{(L2[0]-2+abs(L2[0]-2))/2,L2[1],L2[2]},exp1,exp2,xyz1,xyz2);
@@ -72,7 +72,7 @@ double R(int n, int t, int u, int v, double p, double XPC, double YPC, double ZP
 	}
 }
 
-double Vp(std::vector<int> L1, std::vector<int> L2, double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2, std::vector<double> xyzN){
+double Vp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, double exp2, const std::vector<double>& xyz1, const std::vector<double>& xyz2, const std::vector<double>& xyzN){
 	int i = L1[0];
 	int j = L2[0];
 	int k = L1[1];
@@ -99,7 +99,7 @@ double Vp(std::vector<int> L1, std::vector<int> L2, double exp1, double exp2, st
 	return (2*M_PI/p)*sum;
 }
 
-double V(GF g1, GF g2, std::vector<double> xyzN){
+double V(GF g1, GF g2, const std::vector<double>& xyzN){
         double sum = 0;
         for(int i = 0; i < g1.exps.size(); i++){
                 for(int j = 0; j < g2.exps.size(); j++){

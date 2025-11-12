@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # input file name
-infile="Ne.inp"
+infile="acetaldehyde.inp"
 
 # calculation method (RHF, UHF)
 method="RHF"
 
 # basis set
-basis="def2-SVP"
+basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
 sps="3"
@@ -16,7 +16,7 @@ sps="3"
 eps="1e-8"
 
 # maximum number of scf iterations
-max_cycles="50"
+max_cycles="75"
 
 # population analysis: "lowdin", "mulliken"
 pop="lowdin"

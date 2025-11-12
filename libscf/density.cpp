@@ -20,10 +20,8 @@ double R_density(double x, double y, double z, const Molecule &mol, const Matrix
 		}
 		return density;
 	}
-
-	// molecular; use Becke partitioning
 	else{
-		return 0;
+		return density;
 	}
 }
 

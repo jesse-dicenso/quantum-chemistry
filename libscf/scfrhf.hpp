@@ -5,11 +5,11 @@
 #include "../libmath/linalg.hpp"
 #include "../libmol/mol.hpp"
 
-Matrix R_density_matrix(Matrix C, int N);
-Matrix R_F(Matrix Hcore, Matrix P, std::vector<std::vector<std::vector<std::vector<double>>>> eris);
-double R_E0(Matrix P, Matrix Hcore, Matrix F);
+Matrix R_density_matrix(const Matrix& C, int N);
+Matrix R_F(const Matrix& Hcore, const Matrix& P, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris);
+double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F);
 
-void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N);
-void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd);
+void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N);
+void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd);
 
 #endif

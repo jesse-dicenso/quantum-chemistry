@@ -1,6 +1,6 @@
 #include "scfrhf.hpp"
 
-Matrix R_density_matrix(Matrix C, int N){
+Matrix R_density_matrix(const Matrix& C, int N){
 	Matrix P(C.rows, C.cols);
 	for(int i = 0; i < C.rows; i++){
 		for(int j = 0; j < C.cols; j++){
@@ -14,7 +14,7 @@ Matrix R_density_matrix(Matrix C, int N){
 	return P;
 }
 
-Matrix R_F(Matrix Hcore, Matrix P, std::vector<std::vector<std::vector<std::vector<double>>>> g){
+Matrix R_F(const Matrix& Hcore,const Matrix& P, const std::vector<std::vector<std::vector<std::vector<double>>>>& g){
 	Matrix G(P.rows, P.cols);
 	double sum;
 	for(int mu = 0; mu < G.rows; mu++){
@@ -31,7 +31,7 @@ Matrix R_F(Matrix Hcore, Matrix P, std::vector<std::vector<std::vector<std::vect
 	return Hcore + G;
 }
 
-double R_E0(Matrix P, Matrix Hcore, Matrix F){
+double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F){
 	double sum = 0;
 	for(int i = 0; i < P.rows; i++){
 		for(int j = 0; j < P.cols; j++){
@@ -41,7 +41,7 @@ double R_E0(Matrix P, Matrix Hcore, Matrix F){
 	return 0.5 * sum;
 }
 
-void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N){
+void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N){
 	// Uses Ediff between iterations for error metric
 	std::vector<Matrix> tec(2);
 	double tEo;
@@ -59,7 +59,7 @@ void R_FPI(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vect
 	*p   = R_density_matrix(*c, N);
 }
 
-void R_DIIS(Matrix s, Matrix hcore, std::vector<std::vector<std::vector<std::vector<double>>>> eris, Matrix x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd){
+void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd){
 	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations

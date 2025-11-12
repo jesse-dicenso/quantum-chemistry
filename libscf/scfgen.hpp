@@ -5,9 +5,9 @@
 #include "../libmath/linalg.hpp"
 #include "../libmol/mol.hpp"
 
-Matrix overlap(std::vector<GF> phis);
-Matrix kinetic(std::vector<GF> phis);
-Matrix nuclear(std::vector<GF> phis, std::vector<int> Zvals, std::vector<std::vector<double>> xyzN);
-double nucrepl(std::vector<int> Z, std::vector<std::vector<double>> xyzN);
+Matrix overlap(const std::vector<GF>& phis);
+Matrix kinetic(const std::vector<GF>& phis);
+Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const std::vector<std::vector<double>>& xyzN);
+double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>& xyzN);
 
 #endif

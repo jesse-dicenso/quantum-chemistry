@@ -1,6 +1,6 @@
 #include "scfgen.hpp"
 
-Matrix overlap(std::vector<GF> phis){
+Matrix overlap(const std::vector<GF>& phis){
 	Matrix M(phis.size(),phis.size());
 	for(int i = 0; i < phis.size(); i++){
 		for(int j = 0; j < phis.size(); j++){
@@ -10,7 +10,7 @@ Matrix overlap(std::vector<GF> phis){
 	return M;
 }
 
-Matrix kinetic(std::vector<GF> phis){
+Matrix kinetic(const std::vector<GF>& phis){
 	Matrix M(phis.size(),phis.size());
 	for(int i = 0; i < phis.size(); i++){
 		for(int j = 0; j < phis.size(); j++){
@@ -20,7 +20,7 @@ Matrix kinetic(std::vector<GF> phis){
 	return M;
 }
 
-Matrix nuclear(std::vector<GF> phis, std::vector<int> Zvals, std::vector<std::vector<double>> xyzN){
+Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const std::vector<std::vector<double>>& xyzN){
 	Matrix M(phis.size(),phis.size());
 	for(int i = 0; i < phis.size(); i++){
 		for(int j = 0; j < phis.size(); j++){
@@ -32,7 +32,7 @@ Matrix nuclear(std::vector<GF> phis, std::vector<int> Zvals, std::vector<std::ve
 	return M;
 }
 
-double nucrepl(std::vector<int> Z, std::vector<std::vector<double>> xyzN){
+double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>& xyzN){
 	double sum = 0;
 	double Rij;
 	std::vector<double> Ri;
