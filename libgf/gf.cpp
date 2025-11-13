@@ -2,7 +2,7 @@
 
 // class GF
 
-GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl){
+GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl, int atom_idx){
 	assert(exponents.size()==coeffs.size());
 	assert(pos.size()==3);
 	assert(shl.size()==3);
@@ -12,6 +12,7 @@ GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<do
 	d = coeffs;
 	xyz = pos;
 	shell = shl;
+	atom_index = atom_idx;
 
 	int l = shell[0];
 	int m = shell[1];
@@ -50,7 +51,7 @@ double GF::evaluate(double x, double y, double z) const{
 }
 
 bool operator== (const GF &g1, const GF &g2){
-	if((g1.exps==g2.exps) && (g1.d==g2.d) && (g1.xyz==g2.xyz) && (g1.shell==g2.shell)){
+	if((g1.exps==g2.exps) && (g1.d==g2.d) && /* (g1.xyz==g2.xyz) && */ (g1.shell==g2.shell) && (g1.atom_index==g2.atom_index)){
 		return true;
 	}
 	else{

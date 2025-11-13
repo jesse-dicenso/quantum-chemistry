@@ -11,12 +11,14 @@
 
 class GF{
 	public:
-		GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl);
+		GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl, int atom_idx);
 		
 		std::vector<double> exps;
 		std::vector<double> d;
 		std::vector<double> xyz;
 		std::vector<int> shell;
+		
+		int atom_index;
 		
 		std::vector<double> N;
 

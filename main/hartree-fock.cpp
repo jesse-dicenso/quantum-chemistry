@@ -238,12 +238,12 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
-/*
-			double I_density = integrate_R_density(M, p, 1.35, 100);
+//
+			double I_density = integrate_R(M, p, 100);
 			double trps = Tr(p*s);
 			cout << "Integral of density = " << I_density << "\n\n";
 			cout << "Trace of PS = " << trps << "\n\n";
-*/
+//
 		}
 	}
 	// Unrestricted
@@ -400,9 +400,8 @@ vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
 	Matrix ShPSh = m_sqrt(S) * P * m_sqrt(S);
 	for(int i = 0; i < M.Zvals.size(); i++){
 		double sum = 0;
-		vector<int> positions;
 		for(int j = 0; j < M.AOs.size(); j++){
-			if(M.AOs[j].xyz==M.xyz[i]){
+			if(M.AOs[j].atom_index==i){
 				sum += ShPSh.matrix[j][j];
 			}
 		}
@@ -416,9 +415,8 @@ vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 	Matrix PS = P * S;
 	for(int i = 0; i < M.Zvals.size(); i++){
 		double sum = 0;
-		vector<int> positions;
 		for(int j = 0; j < M.AOs.size(); j++){
-			if(M.AOs[j].xyz==M.xyz[i]){
+			if(M.AOs[j].atom_index==i){
 				sum += PS.matrix[j][j];
 			}
 		}

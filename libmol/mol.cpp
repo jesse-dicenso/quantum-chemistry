@@ -19,14 +19,14 @@ Molecule::Molecule(std::string file, std::string bfs){
 	basis = bfs;
 	std::vector<GF> temp;	
 	for(int j = 0; j < Natoms; j++){
-		temp = AOfunctions(basis, Zvals[j], xyz[j]);
+		temp = AOfunctions(basis, Zvals[j], xyz[j], j);
 		for(int k = 0; k < temp.size(); k++){
 			AOs.push_back(temp[k]);
 		}
 	}
 }
 
-std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& pos){
+std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& pos, int atom_idx){
 	// Element symbols ( elements[i] == elements[Zval-1] )
 	std::vector<std::string> elements = {
     		"H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",
@@ -83,7 +83,7 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>
 				bfsfile >> zeta[j] >> d[j];
 				zeta[j]*=zeta_scale;
 			}
-			GF S(zeta, d, pos, Ls);
+			GF S(zeta, d, pos, Ls, atom_idx);
 			orbitals.push_back(S);
 		}
 		else if(shell=="SP"){
@@ -92,10 +92,10 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>
 				bfsfile >> zeta[j] >> d[j] >> d2[j];
 				zeta[j]*=zeta_scale;
 			}
-			GF S (zeta, d , pos, Ls );
-			GF Px(zeta, d2, pos, Lpx);
-			GF Py(zeta, d2, pos, Lpy);
-			GF Pz(zeta, d2, pos, Lpz);
+			GF S (zeta, d , pos, Ls , atom_idx);
+			GF Px(zeta, d2, pos, Lpx, atom_idx);
+			GF Py(zeta, d2, pos, Lpy, atom_idx);
+			GF Pz(zeta, d2, pos, Lpz, atom_idx);
 			orbitals.push_back(S );	
 			orbitals.push_back(Px);	
 			orbitals.push_back(Py);	
@@ -106,9 +106,9 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>
 				bfsfile >> zeta[j] >> d[j];
 				zeta[j]*=zeta_scale;
 			}
-			GF Px(zeta, d, pos, Lpx);
-			GF Py(zeta, d, pos, Lpy);
-			GF Pz(zeta, d, pos, Lpz);
+			GF Px(zeta, d, pos, Lpx, atom_idx);
+			GF Py(zeta, d, pos, Lpy, atom_idx);
+			GF Pz(zeta, d, pos, Lpz, atom_idx);
 			orbitals.push_back(Px);	
 			orbitals.push_back(Py);	
 			orbitals.push_back(Pz);	
@@ -118,12 +118,12 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>
 				bfsfile >> zeta[j] >> d[j];
 				zeta[j]*=zeta_scale;
 			}
-			GF Dx2(zeta, d, pos, Ldx2);
-			GF Dy2(zeta, d, pos, Ldy2);
-			GF Dz2(zeta, d, pos, Ldz2);
-			GF Dxy(zeta, d, pos, Ldxy);
-			GF Dyz(zeta, d, pos, Ldyz);
-			GF Dzx(zeta, d, pos, Ldzx);
+			GF Dx2(zeta, d, pos, Ldx2, atom_idx);
+			GF Dy2(zeta, d, pos, Ldy2, atom_idx);
+			GF Dz2(zeta, d, pos, Ldz2, atom_idx);
+			GF Dxy(zeta, d, pos, Ldxy, atom_idx);
+			GF Dyz(zeta, d, pos, Ldyz, atom_idx);
+			GF Dzx(zeta, d, pos, Ldzx, atom_idx);
 			orbitals.push_back(Dx2);	
 			orbitals.push_back(Dy2);	
 			orbitals.push_back(Dz2);	
@@ -136,68 +136,4 @@ std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>
 	bfsfile.close();
 	
 	return orbitals;
-
-	/*
-		// * H * //
-		if(Zval==1){
-			// 1s
-			std::vector<double> a1s({0.3425250914e1,0.6239137298,0.1688554040});
-			std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
-			GF H1s(a1s, d1s, pos, Ls);
-			orbitals.push_back(H1s);
-		}
-		// * He * //
-		else if(Zval==2){
-			// 1s
-			// Basis set exchange:
-			//std::vector<double> a1s({0.6362421394e1,0.1158922999e1,0.3136497915});
-			//std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
-			// Szabo-Ostlund:
-			std::vector<double> a1s({0.480844,1.776691,9.753934});
-			std::vector<double> d1s({0.444635,0.535328,0.154329});
-			GF He1s(a1s, d1s, pos, Ls);
-			orbitals.push_back(He1s);
-		}
-		// * C * //
-		else if(Zval==6){
-			// 1s
-			std::vector<double> a1s({0.7161683735e2,0.1304509632e2,0.3530512160e1});
-			std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
-			GF C1s(a1s, d1s, pos, Ls);
-			orbitals.push_back(C1s);
-			// 2s, 2p
-			std::vector<double> a2sp({0.2941249355e1,0.6834830964,0.2222899159});
-			std::vector<double> d2s ({-0.9996722919e-1,0.3995128261,0.7001154689});
-			std::vector<double> d2p ({0.1559162750,0.6076837186,0.3919573931});
-			GF C2s (a2sp, d2s, pos, Ls );
-			GF C2px(a2sp, d2p, pos, Lpx);
-			GF C2py(a2sp, d2p, pos, Lpy);
-			GF C2pz(a2sp, d2p, pos, Lpz);
-			orbitals.push_back(C2s );
-			orbitals.push_back(C2px);
-			orbitals.push_back(C2py);
-			orbitals.push_back(C2pz);
-		}
-		// * O * //
-		else if(Zval==8){
-			// 1s
-			std::vector<double> a1s({0.1307093214e3,0.2380886605e2,0.6443608313e1});
-			std::vector<double> d1s({0.1543289673,0.5353281423,0.4446345422});
-			GF O1s(a1s, d1s, pos, Ls);
-			orbitals.push_back(O1s);
-			// 2s, 2p
-			std::vector<double> a2sp({0.5033151319e1,0.1169596125e1,0.3803889600});
-			std::vector<double> d2s ({-0.9996722919e-1,0.3995128261,0.7001154689});
-			std::vector<double> d2p ({0.1559162750,0.6076837186,0.3919573931});
-			GF O2s (a2sp, d2s, pos, Ls );
-			GF O2px(a2sp, d2p, pos, Lpx);
-			GF O2py(a2sp, d2p, pos, Lpy);
-			GF O2pz(a2sp, d2p, pos, Lpz);
-			orbitals.push_back(O2s );
-			orbitals.push_back(O2px);
-			orbitals.push_back(O2py);
-			orbitals.push_back(O2pz);
-		}
-	return orbitals;
-	*/
 }

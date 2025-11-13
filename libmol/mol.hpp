@@ -21,6 +21,6 @@ class Molecule{
 		std::vector<GF> AOs;
 };
 
-std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& xyz);
+std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& xyz, int atom_idx);
 
 #endif
