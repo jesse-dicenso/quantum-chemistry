@@ -119,7 +119,9 @@ int main(int argc, char* argv[]){
 	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
     cout.flush();
 	
+	cout << "Computing ERIs..." << endl;
 	eris = ERIs(M.AOs);
+	cout << "ERIs computed.\n" << endl;
 
 	if(r){
 		cout << "Performing restricted Hartree Fock...\n";	

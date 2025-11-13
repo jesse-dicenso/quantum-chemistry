@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile="H2.inp"
+infile="CO2.inp"
 
 # calculation method (RHF, UHF)
 method="RHF"

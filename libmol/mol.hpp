@@ -13,6 +13,7 @@ class Molecule{
 
 		int Natoms;
 		std::vector<int> Zvals;
+		bool heteronuclear;
 		int charge;
 		int Nelec;
 		int NUPDOWN;

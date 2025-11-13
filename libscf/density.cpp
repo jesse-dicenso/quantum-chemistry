@@ -11,15 +11,15 @@ double R_atomic_density(double x, double y, double z, const Molecule &mol, const
 	double density = 0;
 	double eval_gf;
 	for(int i = 0; i < P.rows; i++){
-		if(mol.AOs[i].atom_index == atom_i){
+	//	if(mol.AOs[i].atom_index == atom_i){
 			eval_gf = mol.AOs[i].evaluate(x, y, z);
 			for(int j = i+1; j < P.cols; j++){
-				if(mol.AOs[j].atom_index == atom_i){
+	//			if(mol.AOs[j].atom_index == atom_i){
 					density += 2 * P.matrix[i][j] * eval_gf * mol.AOs[j].evaluate(x, y, z);
-				}
+	//			}
 			}
 			density += P.matrix[i][i] * eval_gf * eval_gf;
-		}
+	//	}
 	}
 	return density;
 }
@@ -55,28 +55,56 @@ double becke_weight(double x, double y, double z, int l, int k, const Molecule &
 	assert(l < mol.Natoms);
 	double r_i, r_j, R_ij, mu_ij, P_i, P_l = 0;
 	double sum_P = 0;
-	for(int i = 0; i < mol.Natoms; i++){
-		P_i = 1;
-		r_i = sqrt(	(x-mol.xyz[i][0])*(x-mol.xyz[i][0]) + 
-					(y-mol.xyz[i][1])*(y-mol.xyz[i][1]) + 
-					(z-mol.xyz[i][2])*(z-mol.xyz[i][2]));
-		for(int j = 0; j < mol.Natoms; j++){
-			if(j != i){
-				r_j  = sqrt((x-mol.xyz[j][0])*(x-mol.xyz[j][0]) + 
-							(y-mol.xyz[j][1])*(y-mol.xyz[j][1]) + 
-							(z-mol.xyz[j][2])*(z-mol.xyz[j][2]));
-				R_ij = sqrt((mol.xyz[i][0]-mol.xyz[j][0])*(mol.xyz[i][0]-mol.xyz[j][0]) + 
-							(mol.xyz[i][1]-mol.xyz[j][1])*(mol.xyz[i][1]-mol.xyz[j][1]) + 
-							(mol.xyz[i][2]-mol.xyz[j][2])*(mol.xyz[i][2]-mol.xyz[j][2]));
-				mu_ij = (r_i - r_j) / R_ij;
-				P_i *= 0.5 * (1 - becke_step(mu_ij, k));
+
+	if(mol.heteronuclear){
+	double u_ij, a_ij = 0;
+		for(int i = 0; i < mol.Natoms; i++){
+			P_i = 1;
+			r_i = sqrt(	(x-mol.xyz[i][0])*(x-mol.xyz[i][0]) + 
+						(y-mol.xyz[i][1])*(y-mol.xyz[i][1]) + 
+						(z-mol.xyz[i][2])*(z-mol.xyz[i][2]));
+			for(int j = 0; j < mol.Natoms; j++){
+				if(j != i){
+					r_j  = sqrt((x-mol.xyz[j][0])*(x-mol.xyz[j][0]) + 
+								(y-mol.xyz[j][1])*(y-mol.xyz[j][1]) + 
+								(z-mol.xyz[j][2])*(z-mol.xyz[j][2]));
+					R_ij = sqrt((mol.xyz[i][0]-mol.xyz[j][0])*(mol.xyz[i][0]-mol.xyz[j][0]) + 
+								(mol.xyz[i][1]-mol.xyz[j][1])*(mol.xyz[i][1]-mol.xyz[j][1]) + 
+								(mol.xyz[i][2]-mol.xyz[j][2])*(mol.xyz[i][2]-mol.xyz[j][2]));
+					mu_ij = (r_i - r_j) / R_ij;
+					u_ij  = ( (bragg_slater_radii[mol.Zvals[i]] / bragg_slater_radii[mol.Zvals[j]]) - 1 ) / 
+							( (bragg_slater_radii[mol.Zvals[i]] / bragg_slater_radii[mol.Zvals[j]]) + 1 );
+					a_ij  = std::max(-0.5, std::min(0.5, u_ij / (u_ij * u_ij - 1) ));
+					mu_ij += a_ij * ( 1 - mu_ij * mu_ij );
+					P_i *= 0.5 * (1 - becke_step(mu_ij, k));
+				}
 			}
+			if(i == l) {P_l = P_i;}
+			sum_P += P_i;
 		}
-		std::cout << "P_i = " << P_i << std::endl;
-		if(i == l) {P_l = P_i;}
-		sum_P += P_i;
 	}
-	std::cout << "sum_P = " << sum_P << std::endl;
+	else{
+		for(int i = 0; i < mol.Natoms; i++){
+			P_i = 1;
+			r_i = sqrt(	(x-mol.xyz[i][0])*(x-mol.xyz[i][0]) + 
+						(y-mol.xyz[i][1])*(y-mol.xyz[i][1]) + 
+						(z-mol.xyz[i][2])*(z-mol.xyz[i][2]));
+			for(int j = 0; j < mol.Natoms; j++){
+				if(j != i){
+					r_j  = sqrt((x-mol.xyz[j][0])*(x-mol.xyz[j][0]) + 
+								(y-mol.xyz[j][1])*(y-mol.xyz[j][1]) + 
+								(z-mol.xyz[j][2])*(z-mol.xyz[j][2]));
+					R_ij = sqrt((mol.xyz[i][0]-mol.xyz[j][0])*(mol.xyz[i][0]-mol.xyz[j][0]) + 
+								(mol.xyz[i][1]-mol.xyz[j][1])*(mol.xyz[i][1]-mol.xyz[j][1]) + 
+								(mol.xyz[i][2]-mol.xyz[j][2])*(mol.xyz[i][2]-mol.xyz[j][2]));
+					mu_ij = (r_i - r_j) / R_ij;
+					P_i *= 0.5 * (1 - becke_step(mu_ij, k));
+				}
+			}
+			if(i == l) {P_l = P_i;}
+			sum_P += P_i;
+		}
+	}
 	return P_l / sum_P;
 }
 

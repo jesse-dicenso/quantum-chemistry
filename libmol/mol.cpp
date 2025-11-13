@@ -7,11 +7,15 @@ Molecule::Molecule(std::string file, std::string bfs){
 	Nelec = 0;
 	inpfile >> Natoms >> charge >> NUPDOWN;
 	Nelec = -charge;
+	heteronuclear = false;
 	Zvals.resize(Natoms);
 	xyz.resize(Natoms);
 	for(int i = 0; i < Natoms; i++){
 		xyz[i].resize(3);
 		inpfile >> Zvals[i] >> xyz[i][0] >> xyz[i][1] >> xyz[i][2];
+		if(Zvals[i] != Zvals[0]){
+			heteronuclear = true;
+		}
 		Nelec += Zvals[i];
 	}
 	inpfile.close();
