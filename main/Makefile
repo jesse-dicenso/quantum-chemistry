@@ -16,8 +16,11 @@ gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
 mol.o: ../libmol/mol.cpp ../libmol/mol.hpp ../libgf/gf.hpp
 	g++ -c -O ../libmol/mol.cpp
 
-quadrature.o: ../libgrid/quadrature.cpp ../libgrid/quadrature.hpp
-	g++ -c -O ../libgrid/quadrature.cpp
+#quadrature.o: ../libgrid/quadrature.cpp ../libgrid/quadrature.hpp
+#	g++ -c -O ../libgrid/quadrature.cpp
+
+grid.o: ../libgrid/grid.cpp ../libgrid/grid.hpp ../libmol/mol.hpp
+	g++ -c -O ../libgrid/grid.cpp
 
 density.o: ../libscf/density.cpp ../libmath/linalg.hpp ../libgf/gf.hpp ../libmol/mol.hpp ../libgrid/quadrature.hpp ../libscf/density.hpp
 	g++ -c -O ../libscf/density.cpp
@@ -34,8 +37,8 @@ scfuhf.o: ../libscf/scfuhf.cpp ../libscf/scfuhf.hpp ../libint/2e.hpp ../libmath/
 hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libscf/density.hpp ../libscf/scfgen.hpp ../libscf/scfrhf.hpp ../libscf/scfuhf.hpp
 	g++ -c -O hartree-fock.cpp
 
-hartree-fock: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o quadrature.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o
-	g++ -O -o hartree-fock miscmath.o linalg.o gf.o 1e.o 2e.o mol.o quadrature.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o -llapack -lblas
+HF-EXEC: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o grid.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o
+	g++ -O -o HF-EXEC miscmath.o linalg.o gf.o 1e.o 2e.o mol.o grid.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o -llapack -lblas
 
 clean:
 	rm -f *.o

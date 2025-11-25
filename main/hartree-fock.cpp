@@ -241,7 +241,8 @@ int main(int argc, char* argv[]){
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 //
-			double I_density = integrate_R(M, p, 100);
+			grid mol_grid(M);
+			double I_density = integrate_R_density(mol_grid, M, p);
 			double trps = Tr(p*s);
 			cout << "Integral of density = " << I_density << "\n\n";
 			cout << "Trace of PS = " << trps << "\n\n";

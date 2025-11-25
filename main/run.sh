@@ -10,7 +10,7 @@ method="RHF"
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps="3"
+sps="0"
 
 # convergence criterion (energy)
 eps="1e-8"
@@ -22,4 +22,4 @@ max_cycles="75"
 pop="lowdin"
 
 echo "Running..."
-time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./hartree-fock
+time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./HF-EXEC

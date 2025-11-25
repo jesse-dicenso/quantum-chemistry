@@ -1,38 +1,60 @@
 #include "density.hpp"
 
-struct R_context{
+struct R_density_context{
 	const Molecule 	*molecule;
 	const Matrix	*Pmatrix;
-	int 			atom_idx;
+	//int 			atom_idx;
 };
 
-double R_atomic_density(double x, double y, double z, const Molecule &mol, const Matrix &P, int atom_i){
+/*
+double R_density(double x, double y, double z, const Molecule &mol, const Matrix &P){
 	assert(mol.NUPDOWN==0);
 	double density = 0;
 	double eval_gf;
 	for(int i = 0; i < P.rows; i++){
-	//	if(mol.AOs[i].atom_index == atom_i){
 			eval_gf = mol.AOs[i].evaluate(x, y, z);
 			for(int j = i+1; j < P.cols; j++){
-	//			if(mol.AOs[j].atom_index == atom_i){
 					density += 2 * P.matrix[i][j] * eval_gf * mol.AOs[j].evaluate(x, y, z);
-	//			}
 			}
 			density += P.matrix[i][i] * eval_gf * eval_gf;
-	//	}
+	}
+	return density;
+}
+*/
+/*
+double R_density_wrapper(double x, double y, double z, void* ctx){
+	R_density_context* r_ctx = static_cast<R_density_context*>(ctx);
+	if(r_ctx->molecule->Natoms == 1){
+		return R_density(x, y, z, *r_ctx->molecule, *r_ctx->Pmatrix, 0);
+	}
+	return becke_weight(x, y, z, r_ctx->atom_idx, 3, *r_ctx->molecule) * 
+		   R_density(x, y, z, *r_ctx->molecule, *r_ctx->Pmatrix, r_ctx->atom_idx);
+}
+*/
+
+double R_density(double x, double y, double z, void* ctx){
+	R_density_context* r_ctx = static_cast<R_density_context*>(ctx);
+	const Molecule *mol = r_ctx->molecule;
+	assert(mol->NUPDOWN==0);
+	const Matrix *P = r_ctx->Pmatrix;
+	double density = 0;
+	double eval_gf;
+	for(int i = 0; i < P->rows; i++){
+			eval_gf = mol->AOs[i].evaluate(x, y, z);
+			for(int j = i+1; j < P->cols; j++){
+					density += 2 * P->matrix[i][j] * eval_gf * mol->AOs[j].evaluate(x, y, z);
+			}
+			density += P->matrix[i][i] * eval_gf * eval_gf;
 	}
 	return density;
 }
 
-double R_atomic_density_wrapper(double x, double y, double z, void* ctx){
-	R_context* r_ctx = static_cast<R_context*>(ctx);
-	if(r_ctx->molecule->Natoms == 1){
-		return R_atomic_density(x, y, z, *r_ctx->molecule, *r_ctx->Pmatrix, 0);
-	}
-	return becke_weight(x, y, z, r_ctx->atom_idx, 3, *r_ctx->molecule) * 
-		   R_atomic_density(x, y, z, *r_ctx->molecule, *r_ctx->Pmatrix, r_ctx->atom_idx);
+double integrate_R_density(const grid &g, const Molecule &mol, const Matrix &P){
+	R_density_context ctx = {&mol, &P};
+	return integrate_quad(g, R_density, &ctx);
 }
 
+/*
 double integrate_R(const Molecule &mol, const Matrix &P, int n){
 	double result = 0;
 	R_context ctx = {&mol, &P, 0};
@@ -241,3 +263,5 @@ const double bragg_slater_radii[118] = {
 	3.307020720338619,	// Ts
 	3.307020720338619	// Og
 };
+
+*/
