@@ -23,9 +23,9 @@ grid::grid(const Molecule &mol, int num_radial, int num_angular, int becke_k){
 			gauss_chebyshev_w = std::sin(M_PI * i / (num_radial + 1));
 			gauss_chebyshev_w *= gauss_chebyshev_w * M_PI / (num_radial + 1) * gauss_chebyshev_factor;
 			for(int j = 0; j < num_angular; j++){
-				x[idx] = lebedev_x[j] + r * mol.xyz[0][0];
-				y[idx] = lebedev_y[j] + r * mol.xyz[0][1];
-				z[idx] = lebedev_z[j] + r * mol.xyz[0][2];
+				x[idx] = lebedev_x[j] * r + mol.xyz[0][0];
+				y[idx] = lebedev_y[j] * r + mol.xyz[0][1];
+				z[idx] = lebedev_z[j] * r + mol.xyz[0][2];
 				w[idx] = gauss_chebyshev_w * lebedev_w[j];
 				idx += 1;
 			}
@@ -41,9 +41,9 @@ grid::grid(const Molecule &mol, int num_radial, int num_angular, int becke_k){
 				gauss_chebyshev_w = std::sin(M_PI * i / (num_radial + 1));
 				gauss_chebyshev_w *= gauss_chebyshev_w * M_PI / (num_radial + 1) * gauss_chebyshev_factor;
 				for(int j = 0; j < num_angular; j++){
-					x[idx] = lebedev_x[j] + r * mol.xyz[atom][0];
-					y[idx] = lebedev_y[j] + r * mol.xyz[atom][1];
-					z[idx] = lebedev_z[j] + r * mol.xyz[atom][2];
+					x[idx] = lebedev_x[j] * r + mol.xyz[atom][0];
+					y[idx] = lebedev_y[j] * r + mol.xyz[atom][1];
+					z[idx] = lebedev_z[j] * r + mol.xyz[atom][2];
 					w[idx] = gauss_chebyshev_w * lebedev_w[j] * becke_weight(mol, x[idx], y[idx], z[idx], atom, becke_k);
 					idx += 1;
 				}
@@ -76,8 +76,8 @@ double becke_weight(const Molecule &mol, double x, double y, double z, int atom_
 								(mol.xyz[i][1]-mol.xyz[j][1])*(mol.xyz[i][1]-mol.xyz[j][1]) + 
 								(mol.xyz[i][2]-mol.xyz[j][2])*(mol.xyz[i][2]-mol.xyz[j][2]));
 					mu_ij = (r_i - r_j) / R_ij;
-					u_ij  = ( (bragg_slater_radii[mol.Zvals[i]] / bragg_slater_radii[mol.Zvals[j]]) - 1 ) / 
-							( (bragg_slater_radii[mol.Zvals[i]] / bragg_slater_radii[mol.Zvals[j]]) + 1 );
+					u_ij  = ( (bragg_slater_radii[mol.Zvals[i]-1] / bragg_slater_radii[mol.Zvals[j]-1]) - 1 ) / 
+							( (bragg_slater_radii[mol.Zvals[i]-1] / bragg_slater_radii[mol.Zvals[j]-1]) + 1 );
 					a_ij  = std::max(-0.5, std::min(0.5, u_ij / (u_ij * u_ij - 1) ));
 					mu_ij += a_ij * ( 1 - mu_ij * mu_ij );
 					P_i *= 0.5 * (1 - becke_step(mu_ij, k));
