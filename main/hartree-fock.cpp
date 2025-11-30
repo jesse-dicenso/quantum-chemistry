@@ -172,10 +172,10 @@ int main(int argc, char* argv[]){
 			}
 		}
 		else{
-			vector<Matrix> SPf(sps, zero(K, K));
-			vector<Matrix> SPe(sps, zero(K, K));
+			vector<Matrix> SPf(0, zero(K, K));
+			vector<Matrix> SPe(0, zero(K, K)); // prev: sps, zero...
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf.data(), SPe.data(), sps, &icd);
+				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd); // prev: SPf/e.data()
 				if(icd!=0){
 					break;
 				}

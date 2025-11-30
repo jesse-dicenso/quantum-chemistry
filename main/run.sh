@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile="CO2.inp"
+infile="H2O.inp"
 
 # calculation method (RHF, UHF)
 method="RHF"
@@ -10,13 +10,13 @@ method="RHF"
 basis="STO-3G"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps="0"
+sps="5"
 
 # convergence criterion (energy)
 eps="1e-8"
 
 # maximum number of scf iterations
-max_cycles="75"
+max_cycles="50"
 
 # population analysis: "lowdin", "mulliken"
 pop="lowdin"
