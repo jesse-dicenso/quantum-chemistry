@@ -193,16 +193,14 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		}
 		Matrix RHS(sps+1, 1);
 		RHS.matrix[sps][0] = -1;
+
 		weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
 			std::cout.flush();
 			return;
 		}
-
-		SPf.erase(SPf.begin());		
-		SPe.erase(SPe.begin());		
-
+		
 		// Build fock matrix from previous fock matrices and weights
 		*f = zero(p->rows, p->cols);
 		for(int j = 0; j < sps; j++){
@@ -218,5 +216,8 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*co  = tec[1];
 		*c   = x * (*co);
 		*p   = R_density_matrix(*c, N);
+
+		SPf.erase(SPf.begin());		
+		SPe.erase(SPe.begin());		
 	}
 }
