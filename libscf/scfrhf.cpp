@@ -61,7 +61,7 @@ void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<s
 
 void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd){
 	// Uses commutation of F and P for error metric
-	if(i == 1){
+	if(i == 1){	
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		/*
 		for(int j = 0; j < sps-1; j++){
@@ -135,7 +135,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		for(int j = 0; j < i; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
-		
+
 		*Eo  = R_E0(*p, hcore, *f);
 		*err = errmax;
 
@@ -154,7 +154,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	
 		*f   = R_F(hcore, *p, eris);
 		
-		// Store f, update error vectors
+		/* Store f, update error vectors
 		for(int j = 0; j < sps-1; j++){
 			SPf[j] = SPf[j+1];
 			SPe[j] = SPe[j+1];
@@ -162,6 +162,11 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		SPf[sps-1] = *f;
 		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
 		SPe[sps-1] = ev;
+		*/
+
+		SPf.push_back(*f);
+		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		SPe.push_back(ev);
 
 		errmax = SPe[0].matrix[0][0];
 		for(int j = 0; j < sps; j++){
@@ -194,7 +199,10 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 			std::cout.flush();
 			return;
 		}
-		
+
+		SPf.erase(SPf.begin());		
+		SPe.erase(SPe.begin());		
+
 		// Build fock matrix from previous fock matrices and weights
 		*f = zero(p->rows, p->cols);
 		for(int j = 0; j < sps; j++){
