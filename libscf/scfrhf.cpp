@@ -63,7 +63,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	// Uses commutation of F and P for error metric
 	// Perform fixed-point iterations until iteration number
 	// equals the subspace size, then perform DIIS iterations
-	if(i == 0){
+	if(i == 1){
 		Matrix d = *p;
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		for(int j = 0; j < sps-1; j++){
@@ -86,7 +86,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
 		SPe[sps-1] = ev;
 		*/
-		R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i-1, SPf, SPe, sps, icd);
+		R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i, SPf, SPe, i-1, icd);
 	}
 	else{
 		std::vector<Matrix> tec(2);
@@ -118,17 +118,14 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 
 		// Set up linear system and solve for weights
 		Matrix LHS(sps+1, sps+1);
-		for(int j = 0; j < LHS.rows; j++){
-			for(int k = 0; k < LHS.cols; k++){
-				if((j==LHS.rows-1) && (k==LHS.cols-1)){
-					LHS.matrix[j][k] = 0;
-				}
-				else if((j==LHS.rows-1) || (k==LHS.cols-1)){
-					LHS.matrix[j][k] = -1;
-				}
-				else{
-					LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
-				}
+		LHS.matrix[sps][sps] = 0;
+		for(int j = 0; j < sps; j++){
+			LHS.matrix[sps][j] = -1;
+			LHS.matrix[j][sps] = -1;
+		}
+		for(int j = 0; j < sps; j++){
+			for(int k = 0; k < sps; k++){
+				LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
 			}
 		}
 		Matrix RHS(sps+1, 1);
@@ -140,14 +137,14 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 			return;
 		}
 		
-		*Eo  = R_E0(*p, hcore, *f);
-		*err = errmax;
-		
 		// Build fock matrix from previous fock matrices and weights
 		*f = zero(p->rows, p->cols);
 		for(int j = 0; j < sps; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
+		
+		*Eo  = R_E0(*p, hcore, *f);
+		*err = errmax;
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
