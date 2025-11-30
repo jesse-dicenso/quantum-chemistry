@@ -59,13 +59,11 @@ void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<s
 	*p   = R_density_matrix(*c, N);
 }
 
-void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, Matrix* SPf, Matrix* SPe, int sps, int* icd){
+void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd){
 	// Uses commutation of F and P for error metric
-	// Perform fixed-point iterations until iteration number
-	// equals the subspace size, then perform DIIS iterations
 	if(i == 1){
-		Matrix d = *p;
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
+		/*
 		for(int j = 0; j < sps-1; j++){
 			SPf[j] = SPf[j+1];
 			SPe[j] = SPe[j+1];
@@ -73,10 +71,13 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		SPf[sps-1] = *f;
 		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
 		SPe[sps-1] = ev;
+		*/
+		SPf.push_back(*f);
+		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		SPe.push_back(ev);	
 	}
 	else if(i < sps){
 		/*
-		Matrix d = *p;
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		for(int j = 0; j < sps-1; j++){
 			SPf[j] = SPf[j+1];
@@ -86,7 +87,64 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
 		SPe[sps-1] = ev;
 		*/
-		R_DIIS(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i, SPf, SPe, i-1, icd);
+		std::vector<Matrix> tec(2);
+		std::vector<double> weights(sps+1);
+		double tEo;
+		double errmax;
+	
+		*f   = R_F(hcore, *p, eris);
+		
+		SPf.push_back(*f);
+		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		SPe.push_back(ev);
+
+		errmax = SPe[0].matrix[0][0];
+		for(int j = 0; j < i; j++){
+			for(int k = 0; k < SPe[j].rows; k++){
+				for(int l = 0; l < SPe[j].cols; l++){
+					if(fabs(SPe[j].matrix[k][l]) > fabs(errmax)){
+						errmax = SPe[j].matrix[k][l];
+					}
+				}
+			}
+		}
+
+		// Set up linear system and solve for weights
+		Matrix LHS(i+1, i+1);
+		LHS.matrix[i][i] = 0;
+		for(int j = 0; j < i; j++){
+			LHS.matrix[i][j] = -1;
+			LHS.matrix[j][i] = -1;
+		}
+		for(int j = 0; j < i; j++){
+			for(int k = 0; k < i; k++){
+				LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
+			}
+		}
+		Matrix RHS(i+1, 1);
+		RHS.matrix[i][0] = -1;
+		weights = sym_linear_solve(LHS, RHS, icd);
+		if(*icd!=0){
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
+			std::cout.flush();
+			return;
+		}
+		
+		// Build fock matrix from previous fock matrices and weights
+		*f = zero(p->rows, p->cols);
+		for(int j = 0; j < i; j++){
+			*f = *f + SPf[j] * weights[j];
+		}
+		
+		*Eo  = R_E0(*p, hcore, *f);
+		*err = errmax;
+
+		*fo  = transpose(x) * (*f) * x;
+		tec  = diagonalize(*fo);
+		*e   = tec[0];
+		*co  = tec[1];
+		*c   = x * (*co);
+		*p   = R_density_matrix(*c, N);	
 	}
 	else{
 		std::vector<Matrix> tec(2);
