@@ -63,51 +63,28 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	// Uses commutation of F and P for error metric
 	if(i == 1){	
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
-		/*
-		for(int j = 0; j < sps-1; j++){
-			SPf[j] = SPf[j+1];
-			SPe[j] = SPe[j+1];
-		}
-		SPf[sps-1] = *f;
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-		SPe[sps-1] = ev;
-		*/
 		SPf.push_back(*f);
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
 		SPe.push_back(ev);	
 	}
 	else if(i < sps){
-		/*
-		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
-		for(int j = 0; j < sps-1; j++){
-			SPf[j] = SPf[j+1];
-			SPe[j] = SPe[j+1];
-		}
-		SPf[sps-1] = *f;
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-		SPe[sps-1] = ev;
-		*/
 		std::vector<Matrix> tec(2);
 		std::vector<double> weights(sps+1);
 		double tEo;
-		double errmax;
+		double terr = 0;
 	
 		*f   = R_F(hcore, *p, eris);
 		
 		SPf.push_back(*f);
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
 		SPe.push_back(ev);
 
-		errmax = SPe[0].matrix[0][0];
-		for(int j = 0; j < i; j++){
-			for(int k = 0; k < SPe[j].rows; k++){
-				for(int l = 0; l < SPe[j].cols; l++){
-					if(fabs(SPe[j].matrix[k][l]) > fabs(errmax)){
-						errmax = SPe[j].matrix[k][l];
-					}
-				}
+		for(int j = 0; j < SPe.back().rows; j++){
+			for(int k = 0; k < SPe.back().cols; k++){
+				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
 			}
 		}
+		*err = sqrt(terr);
 
 		// Set up linear system and solve for weights
 		Matrix LHS(i+1, i+1);
@@ -137,7 +114,6 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		}
 
 		*Eo  = R_E0(*p, hcore, *f);
-		*err = errmax;
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
@@ -150,34 +126,20 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		std::vector<Matrix> tec(2);
 		std::vector<double> weights(sps+1);
 		double tEo;
-		double errmax;
+		double terr;
 	
 		*f   = R_F(hcore, *p, eris);
 		
-		/* Store f, update error vectors
-		for(int j = 0; j < sps-1; j++){
-			SPf[j] = SPf[j+1];
-			SPe[j] = SPe[j+1];
-		}
-		SPf[sps-1] = *f;
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
-		SPe[sps-1] = ev;
-		*/
-
 		SPf.push_back(*f);
-		Matrix ev = transpose(x) * ((*f) * (*p) * s - s * (*p) * (*f)) * x;
+		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
 		SPe.push_back(ev);
 
-		errmax = SPe[0].matrix[0][0];
-		for(int j = 0; j < sps; j++){
-			for(int k = 0; k < SPe[j].rows; k++){
-				for(int l = 0; l < SPe[j].cols; l++){
-					if(fabs(SPe[j].matrix[k][l]) > fabs(errmax)){
-						errmax = SPe[j].matrix[k][l];
-					}
-				}
+		for(int j = 0; j < SPe.back().rows; j++){
+			for(int k = 0; k < SPe.back().cols; k++){
+				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
 			}
 		}
+		*err = sqrt(terr);
 
 		// Set up linear system and solve for weights
 		Matrix LHS(sps+1, sps+1);
@@ -208,7 +170,6 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		}
 		
 		*Eo  = R_E0(*p, hcore, *f);
-		*err = errmax;
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
