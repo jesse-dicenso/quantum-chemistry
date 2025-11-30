@@ -79,6 +79,8 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
 		SPe.push_back(ev);
 
+		int n = SPe.size();
+
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
 				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
@@ -87,19 +89,19 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*err = sqrt(terr);
 
 		// Set up linear system and solve for weights
-		Matrix LHS(i+1, i+1);
-		LHS.matrix[i][i] = 0;
-		for(int j = 0; j < i; j++){
-			LHS.matrix[i][j] = -1;
-			LHS.matrix[j][i] = -1;
+		Matrix LHS(n+1, n+1);
+		LHS.matrix[n][n] = 0;
+		for(int j = 0; j < n; j++){
+			LHS.matrix[n][j] = -1;
+			LHS.matrix[j][n] = -1;
 		}
-		for(int j = 0; j < i; j++){
-			for(int k = 0; k < i; k++){
+		for(int j = 0; j < n; j++){
+			for(int k = 0; k < n; k++){
 				LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
 			}
 		}
-		Matrix RHS(i+1, 1);
-		RHS.matrix[i][0] = -1;
+		Matrix RHS(n+1, 1);
+		RHS.matrix[n][0] = -1;
 		weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
@@ -109,7 +111,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		
 		// Build fock matrix from previous fock matrices and weights
 		*f = zero(p->rows, p->cols);
-		for(int j = 0; j < i; j++){
+		for(int j = 0; j < n; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
 
@@ -126,8 +128,8 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		std::vector<Matrix> tec(2);
 		std::vector<double> weights(sps+1);
 		double tEo;
-		double terr;
-	
+		double terr = 0;
+
 		*f   = R_F(hcore, *p, eris);
 		
 		SPf.push_back(*f);
