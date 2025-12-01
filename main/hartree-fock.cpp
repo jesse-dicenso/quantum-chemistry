@@ -173,7 +173,7 @@ int main(int argc, char* argv[]){
 		}
 		else{
 			vector<Matrix> SPf;
-			vector<Matrix> SPe; // prev: sps, zero...
+			vector<Matrix> SPe;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
 				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd); // prev: SPf/e.data()
 				if(icd!=0){
@@ -242,10 +242,10 @@ int main(int argc, char* argv[]){
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
 //
 			grid mol_grid(M);
-			double I_density = integrate_R_density(mol_grid, M, p);
 			double trps = Tr(p*s);
+			double I_density = integrate_R_density(mol_grid, M, p);
+			cout << "Trace of PS = " << trps << '\n';
 			cout << "Integral of density = " << I_density << "\n\n";
-			cout << "Trace of PS = " << trps << "\n\n";
 //
 		}
 	}
@@ -294,32 +294,24 @@ int main(int argc, char* argv[]){
 			}
 		}
 		else{
-			vector<Matrix> SPfa(sps, zero(K, K));
-			vector<Matrix> SPfb(sps, zero(K, K));
-			vector<Matrix> SPea(sps, zero(K, K));
-			vector<Matrix> SPeb(sps, zero(K, K));
+			vector<Matrix> SPfa;
+			vector<Matrix> SPfb;
+			vector<Matrix> SPea;
+			vector<Matrix> SPeb;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_DIIS(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles, SPfa.data(), SPfb.data(), SPea.data(), SPeb.data(), sps, &icd);
+				UR_DIIS(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles, SPfa, SPfb, SPea, SPeb, sps, &icd);
 				if(icd!=0){
 					break;
 				}
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-				/*
-				if(cycles < sps){
+				if(cycles <= 3){
 					cout << setw(10) << "fp\n";
 				}
-				else{
-					cout << setw(10) << "diis\n";
-				}
-				*/
-				if(cycles == 1){
-					cout << setw(10) << "fp\n";
-				}
-				else if(cycles-1 < sps){
-					cout << setw(9) << "diis" << cycles - 1 - sps << '\n';
+				else if(cycles < sps){
+					cout << setw(9) << "diis(" << SPea.size() << ")\n";
 				}
 				else{
-					cout << setw(10) << "diis\n";
+					cout << setw(9) << "diis(" << sps << ")\n";
 				}
 				cout.flush();
 				cycles+=1;

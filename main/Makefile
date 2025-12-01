@@ -19,8 +19,8 @@ mol.o: ../libmol/mol.cpp ../libmol/mol.hpp ../libgf/gf.hpp
 grid.o: ../libgrid/grid.cpp ../libgrid/grid.hpp ../libmol/mol.hpp
 	g++ -c -O ../libgrid/grid.cpp
 
-density.o: ../libscf/density.cpp ../libmath/linalg.hpp ../libgf/gf.hpp ../libmol/mol.hpp ../libgrid/quadrature.hpp ../libscf/density.hpp
-	g++ -c -O ../libscf/density.cpp
+density.o: ../libdft/density.cpp ../libdft/density.hpp ../libmath/linalg.hpp ../libgf/gf.hpp ../libmol/mol.hpp ../libgrid/grid.hpp
+	g++ -c -O ../libdft/density.cpp
 
 scfgen.o: ../libscf/scfgen.cpp ../libscf/scfgen.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
 	g++ -c -O ../libscf/scfgen.cpp
@@ -31,7 +31,7 @@ scfrhf.o: ../libscf/scfrhf.cpp ../libscf/scfrhf.hpp ../libint/2e.hpp ../libmath/
 scfuhf.o: ../libscf/scfuhf.cpp ../libscf/scfuhf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
 	g++ -c -O ../libscf/scfuhf.cpp
 
-hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libscf/density.hpp ../libscf/scfgen.hpp ../libscf/scfrhf.hpp ../libscf/scfuhf.hpp
+hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libdft/density.hpp ../libscf/scfgen.hpp ../libscf/scfrhf.hpp ../libscf/scfuhf.hpp
 	g++ -c -O hartree-fock.cpp
 
 QC-EXEC: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o grid.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o
