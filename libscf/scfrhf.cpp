@@ -61,7 +61,7 @@ void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<s
 
 void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd){
 	// Uses commutation of F and P for error metric
-	if(i == 1){	
+	if(i <= 3){	
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));

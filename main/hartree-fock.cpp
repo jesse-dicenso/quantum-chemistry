@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
 					break;
 				}
 				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-				if(cycles == 1){
+				if(cycles <= 3){
 					cout << setw(10) << "fp\n";
 				}
 				else if(cycles < sps){
