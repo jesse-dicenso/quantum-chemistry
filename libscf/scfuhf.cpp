@@ -94,7 +94,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 
 		int n = SPea.size();
 	
-		for(int j = 0; i < SPea.back().rows; j++){
+		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
 				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
 						SPeb.back().matrix[j][k] * SPeb.back().matrix[j][k];
@@ -165,7 +165,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		SPea.push_back((*fa) * (*pa) * s - s * (*pa) * (*fa));
 		SPeb.push_back((*fb) * (*pb) * s - s * (*pb) * (*fb));
 	
-		for(int j = 0; i < SPea.back().rows; j++){
+		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
 				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
 						SPeb.back().matrix[j][k] * SPeb.back().matrix[j][k];
@@ -221,10 +221,10 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pa   = UR_density_matrix(*ca, Na);
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
+	
+		SPfa.erase(SPfa.begin());
+		SPfb.erase(SPfb.begin());
+		SPea.erase(SPea.begin());
+		SPeb.erase(SPeb.begin());
 	}
-
-	SPfa.erase(SPfa.begin());
-	SPfb.erase(SPfb.begin());
-	SPea.erase(SPea.begin());
-	SPeb.erase(SPeb.begin());
 }
