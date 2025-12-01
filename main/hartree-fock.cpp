@@ -67,8 +67,8 @@ int main(int argc, char* argv[]){
 	cout << "*   HARTREE-FOCK   *\n";
 	cout << "*                  *\n";
 	cout << "********************\n\n";
-	cout << "JESSE DICENSO   \n";
-	cout << "SUMMER 2024     \n\n";
+	cout << "JESSE DICENSO\n";
+	cout << "SUMMER 2024 - (probably May 2030?)\n\n";
 
 	cout << "Reading input...\n\n";
 	
@@ -214,7 +214,13 @@ int main(int argc, char* argv[]){
 			E_tot = Eo + nuc;
 
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
-		
+//
+			grid mol_grid(M);
+			double trps = Tr(p*s);
+			double I_density = integrate_density(mol_grid, M, p);
+			cout << "Trace of PS = " << trps << '\n';
+			cout << "Integral of density = " << I_density << "\n\n";
+//		
 			R_print_orbitals(e, c, N, K);
 
 			vector<double> popa(M.Zvals.size());
@@ -240,13 +246,6 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
-//
-			grid mol_grid(M);
-			double trps = Tr(p*s);
-			double I_density = integrate_R_density(mol_grid, M, p);
-			cout << "Trace of PS = " << trps << '\n';
-			cout << "Integral of density = " << I_density << "\n\n";
-//
 		}
 	}
 	// Unrestricted
@@ -353,8 +352,22 @@ int main(int argc, char* argv[]){
 
 			cout << "Total E     = " << Eo + nuc << " Ha\n";
 			cout << "Exact <S^2> = " << S2_e << '\n';
-			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";
-		
+			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";		
+//
+			grid mol_grid(M);
+			double trpas = Tr(pa*s);
+			double trpbs = Tr(pb*s);
+			double trpts = Tr(pt*s);
+			double I_density_a = integrate_density(mol_grid, M, pa);
+			double I_density_b = integrate_density(mol_grid, M, pb);
+			double I_density_t = integrate_density(mol_grid, M, pt);
+			cout << "Trace    of Pa*S  = " << trpas << '\n';
+			cout << "Integral of rho_a = " << I_density_a << '\n';
+			cout << "Trace    of Pb*S  = " << trpbs << '\n';
+			cout << "Integral of rho_b = " << I_density_b << '\n';
+			cout << "Trace    of Pt*S  = " << trpts << '\n';
+			cout << "Integral of rho_t = " << I_density_t << "\n\n";
+//
 			UR_print_orbitals(ea, eb, ca, cb, Na, Nb, K);
 
 			vector<double> popa(M.Zvals.size());

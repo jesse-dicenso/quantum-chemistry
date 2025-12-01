@@ -221,7 +221,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pa   = UR_density_matrix(*ca, Na);
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
-	
+
 		SPfa.erase(SPfa.begin());
 		SPfb.erase(SPfb.begin());
 		SPea.erase(SPea.begin());
