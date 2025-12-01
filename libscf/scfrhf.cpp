@@ -64,8 +64,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	if(i == 1){	
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
 		SPf.push_back(*f);
-		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
-		SPe.push_back(ev);	
+		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec(2);
@@ -76,8 +75,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*f   = R_F(hcore, *p, eris);
 		
 		SPf.push_back(*f);
-		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
-		SPe.push_back(ev);
+		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
 
 		int n = SPe.size();
 
@@ -133,8 +131,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*f   = R_F(hcore, *p, eris);
 		
 		SPf.push_back(*f);
-		Matrix ev = ((*f) * (*p) * s - s * (*p) * (*f));
-		SPe.push_back(ev);
+		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
 
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
@@ -170,7 +167,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		for(int j = 0; j < sps; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
-		
+	
 		*Eo  = R_E0(*p, hcore, *f);
 
 		*fo  = transpose(x) * (*f) * x;

@@ -7,7 +7,7 @@ infile="H2O.inp"
 method="RHF"
 
 # basis set
-basis="STO-3G"
+basis="def2-SVP"
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
 sps="5"
@@ -22,4 +22,4 @@ max_cycles="50"
 pop="lowdin"
 
 echo "Running..."
-time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./HF-EXEC
+time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./QC-EXEC

@@ -183,11 +183,11 @@ int main(int argc, char* argv[]){
 				if(cycles == 1){
 					cout << setw(10) << "fp\n";
 				}
-				else if(cycles-1 < sps){
-					cout << setw(9) << "diis" << cycles - 1 - sps << '\n';
+				else if(cycles < sps){
+					cout << setw(9) << "diis(" << SPe.size() << ")\n";
 				}
 				else{
-					cout << setw(10) << "diis\n";
+					cout << setw(9) << "diis(" << sps << ")\n";
 				}
 				cout.flush();
 				cycles+=1;
