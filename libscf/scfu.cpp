@@ -1,4 +1,4 @@
-#include "scfuhf.hpp"
+#include "scfu.hpp"
 
 Matrix UR_density_matrix(const Matrix& C, int N){
 	Matrix P(C.rows, C.cols);
@@ -14,23 +14,6 @@ Matrix UR_density_matrix(const Matrix& C, int N){
 	return P;
 }
 
-Matrix UR_F(const Matrix& Hcore, const Matrix& PT, const Matrix& Ps, const std::vector<std::vector<std::vector<std::vector<double>>>>& g){
-	Matrix F(PT.rows, PT.cols);
-	double sum;
-	for(int mu = 0; mu < F.rows; mu++){
-		for(int nu = 0; nu < F.rows; nu++){
-			sum = Hcore.matrix[mu][nu];
-			for(int ld = 0; ld < F.rows; ld++){
-				for(int sg = 0; sg < F.rows; sg++){
-					sum += (PT.matrix[ld][sg] * g[mu][nu][sg][ld]) - (Ps.matrix[ld][sg] * g[mu][ld][sg][nu]);
-				}
-			}
-			F.matrix[mu][nu] = sum;
-		}
-	}
-	return F;
-}
-
 double UR_E0(const Matrix& PT, const Matrix& Pa, const Matrix& Pb, const Matrix& Hcore, const Matrix& Fa, const Matrix& Fb){
 	double sum = 0;
 	for(int i = 0; i < PT.rows; i++){
@@ -41,13 +24,20 @@ double UR_E0(const Matrix& PT, const Matrix& Pa, const Matrix& Pb, const Matrix&
 	return 0.5 * sum;
 }
 
-void UR_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb){
+void UR_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
+			 const Matrix& x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, 
+			 Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i)
+{
 	std::vector<Matrix> tec_a(2);
 	std::vector<Matrix> tec_b(2);
 	double tEo;
 
-	*fa = UR_F(hcore, *pt, *pa, eris);
-	*fb = UR_F(hcore, *pt, *pb, eris);
+	Matrix j  = coulomb(*pt, eris);
+	Matrix ka = U_HF_X_s(*pa, eris);
+	Matrix kb = U_HF_X_s(*pb, eris);
+
+	*fa = fock(hcore, j, ka);
+	*fb = fock(hcore, j, kb);
 	
 	tEo = UR_E0(*pt, *pa, *pb, hcore, *fa, *fb);
 	*err = tEo - *Eo;
@@ -67,16 +57,26 @@ void UR_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	*pa  = UR_density_matrix(*ca, Na);
 	*pb  = UR_density_matrix(*cb, Nb);
 	*pt  = (*pa) + (*pb);
+	
+	std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err << std::setw(10) << "fp" << std::endl;
 }
 
-void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i, std::vector<Matrix>& SPfa, std::vector<Matrix>& SPfb, std::vector<Matrix>& SPea, std::vector<Matrix>& SPeb, int sps, int* icd){
+void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
+			 const Matrix& x, Matrix* pt, Matrix* pa, Matrix* pb, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, Matrix* ea, 
+			 Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, 
+			 int i, std::vector<Matrix>& SPfa, std::vector<Matrix>& SPfb, std::vector<Matrix>& SPea, std::vector<Matrix>& SPeb, 
+			 int sps, int* icd)
+{
 	// Uses commutation of F and P for error metric
 	if(i <= 3){
-		UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb);
+		UR_FPI(s, hcore, eris, x, pt, pa, pb, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb, i);
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
 		SPea.push_back((*fa) * (*pa) * s - s * (*pa) * (*fa));
 		SPeb.push_back((*fb) * (*pb) * s - s * (*pb) * (*fb));
+	
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(10) << "fp" << std::endl;
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec_a(2);
@@ -84,8 +84,12 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		std::vector<double> weights(sps+1);
 		double terr = 0;
 	
-		*fa = UR_F(hcore, *pt, *pa, eris);
-		*fb = UR_F(hcore, *pt, *pb, eris);
+		Matrix j  = coulomb(*pt, eris);
+		Matrix ka = U_HF_X_s(*pa, eris);
+		Matrix kb = U_HF_X_s(*pb, eris);
+
+		*fa = fock(hcore, j, ka);
+		*fb = fock(hcore, j, kb);
 		
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
@@ -120,10 +124,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		RHS.matrix[n][0] = -1;
 
 		weights = sym_linear_solve(LHS, RHS, icd);
-		
 		if(*icd!=0){
-			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
-			std::cout.flush();
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
 		}
 		
@@ -150,6 +152,9 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pa   = UR_density_matrix(*ca, Na);
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
+		
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(9) << "diis(" << SPea.size() << ")" << std::endl;
 	}
 	else{
 		std::vector<Matrix> tec_a(2);
@@ -157,8 +162,12 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		std::vector<double> weights(sps+1);
 		double terr = 0;
 	
-		*fa = UR_F(hcore, *pt, *pa, eris);
-		*fb = UR_F(hcore, *pt, *pb, eris);
+		Matrix j  = coulomb(*pt, eris);
+		Matrix ka = U_HF_X_s(*pa, eris);
+		Matrix kb = U_HF_X_s(*pb, eris);
+
+		*fa = fock(hcore, j, ka);
+		*fb = fock(hcore, j, kb);
 		
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
@@ -191,10 +200,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		RHS.matrix[sps][0] = -1;
 
 		weights = sym_linear_solve(LHS, RHS, icd);
-		
 		if(*icd!=0){
-			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
-			std::cout.flush();
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
 		}
 		
@@ -221,6 +228,9 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pa   = UR_density_matrix(*ca, Na);
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
+		
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;
 
 		SPfa.erase(SPfa.begin());
 		SPfb.erase(SPfb.begin());

@@ -1,4 +1,4 @@
-#include "hartree-fock.hpp"
+#include "main.hpp"
 
 using namespace std;
 
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]){
 		Matrix co(K, K);
 		Matrix c (K, K);
 		
-		f = R_F(hcore, p, eris);
+		f = hcore;
 		Eo = R_E0(p, hcore, f);
 		fo = transpose(x) * f * x;
 		temp_e_c = diagonalize(fo);
@@ -165,9 +165,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N);
-				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
-				cout.flush();
+				R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 				cycles+=1;
 			}
 		}
@@ -175,29 +173,16 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPf;
 			vector<Matrix> SPe;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd); // prev: SPf/e.data()
+				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd);
 				if(icd!=0){
 					break;
 				}
-				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-				if(cycles <= 3){
-					cout << setw(10) << "fp\n";
-				}
-				else if(cycles < sps){
-					cout << setw(9) << "diis(" << SPe.size() << ")\n";
-				}
-				else{
-					cout << setw(9) << "diis(" << sps << ")\n";
-				}
-				cout.flush();
 				cycles+=1;
 			}
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N);
-					cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
-					cout.flush();
+					R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}
@@ -267,8 +252,8 @@ int main(int argc, char* argv[]){
 		Matrix ca (K, K);
 		Matrix cb (K, K);
 		
-		fa = UR_F(hcore, pt, pa, eris);
-		fb = UR_F(hcore, pt, pb, eris);
+		fa = hcore;
+		fb = hcore;
 		Eo = UR_E0(pt, pa, pb, hcore, fa, fb);
 		fao = transpose(x) * fa * x;
 		fbo = transpose(x) * fb * x;
@@ -286,9 +271,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb);
-				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
-				cout.flush();
+				UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 				cycles+=1;
 			}
 		}
@@ -302,25 +285,12 @@ int main(int argc, char* argv[]){
 				if(icd!=0){
 					break;
 				}
-				cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err;
-				if(cycles <= 3){
-					cout << setw(10) << "fp\n";
-				}
-				else if(cycles < sps){
-					cout << setw(9) << "diis(" << SPea.size() << ")\n";
-				}
-				else{
-					cout << setw(9) << "diis(" << sps << ")\n";
-				}
-				cout.flush();
 				cycles+=1;
 			}
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb);
-					cout << setw(3) << cycles << setw(20) << Eo << setw(20) << err << setw(10) << "fp\n";
-					cout.flush();
+					UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}

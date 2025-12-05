@@ -32,6 +32,27 @@ Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const
 	return M;
 }
 
+Matrix coulomb(const Matrix& P, const std::vector<std::vector<std::vector<std::vector<double>>>>& g){
+	Matrix J(P.rows, P.cols);
+	double sum;
+	for(int mu = 0; mu < J.rows; mu++){
+		for(int nu = 0; nu < J.cols; nu++){
+			sum = 0;
+			for(int ld = 0; ld < J.rows; ld++){
+				for(int sg = 0; sg < J.cols; sg++){
+					sum += P.matrix[ld][sg] * g[mu][nu][sg][ld];
+				}
+			}
+			J.matrix[mu][nu] = sum;
+		}
+	}
+	return J;
+}
+
+Matrix fock(const Matrix& Hcore, const Matrix& J, const Matrix& K){
+	return Hcore + J + K;
+}
+
 double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>& xyzN){
 	double sum = 0;
 	double Rij;

@@ -1,4 +1,4 @@
-#include "scfrhf.hpp"
+#include "scfr.hpp"
 
 Matrix R_density_matrix(const Matrix& C, int N){
 	Matrix P(C.rows, C.cols);
@@ -14,23 +14,6 @@ Matrix R_density_matrix(const Matrix& C, int N){
 	return P;
 }
 
-Matrix R_F(const Matrix& Hcore,const Matrix& P, const std::vector<std::vector<std::vector<std::vector<double>>>>& g){
-	Matrix G(P.rows, P.cols);
-	double sum;
-	for(int mu = 0; mu < G.rows; mu++){
-		for(int nu = 0; nu < G.rows; nu++){
-			sum = 0;
-			for(int ld = 0; ld < G.rows; ld++){
-				for(int sg = 0; sg < G.rows; sg++){
-					sum += P.matrix[ld][sg] * (g[mu][nu][sg][ld] - 0.5*g[mu][ld][sg][nu]);
-				}
-			}
-			G.matrix[mu][nu] = sum;
-		}
-	}
-	return Hcore + G;
-}
-
 double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F){
 	double sum = 0;
 	for(int i = 0; i < P.rows; i++){
@@ -41,12 +24,17 @@ double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F){
 	return 0.5 * sum;
 }
 
-void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N){
+void R_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
+			const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, 
+			int N, int i)
+{
 	// Uses Ediff between iterations for error metric
 	std::vector<Matrix> tec(2);
+	Matrix j = coulomb(*p, eris);
+	Matrix k = R_HF_X(*p, eris);
 	double tEo;
 
-	*f = R_F(hcore, *p, eris);
+	*f = fock(hcore, j, k);
 	tEo  = R_E0(*p, hcore, *f);
 	*err = tEo - *Eo;
 	*Eo = tEo;
@@ -57,14 +45,22 @@ void R_FPI(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<s
 	*co  = tec[1];
 	*c   = x * (*co);
 	*p   = R_density_matrix(*c, N);
+	
+	std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err << std::setw(10) << "fp" << std::endl;
 }
 
-void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd){
+void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
+			const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, 
+			int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd)
+{
 	// Uses commutation of F and P for error metric
 	if(i <= 3){	
-		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N);
+		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i);
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
+
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(10) << "fp" << std::endl;
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec(2);
@@ -72,7 +68,9 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		double tEo;
 		double terr = 0;
 	
-		*f   = R_F(hcore, *p, eris);
+		Matrix j = coulomb(*p, eris);
+		Matrix k = R_HF_X(*p, eris);
+		*f = fock(hcore, j, k);
 		
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
@@ -102,8 +100,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		RHS.matrix[n][0] = -1;
 		weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
-			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
-			std::cout.flush();
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
 		}
 		
@@ -121,6 +118,9 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*co  = tec[1];
 		*c   = x * (*co);
 		*p   = R_density_matrix(*c, N);	
+
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(9) << "diis(" << SPe.size() << ")" << std::endl;
 	}
 	else{
 		std::vector<Matrix> tec(2);
@@ -128,7 +128,9 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		double tEo;
 		double terr = 0;
 
-		*f   = R_F(hcore, *p, eris);
+		Matrix j = coulomb(*p, eris);
+		Matrix k = R_HF_X(*p, eris);
+		*f = fock(hcore, j, k);
 		
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
@@ -157,8 +159,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 
 		weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
-			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***\n";
-			std::cout.flush();
+			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
 		}
 		
@@ -176,6 +177,9 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*co  = tec[1];
 		*c   = x * (*co);
 		*p   = R_density_matrix(*c, N);
+
+		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;
 
 		SPf.erase(SPf.begin());		
 		SPe.erase(SPe.begin());		

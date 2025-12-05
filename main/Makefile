@@ -1,41 +1,23 @@
-miscmath.o: ../libmath/miscmath.cpp ../libmath/miscmath.hpp
-	g++ -c -O ../libmath/miscmath.cpp
+CXX := g++
+CXXFLAGS := -O
 
-linalg.o: ../libmath/linalg.cpp ../libmath/linalg.hpp
-	g++ -c -O  ../libmath/linalg.cpp -llapack -lblas
+SRC_DIRS := . ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
+SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
+OBJ := $(patsubst %.cpp, build/%.o, $(SRC))
+TARGET := QC-EXEC
 
-gf.o: ../libgf/gf.cpp ../libgf/gf.hpp ../libmath/miscmath.hpp
-	g++ -c -O ../libgf/gf.cpp
+LIBS := -lblas -llapack
 
-1e.o: ../libint/1e.cpp ../libint/1e.hpp ../libgf/gf.hpp ../libmath/linalg.hpp
-	g++ -c -O ../libint/1e.cpp
+all: $(TARGET)
 
-2e.o: ../libint/2e.cpp ../libint/2e.hpp ../libint/1e.hpp
-	g++ -c -O ../libint/2e.cpp
+$(TARGET): $(OBJ)
+	$(CXX) $(OBJ) $(LIBS) -o $@
 
-mol.o: ../libmol/mol.cpp ../libmol/mol.hpp ../libgf/gf.hpp
-	g++ -c -O ../libmol/mol.cpp
-
-grid.o: ../libgrid/grid.cpp ../libgrid/grid.hpp ../libmol/mol.hpp
-	g++ -c -O ../libgrid/grid.cpp
-
-density.o: ../libdft/density.cpp ../libdft/density.hpp ../libmath/linalg.hpp ../libgf/gf.hpp ../libmol/mol.hpp ../libgrid/grid.hpp
-	g++ -c -O ../libdft/density.cpp
-
-scfgen.o: ../libscf/scfgen.cpp ../libscf/scfgen.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
-	g++ -c -O ../libscf/scfgen.cpp
-
-scfrhf.o: ../libscf/scfrhf.cpp ../libscf/scfrhf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
-	g++ -c -O ../libscf/scfrhf.cpp
-
-scfuhf.o: ../libscf/scfuhf.cpp ../libscf/scfuhf.hpp ../libint/2e.hpp ../libmath/linalg.hpp ../libmol/mol.hpp
-	g++ -c -O ../libscf/scfuhf.cpp
-
-hartree-fock.o: hartree-fock.cpp hartree-fock.hpp ../libdft/density.hpp ../libscf/scfgen.hpp ../libscf/scfrhf.hpp ../libscf/scfuhf.hpp
-	g++ -c -O hartree-fock.cpp
-
-QC-EXEC: miscmath.o linalg.o gf.o 1e.o 2e.o mol.o grid.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o
-	g++ -O -o QC-EXEC miscmath.o linalg.o gf.o 1e.o 2e.o mol.o grid.o density.o scfgen.o scfrhf.o scfuhf.o hartree-fock.o -llapack -lblas
+build/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o
+	rm -f $(OBJ)
+
+.PHONY: all clean
