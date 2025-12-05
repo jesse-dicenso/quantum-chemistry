@@ -46,7 +46,7 @@ void R_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	*c   = x * (*co);
 	*p   = R_density_matrix(*c, N);
 	
-	std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err << std::setw(10) << "fp" << std::endl;
+	std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err << std::setw(10) << "fp" << std::endl;
 }
 
 void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
@@ -58,9 +58,6 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i);
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
-
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
-		std::cout << std::setw(10) << "fp" << std::endl;
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec(2);
@@ -119,7 +116,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*c   = x * (*co);
 		*p   = R_density_matrix(*c, N);	
 
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << SPe.size() << ")" << std::endl;
 	}
 	else{
@@ -178,7 +175,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		*c   = x * (*co);
 		*p   = R_density_matrix(*c, N);
 
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;
 
 		SPf.erase(SPf.begin());		

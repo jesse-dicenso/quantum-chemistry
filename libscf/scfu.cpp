@@ -58,7 +58,7 @@ void UR_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 	*pb  = UR_density_matrix(*cb, Nb);
 	*pt  = (*pa) + (*pb);
 	
-	std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err << std::setw(10) << "fp" << std::endl;
+	std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err << std::setw(10) << "fp" << std::endl;
 }
 
 void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
@@ -74,9 +74,6 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		SPfb.push_back(*fb);
 		SPea.push_back((*fa) * (*pa) * s - s * (*pa) * (*fa));
 		SPeb.push_back((*fb) * (*pb) * s - s * (*pb) * (*fb));
-	
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
-		std::cout << std::setw(10) << "fp" << std::endl;
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec_a(2);
@@ -153,7 +150,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
 		
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << SPea.size() << ")" << std::endl;
 	}
 	else{
@@ -229,7 +226,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector
 		*pb   = UR_density_matrix(*cb, Nb);
 		*pt   = *pa + *pb;
 		
-		std::cout << std::setw(3) << i << std::setw(20) << Eo << std::setw(20) << err;
+		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;
 
 		SPfa.erase(SPfa.begin());

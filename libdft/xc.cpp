@@ -35,6 +35,14 @@ Matrix U_HF_X_s(const Matrix& Ps, const std::vector<std::vector<std::vector<std:
 	return K;
 }
 
+Matrix R_Slater_X(const Matrix& P, const grid& g){
+	//
+}
+
+Matrix U_Slater_X_s(const Matrix& Ps, const grid& g){
+	//
+}
+
 ///// Correlation only /////
 
 ///// Exchange and Correlation /////
