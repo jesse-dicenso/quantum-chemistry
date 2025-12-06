@@ -50,14 +50,4 @@ Matrix m_inv_sqrt(const Matrix A);
 
 std::vector<double> sym_linear_solve(Matrix A, Matrix B, int* icd);
 
-/*
-This was an interesting exploration into numerical linear algebra; it technically works but fails 
-to converge for larger matrices. It was a good learning experience, but LAPACK is better!
-
-double dot(const Matrix A, const Matrix B);
-Matrix H(const Matrix u);
-std::vector<Matrix> QR_decomposition(const Matrix A);
-std::vector<Matrix> QR_diagonalize(const Matrix A, const double tol=1e-8, const int maxiter=1500);
-*/
-
 #endif
