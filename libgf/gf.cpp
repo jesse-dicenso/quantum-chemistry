@@ -22,7 +22,7 @@ GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<do
 	// Normalize
 	std::vector<double> nrms(exps.size());
 	for(int i = 0; i < exps.size(); i++){
-		nrms[i] = pow((2/M_PI),0.75) * pow(2,L) * pow(exps[i],(2*L+3)/4.0) / sqrt(dfact(2*l-1)*dfact(2*m-1)*dfact(2*n-1));
+		nrms[i] = pow((2/M_PI),0.75) * intpow(2,L) * pow(exps[i],(2*L+3)/4.0) / sqrt(dfact(2*l-1)*dfact(2*m-1)*dfact(2*n-1));
 	}
 	
 	N = nrms;
@@ -34,7 +34,7 @@ GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<do
 		}
 	}
 	
-	cN = 1 / sqrt(pow(M_PI, 1.5) * dfact(2*l-1) * dfact(2*m-1) * dfact(2*n-1) * cN / pow(2, L));	
+	cN = 1 / sqrt(pow(M_PI, 1.5) * dfact(2*l-1) * dfact(2*m-1) * dfact(2*n-1) * cN / intpow(2, L));	
 	
 	for(int i = 0; i < exps.size(); i++){
 		d[i] *= cN;
@@ -47,11 +47,41 @@ double GF::evaluate(double x, double y, double z) const{
 	for(int i = 0; i < exps.size(); i++){
 		sum += N[i] * d[i] * exp(-exps[i]*r2);
 	}
-	return sum * pow(x-xyz[0], shell[0]) * pow(y-xyz[1], shell[1]) * pow(z-xyz[2], shell[2]);
+	return sum * intpow(x-xyz[0], shell[0]) * intpow(y-xyz[1], shell[1]) * intpow(z-xyz[2], shell[2]);
+}
+		
+std::vector<double> GF::evaluate_gradient(double x, double y, double z) const{
+	std::vector<double> gradient = {0.0, 0.0, 0.0};
+	double sum = 0;
+	double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
+	double factor_x = intpow(x-xyz[0], shell[0]);
+	double factor_y = intpow(y-xyz[1], shell[1]);
+	double factor_z = intpow(z-xyz[2], shell[2]);
+	for(int i = 0; i < exps.size(); i++){
+		sum -= N[i] * d[i] * exps[i] * exp(-exps[i]*r2);
+	}
+	sum *= 2 * factor_x * factor_y * factor_z;
+	gradient[0] = sum * (x-xyz[0]);
+	gradient[1] = sum * (y-xyz[1]);
+	gradient[2] = sum * (z-xyz[2]);
+
+	bool isl = (shell[0]!=0);
+	bool ism = (shell[1]!=0);
+	bool isn = (shell[2]!=0);
+	if(isl || ism || isn){
+		sum = 0;	
+		for(int i = 0; i < exps.size(); i++){
+			sum += N[i] * d[i] * exp(-exps[i]*r2);
+		}
+		if(isl) {gradient[0] += shell[0] * intpow(x-xyz[0], shell[0]-1) * factor_y * factor_z * sum;}
+		if(ism) {gradient[1] += shell[1] * intpow(y-xyz[1], shell[1]-1) * factor_z * factor_x * sum;}
+		if(isn) {gradient[2] += shell[2] * intpow(z-xyz[2], shell[2]-1) * factor_x * factor_y * sum;}
+	}
+	return gradient;
 }
 
 bool operator== (const GF &g1, const GF &g2){
-	if((g1.exps==g2.exps) && (g1.d==g2.d) && /* (g1.xyz==g2.xyz) && */ (g1.shell==g2.shell) && (g1.atom_index==g2.atom_index)){
+	if((g1.exps==g2.exps) && (g1.d==g2.d) && (g1.shell==g2.shell) && (g1.atom_index==g2.atom_index)){
 		return true;
 	}
 	else{

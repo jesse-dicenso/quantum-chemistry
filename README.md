@@ -1,9 +1,13 @@
 ## Introduction
-This is a simple Hartree-Fock program that I wrote during Summer 2024. It is able to compute the wavefunctions of open- and closed-shell atoms and molecules in 3D, along with some other quantities of interest. It uses the McMurchie-Davidson scheme for computing all molecular integrals. This program will be continuously developed for my own learning (and perhaps for yours as well).
+This is a simple quantum chemistry program that I began during Summer 2024. It is able to compute the wavefunctions of open- and closed-shell atoms and molecules in 3D, along with some other quantities of interest. It uses the McMurchie-Davidson scheme for computing all molecular integrals. This program will be continuously developed for my own learning (and perhaps for yours as well).
 
-Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically for DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems, for DIIS). Everything else, including a class for matrices, was written by me!
+Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems, for DIIS). Everything else, including a class for matrices, was written by me!
 
 ## Current capabilities:
+
+-Methods: RHF, UHF, DFT (RKS, UKS)
+
+-Functionals: HF exchange (Coming soon: Slater exchange, VWN5, PBE, B97)
 
 -Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 
@@ -17,20 +21,18 @@ This program depends on LAPACK for some linear algebra routines (diagonalization
 sudo apt-get install libblas-dev liblapack-dev
 ```
 
-With LAPACK and BLAS installed, simply download all of the program directories/files, navigate to the /hartree-fock/ directory, and run the following command:
+With LAPACK and BLAS installed, simply download all of the program directories/files, navigate to the main/ directory, and run the following command:
 ```bash
-make hartree-fock
+make
 ```
 
-The Makefile will automatically compile the program and will clean up all object files. The program is compiled with g++; it is important that your compiler knows where the LAPACK/BLAS libraries are located. The executable hartree-fock should appear in the /hartree-fock/ directory, and it is ready to use.
+The Makefile will automatically compile the program and will clean up all object files. The program is compiled with g++; it is important that your compiler knows where the LAPACK/BLAS libraries are located. The executable QC-EXEC should appear in the main/ directory, and it is ready to use.
 
 ## How to use:
-The program requires a specific input file format. Sample inputs may be found in /hartree-fock/sample_inputs. The input file must be located in the same directory as the executable.
+The program requires a specific input file format. Sample inputs may be found in main/inputs. The input file must be located in the same directory as the executable.
 
 The program itself is run from a bash script, run.sh. This file contains some important input settings which may be changed depending on the job. To run, simply type
 ```bash
 bash run.sh
 ```
-and the program will begin. It may take awhile, but it will output to the file outfile.dat. Sample output files may be found in the directory /hartree-fock/sample_outputs.
-
-There may be some numerical instabilities, but it generally works well for small molecules. I have tested up to acetaldehyde, which converges using DIIS but not with basic fixed-point iterations.
+and the program will begin. It may take awhile, but it will output to the file outfile.dat. Sample output files may be found in main/sample_outputs.

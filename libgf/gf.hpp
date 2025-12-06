@@ -23,6 +23,7 @@ class GF{
 		std::vector<double> N;
 
 		double evaluate(double x, double y, double z) const;
+		std::vector<double> evaluate_gradient(double x, double y, double z) const;
 
 		friend bool operator== (const GF &g1, const GF &g2);
 
