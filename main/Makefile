@@ -1,7 +1,7 @@
-CXX := g++
-CXXFLAGS := -O
+CXX := clang++
+CXXFLAGS := -O2
 
-SRC_DIRS := . ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
+SRC_DIRS := . ../libaux ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
 SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 OBJ := $(SRC:.cpp=.o)
 TARGET := QC-EXEC

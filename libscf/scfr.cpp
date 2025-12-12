@@ -24,18 +24,17 @@ double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F){
 	return 0.5 * sum;
 }
 
-void R_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
-			const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, 
-			int N, int i)
+void R_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* f, Matrix* fo, 
+			Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i)
 {
 	// Uses Ediff between iterations for error metric
 	std::vector<Matrix> tec(2);
-	Matrix j = coulomb(*p, eris);
-	Matrix k = R_HF_X(*p, eris);
+	Matrix j = coulomb(*(xc_inp->PT), *(xc_inp->eris));
+	Matrix fxc = F_XC(xc_inp).F_XC_1;
 	double tEo;
 
-	*f = fock(hcore, j, k);
-	tEo  = R_E0(*p, hcore, *f);
+	*f = fock(hcore, j, fxc);
+	tEo  = R_E0(*(xc_inp->PT), hcore, *f);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
@@ -44,20 +43,20 @@ void R_FPI (const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 	*e   = tec[0];
 	*co  = tec[1];
 	*c   = x * (*co);
-	*p   = R_density_matrix(*c, N);
+	*(xc_inp->PT) = R_density_matrix(*c, N);
 	
 	std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err << std::setw(10) << "fp" << std::endl;
 }
 
-void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, 
-			const Matrix& x, Matrix* p, Matrix* f, Matrix* fo, Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, 
-			int N, int i, std::vector<Matrix>& SPf, std::vector<Matrix>& SPe, int sps, int* icd)
+void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* f, Matrix* fo, 
+			Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i, std::vector<Matrix>& SPf, 
+			std::vector<Matrix>& SPe, int sps, int* icd)
 {
 	// Uses commutation of F and P for error metric
 	if(i <= 3){	
-		R_FPI(s, hcore, eris, x, p, f, fo, e, co, c, Eo, err, N, i);
+		R_FPI(s, hcore, x, xc_inp, f, fo, e, co, c, Eo, err, N, i);
 		SPf.push_back(*f);
-		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
+		SPe.push_back((*f) * (*(xc_inp->PT)) * s - s * (*(xc_inp->PT)) * (*f));
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec(2);
@@ -65,12 +64,12 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		double tEo;
 		double terr = 0;
 	
-		Matrix j = coulomb(*p, eris);
-		Matrix k = R_HF_X(*p, eris);
-		*f = fock(hcore, j, k);
+		Matrix j = coulomb(*(xc_inp->PT), *(xc_inp->eris));
+		Matrix fxc = F_XC(xc_inp).F_XC_1;
+		*f = fock(hcore, j, fxc);
 		
 		SPf.push_back(*f);
-		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
+		SPe.push_back((*f) * (*(xc_inp->PT)) * s - s * (*(xc_inp->PT)) * (*f));
 
 		int n = SPe.size();
 
@@ -102,19 +101,19 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		}
 		
 		// Build fock matrix from previous fock matrices and weights
-		*f = zero(p->rows, p->cols);
+		*f = zero(xc_inp->PT->rows, xc_inp->PT->cols);
 		for(int j = 0; j < n; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
 
-		*Eo  = R_E0(*p, hcore, *f);
+		*Eo  = R_E0(*(xc_inp->PT), hcore, *f);
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
 		*e   = tec[0];
 		*co  = tec[1];
 		*c   = x * (*co);
-		*p   = R_density_matrix(*c, N);	
+		*(xc_inp->PT) = R_density_matrix(*c, N);	
 
 		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << SPe.size() << ")" << std::endl;
@@ -125,12 +124,12 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		double tEo;
 		double terr = 0;
 
-		Matrix j = coulomb(*p, eris);
-		Matrix k = R_HF_X(*p, eris);
-		*f = fock(hcore, j, k);
+		Matrix j = coulomb(*(xc_inp->PT), *(xc_inp->eris));
+		Matrix fxc = F_XC(xc_inp).F_XC_1;
+		*f = fock(hcore, j, fxc);
 		
 		SPf.push_back(*f);
-		SPe.push_back((*f) * (*p) * s - s * (*p) * (*f));
+		SPe.push_back((*f) * (*(xc_inp->PT)) * s - s * (*(xc_inp->PT)) * (*f));
 
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
@@ -161,19 +160,19 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const std::vector<std::vector<
 		}
 		
 		// Build fock matrix from previous fock matrices and weights
-		*f = zero(p->rows, p->cols);
+		*f = zero(xc_inp->PT->rows, xc_inp->PT->cols);
 		for(int j = 0; j < sps; j++){
 			*f = *f + SPf[j] * weights[j];
 		}
 	
-		*Eo  = R_E0(*p, hcore, *f);
+		*Eo  = R_E0(*(xc_inp->PT), hcore, *f);
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
 		*e   = tec[0];
 		*co  = tec[1];
 		*c   = x * (*co);
-		*p   = R_density_matrix(*c, N);
+		*(xc_inp->PT) = R_density_matrix(*c, N);
 
 		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;

@@ -54,7 +54,7 @@ Matrix Matrix::operator-() const{
 	Matrix mat(rows, cols);
 	for(int i = 0; i < rows; i++){
 		for(int j = 0; j < cols; j++){
-			mat.matrix[i][j] == -matrix[i][j];
+			mat.matrix[i][j] = -matrix[i][j];
 		}
 	}
 	return mat;

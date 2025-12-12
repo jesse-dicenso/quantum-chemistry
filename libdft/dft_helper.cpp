@@ -1,9 +1,4 @@
-#include "density.hpp"
-
-struct density_context{
-	const Molecule 	*molecule;
-	const Matrix	*Pmatrix;
-};
+#include "dft_helper.hpp"
 
 double density(double x, double y, double z, void* ctx){
 	density_context* d_ctx = static_cast<density_context*>(ctx);
@@ -48,6 +43,18 @@ std::vector<double> density_gradient(double x, double y, double z, void* ctx){
 }
 
 double integrate_density(const grid &g, const Molecule &mol, const Matrix &P){
-	density_context ctx = {&mol, &P};
+	density_context ctx = {&mol, &P, 0, 0};
 	return integrate_quad(g, density, &ctx);
+}
+
+double R_Slater_X_integrand(double x, double y, double z, void* ctx){
+	density_context* d_ctx = static_cast<density_context*>(ctx);
+	const Molecule *mol = d_ctx->molecule;
+	return -mol->AOs[d_ctx->idx1].evaluate(x, y, z) * pow(3 * density(x, y, z, ctx) / M_PI, 1.0/3.0) * mol->AOs[d_ctx->idx2].evaluate(x, y, z);
+}
+
+double U_Slater_X_integrand(double x, double y, double z, void* ctx){
+	density_context* d_ctx = static_cast<density_context*>(ctx);
+	const Molecule *mol = d_ctx->molecule;
+	return -mol->AOs[d_ctx->idx1].evaluate(x, y, z) * pow(6 * density(x, y, z, ctx) / M_PI, 1.0/3.0) * mol->AOs[d_ctx->idx2].evaluate(x, y, z);
 }

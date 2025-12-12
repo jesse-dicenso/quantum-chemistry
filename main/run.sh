@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/acetaldehyde.inp
+infile=inputs/CH3.inp
 
 # calculation method (RHF, UHF)
 method=UHF

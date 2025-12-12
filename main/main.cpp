@@ -2,11 +2,6 @@
 
 using namespace std;
 
-vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S);
-vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S);
-void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb);
-void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb);
-
 int main(int argc, char* argv[]){
 	cout << fixed;
 	cout << scientific;
@@ -76,11 +71,15 @@ int main(int argc, char* argv[]){
 	N = M.Nelec;
 	K = M.AOs.size();
 	nupdown = M.NUPDOWN;
-	if(method=="RHF"){
+	if(method.substr(0,2)=="R_"){
 		r = true;
 	}
-	else if(method=="UHF"){
+	else if(method.substr(0,2)=="U_"){
 		r = false;
+	}
+	else{
+		cerr << "ERR: Must specify method as restricted (R_...) or unrestricted (U_...)!\n";
+		return 0;
 	}
 	if(r && (nupdown!=0)){
 		cerr << "ERR: Restricted calculation cannot be performed for NUPDOWN!=0! (Try unrestricted...)\n";
@@ -123,6 +122,14 @@ int main(int argc, char* argv[]){
 	eris = ERIs(M.AOs);
 	cout << "ERIs computed.\n" << endl;
 
+	grid mol_grid(M);
+	XC_inp xc_inp(method);
+	xc_inp.eris = &eris;
+	if(!xc_inp.is_HF){
+		xc_inp.g = &mol_grid;
+		xc_inp.mol = &M;
+	}
+
 	if(r){
 		cout << "Performing restricted Hartree Fock...\n";	
 		cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
@@ -148,6 +155,8 @@ int main(int argc, char* argv[]){
 		vector<Matrix> temp_e_c;
 		
 		Matrix p (K, K);
+		xc_inp.PT = &p;
+
 		Matrix f (K, K);
 		Matrix fo(K, K);
 		Matrix e (K, K);
@@ -165,7 +174,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
+				R_FPI(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 				cycles+=1;
 			}
 		}
@@ -173,7 +182,7 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPf;
 			vector<Matrix> SPe;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd);
+				R_DIIS(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd);
 				if(icd!=0){
 					break;
 				}
@@ -182,7 +191,7 @@ int main(int argc, char* argv[]){
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					R_FPI(s, hcore, eris, x, &p, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
+					R_FPI(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}
@@ -199,13 +208,12 @@ int main(int argc, char* argv[]){
 			E_tot = Eo + nuc;
 
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
-//
-			grid mol_grid(M);
+			
 			double trps = Tr(p*s);
 			double I_density = integrate_density(mol_grid, M, p);
 			cout << "Trace of PS = " << trps << '\n';
 			cout << "Integral of density = " << I_density << "\n\n";
-//		
+			
 			R_print_orbitals(e, c, N, K);
 
 			vector<double> popa(M.Zvals.size());
@@ -241,6 +249,10 @@ int main(int argc, char* argv[]){
 		Matrix pt (K, K);
 		Matrix pa (K, K);
 		Matrix pb (K, K);
+		xc_inp.PT = &pt;
+		xc_inp.PA = &pa;
+		xc_inp.PB = &pb;
+
 		Matrix fa (K, K);
 		Matrix fb (K, K);
 		Matrix fao(K, K);
@@ -271,7 +283,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
+				UR_FPI(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 				cycles+=1;
 			}
 		}
@@ -281,7 +293,8 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPea;
 			vector<Matrix> SPeb;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_DIIS(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles, SPfa, SPfb, SPea, SPeb, sps, &icd);
+				UR_DIIS(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, 
+						&cb, &Eo, &err, Na, Nb, cycles, SPfa, SPfb, SPea, SPeb, sps, &icd);
 				if(icd!=0){
 					break;
 				}
@@ -290,7 +303,7 @@ int main(int argc, char* argv[]){
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					UR_FPI(s, hcore, eris, x, &pt, &pa, &pb, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
+					UR_FPI(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}
@@ -323,8 +336,7 @@ int main(int argc, char* argv[]){
 			cout << "Total E     = " << Eo + nuc << " Ha\n";
 			cout << "Exact <S^2> = " << S2_e << '\n';
 			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";		
-//
-			grid mol_grid(M);
+			
 			double trpas = Tr(pa*s);
 			double trpbs = Tr(pb*s);
 			double trpts = Tr(pt*s);
@@ -337,7 +349,7 @@ int main(int argc, char* argv[]){
 			cout << "Integral of rho_b = " << I_density_b << '\n';
 			cout << "Trace    of Pt*S  = " << trpts << '\n';
 			cout << "Integral of rho_t = " << I_density_t << "\n\n";
-//
+			
 			UR_print_orbitals(ea, eb, ca, cb, Na, Nb, K);
 
 			vector<double> popa(M.Zvals.size());
@@ -371,181 +383,4 @@ int main(int argc, char* argv[]){
 	cout <<   "*     Thank you, have a nice day!     *\n";
 	cout <<   "*                                     *\n";
 	cout <<   "***************************************\n\n";
-}
-
-vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
-	vector<double> LPA(M.Zvals.size());
-	Matrix ShPSh = m_sqrt(S) * P * m_sqrt(S);
-	for(int i = 0; i < M.Zvals.size(); i++){
-		double sum = 0;
-		for(int j = 0; j < M.AOs.size(); j++){
-			if(M.AOs[j].atom_index==i){
-				sum += ShPSh.matrix[j][j];
-			}
-		}
-		LPA[i] = M.Zvals[i] - sum;
-	}
-	return LPA;
-}
-
-vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
-	vector<double> MPA(M.Zvals.size());
-	Matrix PS = P * S;
-	for(int i = 0; i < M.Zvals.size(); i++){
-		double sum = 0;
-		for(int j = 0; j < M.AOs.size(); j++){
-			if(M.AOs[j].atom_index==i){
-				sum += PS.matrix[j][j];
-			}
-		}
-		MPA[i] = M.Zvals[i] - sum;
-	}
-	return MPA;
-}
-
-void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
-	cout << "***************\n";
-	cout << "* MO Energies *\n";
-	cout << "***************\n\n";
-	cout << "Occupied:\n";
-	for(int i = 0; i < Nocc/2; i++){
-		cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n';
-	}
-	if(Kb>(Nocc/2)){
-		cout << "Virtual:\n";
-		for(int i = Nocc/2; i < Kb; i++){
-			cout << setw(4) << 'E' << i+1 << setw(20) << E.matrix[i][i] << '\n'; 
-		}
-	}
-	cout << '\n';
-	cout << "*******************\n";
-	cout << "* MO Coefficients *\n";
-	cout << "*******************\n\n";
-	cout << "Occupied:\n";
-	int count = 0;
-	for(int i = 0; i < Nocc/2; i++){
-		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-		for(int j = 0; j < Kb; j++){
-			cout << C.matrix[j][i] << setw(20);
-			count++;
-			if(count>=5){
-				cout << '\n' << setw(25);
-				count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-	}
-	if(Kb>(Nocc/2)){
-		cout << "Virtual:\n";
-		for(int i = Nocc/2; i < Kb; i++){
-			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-			for(int j = 0; j < Kb; j++){
-				cout << C.matrix[j][i] << setw(20);
-				count++;
-				if(count>=5){
-					cout << '\n' << setw(25);
-					count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-		}
-	}
-	cout << '\n';
-}
-
-void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb){
-	cout << "***************\n";
-	cout << "* MO Energies *\n";
-	cout << "***************\n\n";
-	cout << "Occupied (alpha):\n";
-	for(int i = 0; i < Nocca; i++){
-		cout << setw(4) << 'E' << i+1 << setw(20) << Ea.matrix[i][i] << '\n';
-	}
-	if(Kb>Nocca){
-		cout << "Virtual (alpha):\n";
-		for(int i = Nocca; i < Kb; i++){
-			cout << setw(4) << 'E' << i+1 << setw(20) << Ea.matrix[i][i] << '\n'; 
-		}
-	}
-	cout << '\n';
-	cout << "Occupied (beta):\n";
-	for(int i = 0; i < Noccb; i++){
-		cout << setw(4) << 'E' << i+1 << setw(20) << Eb.matrix[i][i] << '\n';
-	}
-	if(Kb>Noccb){
-		cout << "Virtual (beta):\n";
-		for(int i = Noccb; i < Kb; i++){
-			cout << setw(4) << 'E' << i+1 << setw(20) << Eb.matrix[i][i] << '\n'; 
-		}
-	}
-	cout << '\n';
-	cout << "*******************\n";
-	cout << "* MO Coefficients *\n";
-	cout << "*******************\n\n";
-	cout << "Occupied (alpha):\n";
-	int count = 0;
-	for(int i = 0; i < Nocca; i++){
-		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-		for(int j = 0; j < Kb; j++){
-			cout << Ca.matrix[j][i] << setw(20);
-			count++;
-			if(count>=5){
-				cout << '\n' << setw(25);
-				count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-	}
-	if(Kb>Nocca){
-		cout << "Virtual (alpha):\n";
-		for(int i = Nocca; i < Kb; i++){
-			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-			for(int j = 0; j < Kb; j++){
-				cout << Ca.matrix[j][i] << setw(20);
-				count++;
-				if(count>=5){
-					cout << '\n' << setw(25);
-					count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-		}
-	}
-	cout << '\n';
-	cout << "Occupied (beta):\n";
-	count = 0;
-	for(int i = 0; i < Noccb; i++){
-		cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-		for(int j = 0; j < Kb; j++){
-			cout << Cb.matrix[j][i] << setw(20);
-			count++;
-			if(count>=5){
-				cout << '\n' << setw(25);
-				count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-	}
-	if(Kb>Noccb){
-		cout << "Virtual (beta):\n";
-		for(int i = Noccb; i < Kb; i++){
-			cout << setw(5) << "MO" << i+1 << '\n' << setw(25); 
-			for(int j = 0; j < Kb; j++){
-				cout << Cb.matrix[j][i] << setw(20);
-				count++;
-				if(count>=5){
-					cout << '\n' << setw(25);
-					count = 0;
-			}
-		}
-		count = 0;
-		cout << '\n';
-		}
-	}
-	cout << '\n';
 }
