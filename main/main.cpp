@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
 		Matrix c (K, K);
 		
 		f = hcore;
-		Eo = R_E0(p, hcore, f);
+		Eo = R_E0(&xc_inp, hcore, f, zero(K,K));
 		fo = transpose(x) * f * x;
 		temp_e_c = diagonalize(fo);
 		e = temp_e_c[0];
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]){
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 			
 			double trps = Tr(p*s);
-			double I_density = integrate_density(mol_grid, M, p);
+			double I_density = integrate_quad(mol_grid, density, M, p);
 			cout << "Trace of PS = " << trps << '\n';
 			cout << "Integral of density = " << I_density << "\n\n";
 			
@@ -266,7 +266,7 @@ int main(int argc, char* argv[]){
 		
 		fa = hcore;
 		fb = hcore;
-		Eo = UR_E0(pt, pa, pb, hcore, fa, fb);
+		Eo = UR_E0(&xc_inp, hcore, fa, fb, zero(K,K));
 		fao = transpose(x) * fa * x;
 		fbo = transpose(x) * fb * x;
 		temp_e_c_a = diagonalize(fao);
@@ -340,9 +340,9 @@ int main(int argc, char* argv[]){
 			double trpas = Tr(pa*s);
 			double trpbs = Tr(pb*s);
 			double trpts = Tr(pt*s);
-			double I_density_a = integrate_density(mol_grid, M, pa);
-			double I_density_b = integrate_density(mol_grid, M, pb);
-			double I_density_t = integrate_density(mol_grid, M, pt);
+			double I_density_a = integrate_quad(mol_grid, density, M, pa);
+			double I_density_b = integrate_quad(mol_grid, density, M, pb);
+			double I_density_t = integrate_quad(mol_grid, density, M, pt);
 			cout << "Trace    of Pa*S  = " << trpas << '\n';
 			cout << "Integral of rho_a = " << I_density_a << '\n';
 			cout << "Trace    of Pb*S  = " << trpbs << '\n';

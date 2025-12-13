@@ -5,7 +5,7 @@
 #include "../libdft/xc.hpp"
 
 Matrix R_density_matrix(const Matrix& C, int N);
-double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F);
+double R_E0(XC_inp* xc_inp, const Matrix& Hcore, const Matrix& F, const Matrix& J);
 
 void R_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* f, Matrix* fo, 
 			Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i);

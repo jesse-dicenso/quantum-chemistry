@@ -14,14 +14,24 @@ Matrix R_density_matrix(const Matrix& C, int N){
 	return P;
 }
 
-double R_E0(const Matrix& P, const Matrix& Hcore, const Matrix& F){
+double R_E0(XC_inp* xc_inp, const Matrix& Hcore, const Matrix& F, const Matrix& J){
 	double sum = 0;
-	for(int i = 0; i < P.rows; i++){
-		for(int j = 0; j < P.cols; j++){
-			sum += P.matrix[j][i]*(Hcore.matrix[i][j]+F.matrix[i][j]);
+	if(xc_inp->is_HF){
+		for(int i = 0; i < xc_inp->PT->rows; i++){
+			for(int j = 0; j < xc_inp->PT->cols; j++){
+				sum += xc_inp->PT->matrix[j][i]*(Hcore.matrix[i][j]+F.matrix[i][j]);
+			}
 		}
+		return 0.5 * sum;
 	}
-	return 0.5 * sum;
+	else{
+		for(int i = 0; i < xc_inp->PT->rows; i++){
+			for(int j = 0; j < xc_inp->PT->cols; j++){
+				sum += xc_inp->PT->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
+			}
+		}
+		return sum + E_XC(xc_inp);
+	}
 }
 
 void R_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* f, Matrix* fo, 
@@ -34,7 +44,7 @@ void R_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_in
 	double tEo;
 
 	*f = fock(hcore, j, fxc);
-	tEo  = R_E0(*(xc_inp->PT), hcore, *f);
+	tEo  = R_E0(xc_inp, hcore, *f, j);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
@@ -106,7 +116,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_in
 			*f = *f + SPf[j] * weights[j];
 		}
 
-		*Eo  = R_E0(*(xc_inp->PT), hcore, *f);
+		*Eo  = R_E0(xc_inp, hcore, *f, j);
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);
@@ -165,7 +175,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_in
 			*f = *f + SPf[j] * weights[j];
 		}
 	
-		*Eo  = R_E0(*(xc_inp->PT), hcore, *f);
+		*Eo  = R_E0(xc_inp, hcore, *f, j);
 
 		*fo  = transpose(x) * (*f) * x;
 		tec  = diagonalize(*fo);

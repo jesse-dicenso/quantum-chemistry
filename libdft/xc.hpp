@@ -32,15 +32,22 @@ struct XC_ret{
 	Matrix F_XC_2;	// F_XC_b if unrestricted
 };
 
-extern std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_register;
-
+extern std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_register;
 XC_ret F_XC(XC_inp* inp);
+
+extern std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_register;
+double E_XC(XC_inp* inp);
 
 // HF //
 XC_ret R_HF_X(const XC_inp& inp);
 XC_ret U_HF_X(const XC_inp& inp);
 // LDA //
 XC_ret R_Slater_X(const XC_inp& inp);
+double R_Slater_X_E(const XC_inp& inp);
+
 XC_ret U_Slater_X(const XC_inp& inp);
+double U_Slater_X_E(const XC_inp& inp);
+
+// GGA //
 
 #endif

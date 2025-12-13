@@ -3,8 +3,8 @@
 # input file name
 infile=inputs/CH3.inp
 
-# calculation method (RHF, UHF)
-method=UHF
+# XC functional (R_, U_: HF, Slater, VWN5)
+method=U_Slater
 
 # basis set
 basis=STO-3G

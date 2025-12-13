@@ -1,10 +1,10 @@
 #ifndef GRIDHEADERDEF
 #define GRIDHEADERDEF
 
+#include "../libmol/mol.hpp"
+
 #include <cmath>
 #include <vector>
-
-#include "../libmol/mol.hpp"
 
 class grid{
 	public:
@@ -18,10 +18,17 @@ class grid{
 		int num_gridpoints;
 };
 
-double becke_weight(const Molecule &mol, double x, double y, double z, int atom_me, int k = 3);
+double becke_weight(const Molecule& mol, double x, double y, double z, int atom_me, int k = 3);
 double becke_step(double mu, int k);
 
-double integrate_quad(const grid &g, double (*func)(double, double, double, void*), void* ctx);
+template <typename F, typename... Args>
+double integrate_quad(const grid& g, F&& func, const Args&... args){
+	double result = 0;
+	for(int i = 0; i < g.num_gridpoints; i++){
+		result += g.w[i] * func(g.x[i], g.y[i], g.z[i], args...);
+	}
+	return result;
+}
 
 // Only Lebedev grids of degree 230 available
 extern const int 	lebedev_degree;

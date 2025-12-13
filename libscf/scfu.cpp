@@ -14,14 +14,26 @@ Matrix UR_density_matrix(const Matrix& C, int N){
 	return P;
 }
 
-double UR_E0(const Matrix& PT, const Matrix& Pa, const Matrix& Pb, const Matrix& Hcore, const Matrix& Fa, const Matrix& Fb){
+double UR_E0(XC_inp* xc_inp, const Matrix& Hcore, const Matrix& Fa, const Matrix& Fb, const Matrix& J){
 	double sum = 0;
-	for(int i = 0; i < PT.rows; i++){
-		for(int j = 0; j < PT.cols; j++){
-			sum += PT.matrix[j][i] * Hcore.matrix[i][j] + Pa.matrix[j][i] * Fa.matrix[i][j] + Pb.matrix[j][i] * Fb.matrix[i][j];
+	if(xc_inp->is_HF){
+		for(int i = 0; i < xc_inp->PT->rows; i++){
+			for(int j = 0; j < xc_inp->PT->cols; j++){
+				sum += xc_inp->PT->matrix[j][i] * Hcore.matrix[i][j] + 
+					   xc_inp->PA->matrix[j][i] * Fa.matrix[i][j]    + 
+					   xc_inp->PB->matrix[j][i] * Fb.matrix[i][j];
+			}
 		}
+		return 0.5 * sum;
 	}
-	return 0.5 * sum;
+	else{
+		for(int i = 0; i < xc_inp->PT->rows; i++){
+			for(int j = 0; j < xc_inp->PT->cols; j++){
+				sum += xc_inp->PT->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
+			}
+		}
+		return sum + E_XC(xc_inp);
+	}
 }
 
 void UR_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
@@ -39,7 +51,7 @@ void UR_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 	*fa = fock(hcore, j, fxca);
 	*fb = fock(hcore, j, fxcb);
 	
-	tEo = UR_E0(*(xc_inp->PT), *(xc_inp->PA), *(xc_inp->PB), hcore, *fa, *fb);
+	tEo = UR_E0(xc_inp, hcore, *fa, *fb, j);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
@@ -125,7 +137,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 			return;
 		}
 		
-		*Eo = UR_E0(*(xc_inp->PT), *(xc_inp->PA), *(xc_inp->PB), hcore, *fa, *fb);
+		*Eo = UR_E0(xc_inp, hcore, *fa, *fb, j);
 		
 		// Build fock matrices from previous fock matrices and weights
 		*fa = zero(xc_inp->PT->rows, xc_inp->PT->cols);
@@ -202,7 +214,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 			return;
 		}
 		
-		*Eo = UR_E0(*(xc_inp->PT), *(xc_inp->PA), *(xc_inp->PB), hcore, *fa, *fb);
+		*Eo = UR_E0(xc_inp, hcore, *fa, *fb, j);
 		
 		// Build fock matrices from previous fock matrices and weights
 		*fa = zero(xc_inp->PT->rows, xc_inp->PT->cols);

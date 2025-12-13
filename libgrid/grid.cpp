@@ -125,14 +125,6 @@ double becke_step(double mu, int k){
 	}
 }
 
-double integrate_quad(const grid &g, double (*func)(double, double, double, void*), void* ctx){
-	double result = 0;
-	for(int i = 0; i < g.num_gridpoints; i++){
-		result += g.w[i] * func(g.x[i], g.y[i], g.z[i], ctx);
-	}
-	return result;
-}
-
 const int lebedev_degree = 230;
 const double lebedev_x[230] = {
 	1.0000000000000000,-1.0000000000000000,0.0000000000000000,0.0000000000000000,0.0000000000000000,
