@@ -31,16 +31,3 @@ std::vector<double> density_gradient(double x, double y, double z, const Molecul
 	grad_rho[2] *= 2;
 	return grad_rho;
 }
-/*
-double R_Slater_X_integrand(double x, double y, double z, void* ctx){
-	density_context* d_ctx = static_cast<density_context*>(ctx);
-	const Molecule *mol = d_ctx->molecule;
-	return -mol->AOs[d_ctx->idx1].evaluate(x, y, z) * pow(3 * density(x, y, z, ctx) / M_PI, 1.0/3.0) * mol->AOs[d_ctx->idx2].evaluate(x, y, z);
-}
-
-double U_Slater_X_integrand(double x, double y, double z, void* ctx){
-	density_context* d_ctx = static_cast<density_context*>(ctx);
-	const Molecule *mol = d_ctx->molecule;
-	return -mol->AOs[d_ctx->idx1].evaluate(x, y, z) * pow(6 * density(x, y, z, ctx) / M_PI, 1.0/3.0) * mol->AOs[d_ctx->idx2].evaluate(x, y, z);
-}
-*/

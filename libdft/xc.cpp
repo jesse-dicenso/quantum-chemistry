@@ -22,12 +22,11 @@ std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_regis
 	{ "U_HF", U_HF_X },
 	// LDA //
 	{ "R_Slater", R_Slater_X },
-	{ "U_Slater", U_Slater_X }/*,
+	{ "U_Slater", U_Slater_X },
 	{ "R_VWN5_c", R_VWN5_c },
-	{ "U_VWN5_c", U_VWN5_c },
-	{ "R_VWN5, R_VWN5" },
-	{ "U_VWN5, U_VWN5" },
-	*/
+	//{ "U_VWN5_c", U_VWN5_c },
+	{ "R_VWN5", R_VWN5 }//,
+	//{ "U_VWN5", U_VWN5 },
 };
 
 XC_ret F_XC(XC_inp* inp){
@@ -39,12 +38,11 @@ std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_regis
 {
 	// LDA //
 	{ "R_Slater", R_Slater_X_E },
-	{ "U_Slater", U_Slater_X_E }/*,
+	{ "U_Slater", U_Slater_X_E },
 	{ "R_VWN5_c", R_VWN5_c_E },
-	{ "U_VWN5_c", U_VWN5_c_E },
-	{ "R_VWN5, R_VWN5_E" },
-	{ "U_VWN5, U_VWN5_E" },
-	*/
+	//{ "U_VWN5_c", U_VWN5_c_E },
+	{ "R_VWN5", R_VWN5_E }//,
+	//{ "U_VWN5", U_VWN5_E },
 };
 
 double E_XC(XC_inp* inp){
@@ -100,11 +98,9 @@ XC_ret R_Slater_X(const XC_inp& inp){
 	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	Matrix F_XC(inp.PT->rows, inp.PT->cols);
 	Matrix null;
-
 	auto integrand = [](double x, double y, double z, const Molecule& m, const Matrix& p, int idx1, int idx2) {
 		return -m.AOs[idx1].evaluate(x,y,z) * cbrt(3 * density(x, y, z, m, p) / M_PI) * m.AOs[idx2].evaluate(x,y,z);
 	};
-
 	for(int i = 0; i < F_XC.rows; i++){
 		F_XC.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PT, i, i);
 		for(int j = 0; j < i; j++){
@@ -128,11 +124,9 @@ XC_ret U_Slater_X(const XC_inp& inp){
 	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	Matrix F_XC_a(inp.PA->rows, inp.PA->cols);
 	Matrix F_XC_b(inp.PA->rows, inp.PB->cols);
-	
 	auto integrand = [](double x, double y, double z, const Molecule& m, const Matrix& p, int idx1, int idx2) {
 		return -m.AOs[idx1].evaluate(x,y,z) * cbrt(6 * density(x, y, z, m, p) / M_PI) * m.AOs[idx2].evaluate(x,y,z);
 	};
-	
 	for(int i = 0; i < F_XC_a.rows; i++){
 		F_XC_a.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PA, i, i);
 		F_XC_b.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PB, i, i);
@@ -155,8 +149,63 @@ double U_Slater_X_E(const XC_inp& inp){
 	};
 	return -(3.0/4.0) * cbrt(6.0 / M_PI) * integrate_quad(*inp.g, integrand, *inp.mol, *inp.PA, *inp.PB);
 }
-/*
-	VWN5
-	rs   = cbrt(3 / (4 * M_PI * rho));
-	zeta = (rho_up - rho_down) / rho;
-*/
+
+XC_ret R_VWN5_c(const XC_inp& inp){
+	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
+	Matrix F_XC(inp.PT->rows, inp.PT->cols);
+	Matrix null;
+	const double x0 = -0.10498;
+	const double b  =  3.72744;
+	const double c  =  12.9352;
+	const double X0 = x0 * x0 + b * x0 + c;
+	const double Q  = sqrt(4 * c - b * b);
+	auto integrand = [x0, b, c, X0, Q](double r_x, double r_y, double r_z, const Molecule& m, const Matrix& p, int idx1, int idx2) {
+		double rho = density(r_x, r_y, r_z, m, p);
+		if(rho < 1e-16) {return 0.0;}
+		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+		double X  = x * x + b * x + c;
+		double vc = (
+			log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
+		);
+		vc -= (x / (3 * X)) * (c / x - b * x0 / (x - x0));
+		vc *= ((1 - log(2)) / (M_PI * M_PI));
+		return m.AOs[idx1].evaluate(r_x, r_y, r_z) * vc * m.AOs[idx2].evaluate(r_x, r_y, r_z); 
+	};
+	for(int i = 0; i < F_XC.rows; i++){
+		F_XC.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PT, i, i);
+		for(int j = 0; j < i; j++){
+			F_XC.matrix[i][j] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PT, i, j);
+			F_XC.matrix[j][i] = F_XC.matrix[i][j];
+		}
+	}
+	return {F_XC, null};
+}
+
+double R_VWN5_c_E(const XC_inp& inp){
+	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
+	const double x0 = -0.10498;
+	const double b  =  3.72744;
+	const double c  =  12.9352;
+	const double Q  = sqrt(4 * c - b * b);
+	const double X0 = x0 * x0 + b * x0 + c;
+	auto integrand = [x0, b, c, X0, Q](double r_x, double r_y, double r_z, const Molecule& m, const Matrix& p) {
+		double rho = density(r_x, r_y, r_z, m, p);
+		if(rho < 1e-16) {return 0.0;}
+		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+		double X  = x * x + b * x + c;
+		double ec = (3.0 / (4.0 * M_PI * intpow(x, 6))) * ((1 - log(2))/(M_PI * M_PI)) * (
+			log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
+		);
+		return ec; 
+	};
+	return integrate_quad(*inp.g, integrand, *inp.mol, *inp.PT);
+}
+
+XC_ret R_VWN5(const XC_inp& inp){
+	Matrix null;
+	return {R_VWN5_c(inp).F_XC_1 + R_Slater_X(inp).F_XC_1, null};
+}
+
+double R_VWN5_E(const XC_inp& inp){
+	return R_VWN5_c_E(inp) + R_Slater_X_E(inp);
+}
