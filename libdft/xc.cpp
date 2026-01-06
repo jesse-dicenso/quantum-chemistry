@@ -256,7 +256,7 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 		);
 		double ec_1 = rho * A_1 * (
 			log(x * x / X_1) + (2 * b_1 / Q_1) * (1 - (2 * x0_1 + b_1) * x0_1 / X0_1) * 
-			atan(Q_1 / (2 * x + b_1)) - (b_0 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
+			atan(Q_1 / (2 * x + b_1)) - (b_1 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
 		);
 	
 		double vc_0 = (
