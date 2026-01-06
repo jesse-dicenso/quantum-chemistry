@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/H2O.inp
+infile=inputs/C.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
 method=U_VWN5
@@ -16,7 +16,7 @@ sps=5
 eps=1e-6
 
 # maximum number of scf iterations
-max_cycles=50
+max_cycles=30
 
 # population analysis: lowdin, mulliken
 pop=lowdin

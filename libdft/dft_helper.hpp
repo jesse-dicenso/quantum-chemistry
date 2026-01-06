@@ -12,7 +12,7 @@ std::vector<double> density_gradient(double x, double y, double z, const Molecul
 // U_VWN_c helpers
 double f_zeta(double zeta);
 double df_zeta(double zeta);
-double VWN_alpha(double rho);
-double VWN_dalpha_drho(double rho);	
+double VWN_alpha(double x);
+double VWN_dalpha_drho(double x, double n);	
 
 #endif

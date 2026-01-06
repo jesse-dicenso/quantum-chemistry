@@ -41,34 +41,29 @@ double df_zeta(double zeta){
 }
 
 // VWN spin stiffness
-double VWN_alpha(double rho){
+double VWN_alpha(double x){
+	const double A  = -1 / (6 * M_PI * M_PI);
 	const double x0 = -0.00475840;
 	const double b  =  1.13107;
 	const double c  =  13.0045;
 	const double Q  = sqrt(4 * c - b * b);
 	const double X0 = x0 * x0 + b * x0 + c;	
 
-	double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 	double X  = x * x + b * x + c;
-	return rho * ((1 - log(2))/(M_PI * M_PI)) * (
+	return A * (
 		log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
 	);
 }
 
 // VWN spin stiffness, derivative w.r.t. density
-double VWN_dalpha_drho(double rho){	
+double VWN_dalpha_drho(double x, double n){	
+	const double A  = -1 / (6 * M_PI * M_PI);
 	const double x0 = -0.00475840;
 	const double b  =  1.13107;
 	const double c  =  13.0045;
 	const double Q  = sqrt(4 * c - b * b);
 	const double X0 = x0 * x0 + b * x0 + c;
 
-	double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 	double X  = x * x + b * x + c;
-	double dalpha = (
-		log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
-	);
-	dalpha -= (x / (3 * X)) * (c / x - b * x0 / (x - x0));
-	dalpha *= ((1 - log(2)) / (M_PI * M_PI));
-	return dalpha;
+	return (A / (3 * X * n)) * (b / ((1 / x0) - (1 / x)) - c);
 }
