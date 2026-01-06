@@ -65,5 +65,5 @@ double VWN_dalpha_drho(double x, double n){
 	const double X0 = x0 * x0 + b * x0 + c;
 
 	double X  = x * x + b * x + c;
-	return (A / (3 * X * n)) * (b / ((1 / x0) - (1 / x)) - c);
+	return -(A / (3 * X * n)) * (c - b * x0 * x / (x - x0));
 }

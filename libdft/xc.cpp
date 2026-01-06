@@ -227,24 +227,24 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 	auto integrand = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double r_x, double r_y, double r_z, const Molecule& m, 
 																			const Matrix& pa, const Matrix& pb, int idx1, int idx2, int spin) 
 	{
-		double rho_up = density(r_x, r_y, r_z, m, pa);
-		double rho_dn = density(r_x, r_y, r_z, m, pb);
-		double rho = rho_up + rho_dn;
+		double rho_a = density(r_x, r_y, r_z, m, pa);
+		double rho_b = density(r_x, r_y, r_z, m, pb);
+		double rho = rho_a + rho_b;
 		if(rho < 1e-16) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 
-		double zeta = ( rho_up - rho_dn ) / rho;
+		double zeta = ( rho_a - rho_b ) / rho;
 		double zeta3 = zeta * zeta * zeta;
 		// spin = 0 -> alpha, spin = 1 -> beta
 		double dzeta_drho;
-		if(spin == 0) {dzeta_drho = 2 * rho_dn / (rho * rho) ;}
-		else if(spin == 1) {dzeta_drho = -2 * rho_up / (rho * rho) ;}
+		if(spin == 0) {dzeta_drho = 2 * rho_b / (rho * rho) ;}
+		else if(spin == 1) {dzeta_drho = -2 * rho_a / (rho * rho) ;}
 		else{assert((spin==0) || (spin==1));}
 		double f  = f_zeta(zeta);
 		double df = df_zeta(zeta);
 		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
 		double alpha = VWN_alpha(x);
-		double dalpha_drho  = VWN_dalpha_drho(x, rho);
+		double dalpha_drho = VWN_dalpha_drho(x, rho);
 
 		// evaluate energy densities and potentials for zeta = 0, 1
 		double X_0  = x * x + b_0 * x + c_0;
@@ -272,12 +272,14 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 		vc_1 -= (x / (3 * X_1)) * (c_1 / x - b_1 * x0_1 / (x - x0_1));
 		vc_1 *= A_1;
 
-		double vc_s = vc_0 + dalpha_drho * (f / ddf0) * (1 - zeta3*zeta) +
-					  alpha * (dzeta_drho / ddf0) * (df * (1 - zeta3*zeta) - 4 * f * zeta3) + 
-					  (vc_1 - vc_0) * f * zeta3*zeta + 
-					  (ec_1 - ec_0) * dzeta_drho * (df * zeta3*zeta + 4 * f * zeta3);
+		double vc_s = vc_0 + dalpha_drho * (f / ddf0) * (1 - zeta3 * zeta) + 
+					  alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho +
+					  (vc_1 - vc_0) * f * zeta3 * zeta + 
+					  (ec_1 - ec_0) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho;
+					  
 		return m.AOs[idx1].evaluate(r_x, r_y, r_z) * vc_s * m.AOs[idx2].evaluate(r_x, r_y, r_z); 
 	};
+
 	for(int i = 0; i < F_XC_a.rows; i++){
 		F_XC_a.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PA, *inp.PB, i, i, 0);
 		F_XC_b.matrix[i][i] = integrate_quad(*inp.g, integrand, *inp.mol, *inp.PA, *inp.PB, i, i, 1);
@@ -311,13 +313,13 @@ double U_VWN5_c_E(const XC_inp& inp){
 	auto integrand = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double r_x, double r_y, double r_z, const Molecule& m, 
 																					  const Matrix& pa, const Matrix& pb) 
 	{
-		double rho_up = density(r_x, r_y, r_z, m, pa);
-		double rho_dn = density(r_x, r_y, r_z, m, pb);
-		double rho = rho_up + rho_dn;
+		double rho_a = density(r_x, r_y, r_z, m, pa);
+		double rho_b = density(r_x, r_y, r_z, m, pb);
+		double rho = rho_a + rho_b;
 		if(rho < 1e-16) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 
-		double zeta = ( rho_up - rho_dn ) / rho;
+		double zeta = ( rho_a - rho_b ) / rho;
 		double zeta4 = zeta * zeta * zeta * zeta;
 		double f = f_zeta(zeta);
 		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );

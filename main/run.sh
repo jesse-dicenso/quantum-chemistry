@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/CH3.inp
+infile=inputs/C.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
 method=U_VWN5
@@ -10,7 +10,7 @@ method=U_VWN5
 basis=STO-3G
 
 # DIIS subspace size; if sps=0, fixed-point iterations are used
-sps=3
+sps=5
 
 # convergence criterion (energy)
 eps=1e-6
