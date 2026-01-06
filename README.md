@@ -7,7 +7,7 @@ Most of the implementation is entirely from scratch. The only external code is f
 
 -Methods: RHF, UHF, DFT (RKS, UKS)
 
--Functionals: HF exchange (Coming soon: Slater exchange, VWN5, PBE, B97)
+-Functionals: HF exchange, Slater exchange, VWN5 (coming soon: PBE, B97)
 
 -Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 

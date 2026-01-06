@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/Ne.inp
+infile=inputs/H2O.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
-method=R_VWN5
+method=U_VWN5
 
 # basis set
 basis=STO-3G
@@ -13,7 +13,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-8
+eps=1e-6
 
 # maximum number of scf iterations
 max_cycles=50

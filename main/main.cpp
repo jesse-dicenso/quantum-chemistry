@@ -57,11 +57,11 @@ int main(int argc, char* argv[]){
 	// e		// orbital energies		//
 	//////////////////////////////////////////////////
 	
-	cout << "********************\n";
-	cout << "*                  *\n";
-	cout << "*   HARTREE-FOCK   *\n";
-	cout << "*                  *\n";
-	cout << "********************\n\n";
+	cout << "*************************\n";
+	cout << "*                       *\n";
+	cout << "*   QUANTUM CHEMISTRY   *\n";
+	cout << "*                       *\n";
+	cout << "*************************\n\n";
 	cout << "JESSE DICENSO\n";
 	cout << "SUMMER 2024 - (probably May 2030?)\n\n";
 

@@ -44,15 +44,17 @@ XC_ret U_HF_X(const XC_inp& inp);
 // LDA //
 XC_ret R_Slater_X(const XC_inp& inp);
 double R_Slater_X_E(const XC_inp& inp);
-
 XC_ret U_Slater_X(const XC_inp& inp);
 double U_Slater_X_E(const XC_inp& inp);
 
 XC_ret R_VWN5_c(const XC_inp& inp);
 double R_VWN5_c_E(const XC_inp& inp);
-
+XC_ret U_VWN5_c(const XC_inp& inp);
+double U_VWN5_c_E(const XC_inp& inp);
 XC_ret R_VWN5(const XC_inp& inp);
 double R_VWN5_E(const XC_inp& inp);
+XC_ret U_VWN5(const XC_inp& inp);
+double U_VWN5_E(const XC_inp& inp);
 
 // GGA //
 

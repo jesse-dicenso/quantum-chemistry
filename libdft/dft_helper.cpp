@@ -31,3 +31,44 @@ std::vector<double> density_gradient(double x, double y, double z, const Molecul
 	grad_rho[2] *= 2;
 	return grad_rho;
 }
+
+double f_zeta(double zeta){
+	return ( cbrt(intpow(1 + zeta, 4)) + cbrt(intpow(1 - zeta, 4)) - 2.0 ) / ( cbrt(intpow(2.0, 4)) - 2.0 );
+}
+
+double df_zeta(double zeta){
+	return 2 * ( cbrt(1 + zeta) - cbrt(1 - zeta) ) / (3 * (cbrt(2) - 1));
+}
+
+// VWN spin stiffness
+double VWN_alpha(double rho){
+	const double x0 = -0.00475840;
+	const double b  =  1.13107;
+	const double c  =  13.0045;
+	const double Q  = sqrt(4 * c - b * b);
+	const double X0 = x0 * x0 + b * x0 + c;	
+
+	double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+	double X  = x * x + b * x + c;
+	return rho * ((1 - log(2))/(M_PI * M_PI)) * (
+		log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
+	);
+}
+
+// VWN spin stiffness, derivative w.r.t. density
+double VWN_dalpha_drho(double rho){	
+	const double x0 = -0.00475840;
+	const double b  =  1.13107;
+	const double c  =  13.0045;
+	const double Q  = sqrt(4 * c - b * b);
+	const double X0 = x0 * x0 + b * x0 + c;
+
+	double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+	double X  = x * x + b * x + c;
+	double dalpha = (
+		log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
+	);
+	dalpha -= (x / (3 * X)) * (c / x - b * x0 / (x - x0));
+	dalpha *= ((1 - log(2)) / (M_PI * M_PI));
+	return dalpha;
+}
