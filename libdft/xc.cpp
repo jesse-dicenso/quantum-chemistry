@@ -272,8 +272,8 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 		vc_1 -= (x / (3 * X_1)) * (c_1 / x - b_1 * x0_1 / (x - x0_1));
 		vc_1 *= A_1;
 
-		double vc_s = vc_0 + dalpha_drho * (f / ddf0) * (1 - zeta3 * zeta) + 
-					  alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho +
+		double vc_s = vc_0 + (alpha + rho * dalpha_drho) * (f / ddf0) * (1 - zeta3 * zeta) + 
+					  rho * alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho +
 					  (vc_1 - vc_0) * f * zeta3 * zeta + 
 					  (ec_1 - ec_0) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho;
 					  
@@ -338,7 +338,7 @@ double U_VWN5_c_E(const XC_inp& inp){
 			atan(Q_1 / (2 * x + b_1)) - (b_1 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
 		);
 
-		return ec_0 + alpha * (f / ddf0) * (1 - zeta4) + (ec_1 - ec_0) * f * zeta4;
+		return ec_0 + rho * alpha * (f / ddf0) * (1 - zeta4) + (ec_1 - ec_0) * f * zeta4;
 	};
 	return integrate_quad(*inp.g, integrand, *inp.mol, *inp.PA, *inp.PB);	
 }

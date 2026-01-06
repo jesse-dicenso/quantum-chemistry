@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/C.inp
+infile=inputs/CH3.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
 method=U_VWN5
@@ -13,7 +13,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-6
+eps=1e-8
 
 # maximum number of scf iterations
 max_cycles=30
