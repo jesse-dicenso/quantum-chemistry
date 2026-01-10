@@ -95,7 +95,7 @@ XC_ret R_Slater_X(const XC_inp& inp){
 	auto v = [](double rho) {
 		return -cbrt(3 * rho / M_PI);
 	};
-	return F_XC_LDA(inp, 0, v);
+	return F_XC_LDA<0>(inp, v);
 }
 
 double R_Slater_X_E(const XC_inp& inp){
@@ -112,7 +112,7 @@ XC_ret U_Slater_X(const XC_inp& inp){
 	auto v = [](double rho_s) {
 		return -cbrt(6 * rho_s / M_PI);
 	};
-	return F_XC_LDA(inp, 1, v);
+	return F_XC_LDA<1>(inp, v);
 }
 
 double U_Slater_X_E(const XC_inp& inp){
@@ -144,7 +144,7 @@ XC_ret R_VWN5_c(const XC_inp& inp){
 		vc *= A;
 		return vc; 
 	};
-	return F_XC_LDA(inp, 0, v);
+	return F_XC_LDA<0>(inp, v);
 }
 
 double R_VWN5_c_E(const XC_inp& inp){
@@ -236,7 +236,7 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 					  
 		return vc_s; 
 	};
-	return F_XC_LDA(inp, 2, v);
+	return F_XC_LDA<2>(inp, v);
 }
 
 double U_VWN5_c_E(const XC_inp& inp){

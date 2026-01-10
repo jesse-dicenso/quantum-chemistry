@@ -43,14 +43,14 @@ XC_ret R_HF_X(const XC_inp& inp);
 XC_ret U_HF_X(const XC_inp& inp);
 
 // LDA //
-template <typename F, typename... Args>
-XC_ret F_XC_LDA(const XC_inp& inp, int sflag, F&& v_LDA, const Args&... args){
+template <int sflag, typename F, typename... Args>
+XC_ret F_XC_LDA(const XC_inp& inp, F&& v_LDA, const Args&... args){
 	Molecule* m = inp.mol;
 	grid*     g = inp.g;
 	int num_gpts = g->num_gridpoints;
 	std::vector<double> phi_buf(num_gpts);
 	// Restricted: sflag = 0
-	if(sflag==0){
+	if constexpr (sflag==0){
 		Matrix* p = inp.PT;
 		Matrix F_XC(p->rows, p->cols);
 		Matrix null;
@@ -71,7 +71,7 @@ XC_ret F_XC_LDA(const XC_inp& inp, int sflag, F&& v_LDA, const Args&... args){
 		return {F_XC, null};
 	}
 	// Unrestricted, rho_a, rho_b not needed together: sflag = 1
-	else if(sflag==1){
+	else if constexpr (sflag==1){
 		Matrix* pa = inp.PA;
 		Matrix* pb = inp.PB;
 		Matrix F_XC_A(pa->rows, pa->cols);
@@ -97,7 +97,7 @@ XC_ret F_XC_LDA(const XC_inp& inp, int sflag, F&& v_LDA, const Args&... args){
 		return {F_XC_A, F_XC_B};
 	}
 	// Unrestricted, rho_a, rho_b needed together: sflag = 2
-	else if(sflag==2){
+	else if constexpr(sflag==2){
 		Matrix* pa = inp.PA;
 		Matrix* pb = inp.PB;
 		Matrix F_XC_A(pa->rows, pa->cols);
