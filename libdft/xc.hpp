@@ -59,7 +59,7 @@ XC_ret F_XC_LDA(const XC_inp& inp, F&& v_LDA, const Args&... args){
 			for(int j = 0; j < m->AOs.size(); j++){
 				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
 			}
-			rho = density2(g->x[i], g->y[i], g->z[i], phi_buf, *p);
+			rho = density(g->x[i], g->y[i], g->z[i], phi_buf, *p);
 			for(int mu = 0; mu < F_XC.rows; mu++){
 				F_XC.matrix[mu][mu] += g->w[i] * phi_buf[mu] * v_LDA(rho, args...) * phi_buf[mu];
 				for(int nu = 0; nu < mu; nu++){
@@ -81,8 +81,8 @@ XC_ret F_XC_LDA(const XC_inp& inp, F&& v_LDA, const Args&... args){
 			for(int j = 0; j < m->AOs.size(); j++){
 				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
 			}
-			rho_a = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
-			rho_b = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
+			rho_a = density(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
+			rho_b = density(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
 			for(int mu = 0; mu < F_XC_A.rows; mu++){
 				F_XC_A.matrix[mu][mu] += g->w[i] * phi_buf[mu] * v_LDA(rho_a, args...) * phi_buf[mu];
 				F_XC_B.matrix[mu][mu] += g->w[i] * phi_buf[mu] * v_LDA(rho_b, args...) * phi_buf[mu];
@@ -107,8 +107,8 @@ XC_ret F_XC_LDA(const XC_inp& inp, F&& v_LDA, const Args&... args){
 			for(int j = 0; j < m->AOs.size(); j++){
 				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
 			}
-			rho_a = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
-			rho_b = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
+			rho_a = density(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
+			rho_b = density(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
 			for(int mu = 0; mu < F_XC_A.rows; mu++){
 				F_XC_A.matrix[mu][mu] += g->w[i] * phi_buf[mu] * v_LDA(rho_a, rho_b, 0, args...) * phi_buf[mu];
 				F_XC_B.matrix[mu][mu] += g->w[i] * phi_buf[mu] * v_LDA(rho_a, rho_b, 1, args...) * phi_buf[mu];
@@ -140,7 +140,7 @@ double E_XC_LDA(const XC_inp& inp, F&& e_LDA, const Args&... args){
 			for(int j = 0; j < m->AOs.size(); j++){
 				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
 			}
-			rho = density2(g->x[i], g->y[i], g->z[i], phi_buf, *p);
+			rho = density(g->x[i], g->y[i], g->z[i], phi_buf, *p);
 			E_XC += g->w[i] * e_LDA(rho, args...);
 		}
 	}
@@ -153,8 +153,8 @@ double E_XC_LDA(const XC_inp& inp, F&& e_LDA, const Args&... args){
 			for(int j = 0; j < m->AOs.size(); j++){
 				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
 			}
-			rho_a = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
-			rho_b = density2(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
+			rho_a = density(g->x[i], g->y[i], g->z[i], phi_buf, *pa);
+			rho_b = density(g->x[i], g->y[i], g->z[i], phi_buf, *pb);
 			E_XC += g->w[i] * e_LDA(rho_a, rho_b, args...);
 		}
 	}
@@ -175,6 +175,15 @@ XC_ret R_VWN5(const XC_inp& inp);
 double R_VWN5_E(const XC_inp& inp);
 XC_ret U_VWN5(const XC_inp& inp);
 double U_VWN5_E(const XC_inp& inp);
+
+XC_ret R_PW92_c(const XC_inp& inp);
+double R_PW92_c_E(const XC_inp& inp);
+XC_ret U_PW92_c(const XC_inp& inp);
+double U_PW92_c_E(const XC_inp& inp);
+XC_ret R_PW92(const XC_inp& inp);
+double R_PW92_E(const XC_inp& inp);
+XC_ret U_PW92(const XC_inp& inp);
+double U_PW92_E(const XC_inp& inp);
 
 // GGA //
 

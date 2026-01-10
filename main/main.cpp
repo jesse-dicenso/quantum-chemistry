@@ -131,11 +131,11 @@ int main(int argc, char* argv[]){
 	}
 
 	if(r){
-		cout << "Performing restricted Hartree Fock...\n";	
+		cout << "Performing restricted calculation...\n";	
 		cout << "Using core Hamiltonian as initial guess to Fock matrix.\n\n";
 	}
 	else{
-		cout << "Performing unrestricted Hartree Fock...\n";	
+		cout << "Performing unrestricted calculation...\n";	
 		cout << "Using core Hamiltonian as initial guess to alpha/beta Fock matrices.\n\n";
 	}
 	cout << "                   *************\n";
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]){
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 			
 			double trps = Tr(p*s);
-			double I_density = integrate_quad(mol_grid, density, M, p);
+			double I_density = integrate_quad(mol_grid, density2, M, p);
 			cout << "Trace of PS = " << trps << '\n';
 			cout << "Integral of density = " << I_density << "\n\n";
 			
@@ -335,14 +335,14 @@ int main(int argc, char* argv[]){
 
 			cout << "Total E     = " << Eo + nuc << " Ha\n";
 			cout << "Exact <S^2> = " << S2_e << '\n';
-			cout << "UHF   <S^2> = " << S2_UHF << "\n\n";		
+			cout << "Calc. <S^2> = " << S2_UHF << "\n\n";		
 			
 			double trpas = Tr(pa*s);
 			double trpbs = Tr(pb*s);
 			double trpts = Tr(pt*s);
-			double I_density_a = integrate_quad(mol_grid, density, M, pa);
-			double I_density_b = integrate_quad(mol_grid, density, M, pb);
-			double I_density_t = integrate_quad(mol_grid, density, M, pt);
+			double I_density_a = integrate_quad(mol_grid, density2, M, pa);
+			double I_density_b = integrate_quad(mol_grid, density2, M, pb);
+			double I_density_t = integrate_quad(mol_grid, density2, M, pt);
 			cout << "Trace    of Pa*S  = " << trpas << '\n';
 			cout << "Integral of rho_a = " << I_density_a << '\n';
 			cout << "Trace    of Pb*S  = " << trpbs << '\n';

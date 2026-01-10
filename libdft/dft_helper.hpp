@@ -6,14 +6,19 @@
 #include "../libmol/mol.hpp"
 #include "../libgrid/grid.hpp"
 
-double density (double x, double y, double z, const Molecule& mol, const Matrix& P);
-double density2(double x, double y, double z, const std::vector<double>& phis, const Matrix& P);
-std::vector<double> density_gradient(double x, double y, double z, const Molecule& mol, const Matrix& P);
+double density(double x, double y, double z, const std::vector<double>& phis, const Matrix& P);
+std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, 
+									 const std::vector<double>& g_phis, const Matrix& P);
 
-// U_VWN_c helpers
+// U_LDA_c helpers
 double f_zeta(double zeta);
 double df_zeta(double zeta);
 double VWN_alpha(double x);
 double VWN_dalpha_drho(double x, double n);	
+double PW92_alpha(double rs);
+double PW92_dalpha_drs(double rs);
+
+// Old
+double density2(double x, double y, double z, const Molecule& mol, const Matrix& P);
 
 #endif

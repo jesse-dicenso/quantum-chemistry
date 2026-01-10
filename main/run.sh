@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/CH3.inp
+infile=inputs/C.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
 method=U_VWN5
