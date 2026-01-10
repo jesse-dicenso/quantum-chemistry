@@ -1,5 +1,5 @@
 CXX := clang++
-CXXFLAGS := -O2
+CXXFLAGS := -O2 -Wno-c++17-extensions
 
 SRC_DIRS := . ../libaux ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
 SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
