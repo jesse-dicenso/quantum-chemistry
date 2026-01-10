@@ -27,10 +27,10 @@ std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_regis
 	{ "U_VWN5_c", U_VWN5_c },
 	{ "R_VWN5", R_VWN5 },
 	{ "U_VWN5", U_VWN5 },
-	{ "R_PW92_c", R_VWN5 },
-	{ "U_PW92_c", R_VWN5 },
-	{ "R_PW92", R_VWN5 },
-	{ "U_PW92", R_VWN5 },
+	{ "R_PW92_c", R_PW92_c },
+	{ "U_PW92_c", U_PW92_c },
+	{ "R_PW92", R_PW92 },
+	{ "U_PW92", U_PW92 }
 };
 
 XC_ret F_XC(XC_inp* inp){
@@ -46,10 +46,10 @@ std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_regis
 	{ "U_VWN5_c", U_VWN5_c_E },
 	{ "R_VWN5", R_VWN5_E },
 	{ "U_VWN5", U_VWN5_E },
-	{ "R_PW92_c", R_VWN5_E },
-	{ "U_PW92_c", U_VWN5_E },
-	{ "R_PW92", R_VWN5_E },
-	{ "U_PW92", U_VWN5_E },
+	{ "R_PW92_c", R_PW92_E },
+	{ "U_PW92_c", U_PW92_E },
+	{ "R_PW92", R_PW92_E },
+	{ "U_PW92", U_PW92_E }
 };
 
 double E_XC(XC_inp* inp){
@@ -470,7 +470,7 @@ XC_ret U_PW92(const XC_inp& inp){
 }
 
 double U_PW92_E(const XC_inp& inp){
-	return U_PW92_c_E(inp) + R_Slater_X_E(inp);
+	return U_PW92_c_E(inp) + U_Slater_X_E(inp);
 }
 
 // GGA //

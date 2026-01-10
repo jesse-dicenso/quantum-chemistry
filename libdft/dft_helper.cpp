@@ -68,7 +68,8 @@ double VWN_dalpha_drho(double x, double n){
 
 // PW92 spin stiffness
 double PW92_alpha(double rs){
-	const double A  = 0.016887;
+	// const double A  = 0.016887;
+	const double A  = 1 / (6 * M_PI * M_PI);
 	const double a1 = 0.11125;
 	const double b1 = 10.357;
 	const double b2 = 3.6231;
