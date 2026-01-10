@@ -6,7 +6,8 @@
 #include "../libmol/mol.hpp"
 #include "../libgrid/grid.hpp"
 
-double density(double x, double y, double z, const Molecule& mol, const Matrix& P);
+double density (double x, double y, double z, const Molecule& mol, const Matrix& P);
+double density2(double x, double y, double z, const std::vector<double>& phis, const Matrix& P);
 std::vector<double> density_gradient(double x, double y, double z, const Molecule& mol, const Matrix& P);
 
 // U_VWN_c helpers

@@ -13,6 +13,17 @@ double density(double x, double y, double z, const Molecule& mol, const Matrix& 
 	return rho;
 }
 
+double density2(double x, double y, double z, const std::vector<double>& phis, const Matrix& P){
+	double rho = 0;
+	for(int i = 0; i < P.rows; i++){
+			for(int j = i+1; j < P.cols; j++){
+					rho += 2 * P.matrix[i][j] * phis[i] * phis[j];
+			}
+			rho += P.matrix[i][i] * phis[i] * phis[i];
+	}
+	return rho;
+}
+
 std::vector<double> density_gradient(double x, double y, double z, const Molecule& mol, const Matrix& P){
 	std::vector<double> grad_rho = {0.0, 0.0, 0.0};
 	std::vector<double> eval_grad_gf;
