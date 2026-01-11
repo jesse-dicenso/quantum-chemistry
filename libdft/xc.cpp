@@ -556,27 +556,26 @@ XC_ret U_PBE_X(const XC_inp& inp){
 						 double gpx1, double gpy1, double gpz1,
 					 	 double gpx2, double gpy2, double gpz2, int spin) 
 	{
-		double rho = rho_a + rho_b;
-		std::vector<double> grho = {grho_a[0] + grho_b[0], grho_a[1] + grho_b[1], grho_a[2] + grho_b[2]};
-		if (rho < 1e-16) {return 0.0;}
 		double rho_s;
-		if     (spin == 0) {rho_s = rho_a;}
-		else if(spin == 1) {rho_s = rho_b;}
+		std::vector<double> grho_s;
+		if     (spin == 0) {rho_s = rho_a; grho_s = grho_a;}
+		else if(spin == 1) {rho_s = rho_b; grho_s = grho_b;}
 		else{assert((spin==0) || (spin==1));}
+		if (rho_s < 1e-16) {return 0.0;}
 		// Slater Exchange
 		double v_LDA, e_LDA;
-		v_LDA = -cbrt(6 * rho_s / M_PI);
-		e_LDA = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * (cbrt(rho_a * rho_a * rho_a * rho_a) + cbrt(rho_b * rho_b * rho_b * rho_b));
+		v_LDA = -cbrt(3 * 16 * rho_s / M_PI);
+		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho_s * rho_s * rho_s * rho_s * 16);
 
 		// Enhancement Factor
 		double grho2, kF, s2;
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		s2 = grho2 / (4 * kF * kF * rho * rho);
+		grho2 = 4 * grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2];
+		kF = cbrt(3 * M_PI * M_PI * 2 * rho_s);
+		s2 = grho2 / (4 * kF * kF * 2 * rho_s * 2 * rho_s);
 		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
 
 		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
-		ds2_drho = -5 * s2 / (3 * rho);
+		ds2_drho = -5 * s2 / (3 * rho_s);
 		ds2_dgrho2 = s2 / grho2;	
 		FX_d = 1 + mu * s2 / kappa;	
 		FX = 1 + kappa - kappa / FX_d;
@@ -587,9 +586,9 @@ XC_ret U_PBE_X(const XC_inp& inp){
 		double de_drho = v_LDA * FX + e_LDA * dFX_drho;
 		double de_dgrho2 = e_LDA * dFX_dgrho2;
 
-		return (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
-			   (phi1 * (grho[0] * gpx2 + grho[1] * gpy2 + grho[2] * gpz2) + 
-			    phi2 * (grho[0] * gpx1 + grho[1] * gpy1 + grho[2] * gpz1));
+		return 0.5 * (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
+			   (phi1 * 2 * (grho_s[0] * gpx2 + grho_s[1] * gpy2 + grho_s[2] * gpz2) + 
+			    phi2 * 2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1));
 	};
 	return F_XC_GGA<1>(inp, v);
 }
@@ -602,19 +601,22 @@ double U_PBE_X_E(const XC_inp& inp){
 	{
 		double rho = rho_a + rho_b;
 		if (rho < 1e-16) {return 0.0;}
-		std::vector<double> grho = {grho_a[0] + grho_b[0], grho_a[1] + grho_b[1], grho_a[2] + grho_b[2]};
 		// Slater Exchange
-		double e_LDA;
-		e_LDA = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * (cbrt(rho_a * rho_a * rho_a * rho_a) + cbrt(rho_b * rho_b * rho_b * rho_b));
+		double e_LDA_a = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_a * rho_a * rho_a * rho_a);
+		double e_LDA_b = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_b * rho_b * rho_b * rho_b);
 
 		// Enhancement Factor
-		double grho2, kF, s2;
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		s2 = grho2 / (4 * kF * kF * rho * rho);
-		if (s2 < 1e-16) {return e_LDA;}	
+		double grho2_a, grho2_b, kF_a, kF_b, s2_a, s2_b, FX_a, FX_b;
+		grho2_a = 4 * (grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2]);
+		grho2_b = 4 * (grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2]);
+		kF_a = cbrt(3 * M_PI * M_PI * rho_a * 2);
+		kF_b = cbrt(3 * M_PI * M_PI * rho_b * 2);
+		s2_a = grho2_a / (4 * kF_a * kF_a * rho_a * 2 * rho_a * 2);
+		s2_b = grho2_b / (4 * kF_b * kF_b * rho_b * 2 * rho_b * 2);
 
-		return e_LDA * (1 + kappa - kappa / (1 + mu * s2 / kappa));
+		FX_a = (1 + kappa - kappa / (1 + mu * s2_a / kappa));
+		FX_b = (1 + kappa - kappa / (1 + mu * s2_b / kappa));
+		return e_LDA_a * FX_a + e_LDA_b * FX_b;
 	};
 	return E_XC_GGA<1>(inp, e);
 }

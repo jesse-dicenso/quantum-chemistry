@@ -218,7 +218,7 @@ XC_ret F_XC_GGA(const XC_inp& inp, F&& v_GGA){
 													   gpx_buf[mu], gpy_buf[mu], gpz_buf[mu],
 													   gpx_buf[mu], gpy_buf[mu], gpz_buf[mu]);
 				for(int nu = 0; nu < mu; nu++){
-					F_XC.matrix[mu][mu] += g->w[i] * v_GGA(rho, grho, phi_buf[mu], phi_buf[nu], 
+					F_XC.matrix[mu][nu] += g->w[i] * v_GGA(rho, grho, phi_buf[mu], phi_buf[nu], 
 														   gpx_buf[mu], gpy_buf[mu], gpz_buf[mu],
 														   gpx_buf[nu], gpy_buf[nu], gpz_buf[nu]);
 					F_XC.matrix[nu][mu] = F_XC.matrix[mu][nu];
@@ -256,11 +256,11 @@ XC_ret F_XC_GGA(const XC_inp& inp, F&& v_GGA){
 													     gpx_buf[mu], gpy_buf[mu], gpz_buf[mu],
 													     gpx_buf[mu], gpy_buf[mu], gpz_buf[mu], 1);
 				for(int nu = 0; nu < mu; nu++){
-					F_XC_A.matrix[mu][mu] += g->w[i] * v_GGA(rho_a, rho_b, grho_a, grho_b, phi_buf[mu], phi_buf[nu], 
+					F_XC_A.matrix[mu][nu] += g->w[i] * v_GGA(rho_a, rho_b, grho_a, grho_b, phi_buf[mu], phi_buf[nu], 
 														     gpx_buf[mu], gpy_buf[mu], gpz_buf[mu],
 														     gpx_buf[nu], gpy_buf[nu], gpz_buf[nu], 0);
 					F_XC_A.matrix[nu][mu] = F_XC_A.matrix[mu][nu];
-					F_XC_B.matrix[mu][mu] += g->w[i] * v_GGA(rho_a, rho_b, grho_a, grho_b, phi_buf[mu], phi_buf[nu], 
+					F_XC_B.matrix[mu][nu] += g->w[i] * v_GGA(rho_a, rho_b, grho_a, grho_b, phi_buf[mu], phi_buf[nu], 
 														     gpx_buf[mu], gpy_buf[mu], gpz_buf[mu],
 														     gpx_buf[nu], gpy_buf[nu], gpz_buf[nu], 1);
 					F_XC_B.matrix[nu][mu] = F_XC_B.matrix[mu][nu];
