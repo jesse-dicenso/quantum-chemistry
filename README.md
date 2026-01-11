@@ -5,15 +5,15 @@ Most of the implementation is entirely from scratch. The only external code is f
 
 ## Current capabilities:
 
--Methods: RHF, UHF, DFT (RKS, UKS)
+-Methods: RHF, UHF, DFT (RKS, UKS).
 
--Functionals: HF exchange, Slater exchange, VWN5 (coming soon: PBE, B97)
+-Functionals: HF exchange, Slater exchange, VWN5, PW92 (more to come...); evaluated on Gauss-Chebyshev-Lebedev grids (100 radial points, 230 angular points).
 
 -Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 
--SCF Algorithms: fixed-point, DIIS with variable subspace size
+-SCF Algorithms: fixed-point, DIIS with variable subspace size.
 
--Population Analyses: Lowdin, Mulliken
+-Population Analyses: Lowdin, Mulliken.
 
 ## How to install:
 This program depends on LAPACK for some linear algebra routines (diagonalization, linear systems). If you do not already have LAPACK and BLAS installed, this can be done manually or with commands like:

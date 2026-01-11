@@ -11,17 +11,17 @@ double density(double x, double y, double z, const std::vector<double>& phis, co
 	return rho;
 }
 
-std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, 
-									 const std::vector<double>& g_phis, const Matrix& P)
+std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, const std::vector<double>& gpx, 
+									 const std::vector<double> gpy, const std::vector<double> gpz, const Matrix& P)
 {
 	double temp;
 	std::vector<double> grad_rho = {0.0, 0.0, 0.0};
 	for(int i = 0; i < P.rows; i++){
 			for(int j = 0; j < P.cols; j++){
 					temp = P.matrix[i][j] * phis[j];
-					grad_rho[0] += g_phis[0] * temp;
-					grad_rho[1] += g_phis[1] * temp;
-					grad_rho[2] += g_phis[2] * temp;
+					grad_rho[0] += gpx[i] * temp;
+					grad_rho[1] += gpy[i] * temp;
+					grad_rho[2] += gpz[i] * temp;
 			}
 	}
 	grad_rho[0] *= 2;

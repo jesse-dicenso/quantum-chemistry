@@ -5,12 +5,16 @@ XC_inp::XC_inp(const std::string& method_name){
 
 	is_HF = is_LDA = is_GGA = false;
 	assert((method.substr(0,2)=="R_") || (method.substr(0,2)=="U_"));
-	if      (method.substr(2)=="HF"     )  {is_HF  = true;}
-	else if((method.substr(2)=="Slater" ) || 
-			(method.substr(2)=="VWN5_c" ) || 
-			(method.substr(2)=="VWN5"   ) || 
-			(method.substr(2)=="PW92_c" ) || 
-			(method.substr(2)=="PW92"   )) {is_LDA = true;}
+	std::string sub = method.substr(2);
+	if      (sub=="HF"     )  {is_HF  = true;}
+	else if((sub=="Slater" ) || 
+			(sub=="VWN5_c" ) || 
+			(sub=="VWN5"   ) || 
+			(sub=="PW92_c" ) || 
+			(sub=="PW92"   )) {is_LDA = true;}
+	else if((sub=="PBE_X"  ) ||
+			(sub=="PBE_c"  ) ||
+			(sub=="PBE"    )) {is_GGA = true;}
 	else{
 		std::cerr << "Error: method " << method << " not found!" << std::endl;
 		assert(false);
@@ -30,7 +34,8 @@ std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_regis
 	{ "R_PW92_c", R_PW92_c },
 	{ "U_PW92_c", U_PW92_c },
 	{ "R_PW92", R_PW92 },
-	{ "U_PW92", U_PW92 }
+	{ "U_PW92", U_PW92 },
+	{ "R_PBE_X", R_PBE_X }
 };
 
 XC_ret F_XC(XC_inp* inp){
@@ -49,7 +54,8 @@ std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_regis
 	{ "R_PW92_c", R_PW92_E },
 	{ "U_PW92_c", U_PW92_E },
 	{ "R_PW92", R_PW92_E },
-	{ "U_PW92", U_PW92_E }
+	{ "U_PW92", U_PW92_E },
+	{ "R_PBE_X", R_PBE_X_E }
 };
 
 double E_XC(XC_inp* inp){
@@ -99,7 +105,7 @@ XC_ret U_HF_X(const XC_inp& inp){
 	return {F_XC_a, F_XC_b};
 }
 
-// LDA //
+//////////////////////////////////////////////////////////// LDA //
 XC_ret R_Slater_X(const XC_inp& inp){
 	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	auto v = [](double rho) {
@@ -473,4 +479,70 @@ double U_PW92_E(const XC_inp& inp){
 	return U_PW92_c_E(inp) + U_Slater_X_E(inp);
 }
 
-// GGA //
+//////////////////////////////////////////////////////////// GGA //
+XC_ret R_PBE_X(const XC_inp& inp){
+	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
+	const double beta = 0.066725;
+	const double kappa = 0.804;
+	const double mu = beta * (M_PI * M_PI / 3);
+	auto v = [kappa, mu](double rho, std::vector<double> grho, double phi1, double phi2, 
+						 double gpx1, double gpy1, double gpz1,
+					 	 double gpx2, double gpy2, double gpz2) 
+	{
+		if (rho < 1e-16) {return 0.0;}
+		// Slater Exchange
+		double v_LDA, e_LDA;
+		v_LDA = -cbrt(3 * rho / M_PI);
+		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho * rho * rho * rho);
+
+		// Enhancement Factor
+		double grho2, kF, s2;
+		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
+		kF = cbrt(3 * M_PI * M_PI * rho);
+		s2 = grho2 / (4 * kF * kF * rho * rho);
+		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
+
+		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
+		ds2_drho = -5 * s2 / (3 * rho);
+		ds2_dgrho2 = s2 / grho2;	
+		FX_d = 1 + mu * s2 / kappa;	
+		FX = 1 + kappa - kappa / FX_d;
+		dFX_ds2 = mu / (FX_d * FX_d);
+		dFX_drho = dFX_ds2 * ds2_drho; 
+		dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
+ 
+		double de_drho = v_LDA * FX + e_LDA * dFX_drho;
+		double de_dgrho2 = e_LDA * dFX_dgrho2;
+
+		return (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
+			   (phi1 * (grho[0] * gpx2 + grho[1] * gpy2 + grho[2] * gpz2) + 
+			    phi2 * (grho[0] * gpx1 + grho[1] * gpy1 + grho[2] * gpz1));
+	};
+	return F_XC_GGA<0>(inp, v);
+}
+
+double R_PBE_X_E(const XC_inp& inp){
+	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
+	const double beta = 0.066725;
+	const double kappa = 0.804;
+	const double mu = beta * (M_PI * M_PI / 3);
+	auto e = [kappa, mu](double rho, std::vector<double> grho) 
+	{
+		if (rho < 1e-16) {return 0.0;}
+		// Slater Exchange
+		double e_LDA;
+		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho * rho * rho * rho);
+
+		// Enhancement Factor
+		double grho2, kF, s2;
+		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
+		kF = cbrt(3 * M_PI * M_PI * rho);
+		s2 = grho2 / (4 * kF * kF * rho * rho);
+		if (s2 < 1e-16) {return e_LDA;}	
+
+		return e_LDA * (1 + kappa - kappa / (1 + mu * s2 / kappa));
+	};
+	return E_XC_GGA<0>(inp, e);
+}
+	//const double beta = 0.066725;
+	//const double gamma = (1 - log(2)) / (M_PI * M_PI);

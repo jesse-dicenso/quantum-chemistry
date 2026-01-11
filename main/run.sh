@@ -4,7 +4,7 @@
 infile=inputs/Ne.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
-method=R_PW92
+method=R_PBE_X
 
 # basis set
 basis=STO-3G

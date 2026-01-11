@@ -7,8 +7,8 @@
 #include "../libgrid/grid.hpp"
 
 double density(double x, double y, double z, const std::vector<double>& phis, const Matrix& P);
-std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, 
-									 const std::vector<double>& g_phis, const Matrix& P);
+std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, const std::vector<double>& gpx, 
+									 const std::vector<double> gpy, const std::vector<double> gpz, const Matrix& P);
 
 // U_LDA_c helpers
 double f_zeta(double zeta);
