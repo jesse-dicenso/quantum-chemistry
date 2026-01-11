@@ -505,7 +505,7 @@ XC_ret R_PBE_X(const XC_inp& inp){
 		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
 
 		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
-		ds2_drho = -5 * s2 / (3 * rho);
+		ds2_drho = -8 * s2 / (3 * rho);
 		ds2_dgrho2 = s2 / grho2;	
 		FX_d = 1 + mu * s2 / kappa;	
 		FX = 1 + kappa - kappa / FX_d;
@@ -569,13 +569,13 @@ XC_ret U_PBE_X(const XC_inp& inp){
 
 		// Enhancement Factor
 		double grho2, kF, s2;
-		grho2 = 4 * grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2];
+		grho2 = 4 * (grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2]);
 		kF = cbrt(3 * M_PI * M_PI * 2 * rho_s);
 		s2 = grho2 / (4 * kF * kF * 2 * rho_s * 2 * rho_s);
 		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
 
 		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
-		ds2_drho = -5 * s2 / (3 * rho_s);
+		ds2_drho = -8 * s2 / (3 * rho_s);
 		ds2_dgrho2 = s2 / grho2;	
 		FX_d = 1 + mu * s2 / kappa;	
 		FX = 1 + kappa - kappa / FX_d;
