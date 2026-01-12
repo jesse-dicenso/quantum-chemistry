@@ -149,7 +149,7 @@ XC_ret R_VWN5_c(const XC_inp& inp){
 	const double X0 = x0 * x0 + b * x0 + c;
 	const double Q  = sqrt(4 * c - b * b);
 	auto v = [A, x0, b, c, X0, Q](double rho) {
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 		double X  = x * x + b * x + c;
 		double vc = (
@@ -171,7 +171,7 @@ double R_VWN5_c_E(const XC_inp& inp){
 	const double Q  = sqrt(4 * c - b * b);
 	const double X0 = x0 * x0 + b * x0 + c;
 	auto e = [A, x0, b, c, X0, Q](double rho) {
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 		double X  = x * x + b * x + c;
 		double ec = rho * A * (
@@ -201,7 +201,7 @@ XC_ret U_VWN5_c(const XC_inp& inp){
 	auto v = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double rho_a, double rho_b, int spin) 
 	{
 		double rho = rho_a + rho_b;
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 
 		double zeta = ( rho_a - rho_b ) / rho;
@@ -274,7 +274,7 @@ double U_VWN5_c_E(const XC_inp& inp){
 	auto e = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double rho_a, double rho_b) 
 	{
 		double rho = rho_a + rho_b;
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
 
 		double zeta = ( rho_a - rho_b ) / rho;
@@ -331,7 +331,7 @@ XC_ret R_PW92_c(const XC_inp& inp){
 	const double b4 = 0.49294;
 
 	auto v = [A, a1, b1, b2, b3, b4](double rho){
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double rs = cbrt(3 / (4 * M_PI * rho));
 		double Q0  = -2 * A * (1 + a1 * rs);
 		double Q1  =  2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs);
@@ -354,7 +354,7 @@ double R_PW92_c_E(const XC_inp& inp){
 	const double b4 = 0.49294;
 
 	auto e = [A, a1, b1, b2, b3, b4](double rho){ 
-		if(rho < 1e-16) {return 0.0;}
+		if(rho < 1e-20) {return 0.0;}
 		double rs = cbrt(3 / (4 * M_PI * rho));
 		return -rho * 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs)));
 	};
@@ -382,7 +382,7 @@ XC_ret U_PW92_c(const XC_inp& inp){
 
 	auto v = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b, int spin){
 		double rho = rho_a + rho_b;
-		if (rho < 1e-16) {return 0.0;}
+		if (rho < 1e-20) {return 0.0;}
 		double rs = cbrt(3 / (4 * M_PI * rho));
 
 		int sgn_spin;
@@ -443,7 +443,7 @@ double U_PW92_c_E(const XC_inp& inp){
 
 	auto v = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b){
 		double rho = rho_a + rho_b;
-		if (rho < 1e-16) {return 0.0;}
+		if (rho < 1e-20) {return 0.0;}
 		double rs = cbrt(3 / (4 * M_PI * rho));
 		
 		double zeta = (rho_a - rho_b) / rho;
@@ -530,7 +530,7 @@ double R_PBE_X_E(const XC_inp& inp){
 	const double mu = beta * (M_PI * M_PI / 3);
 	auto e = [kappa, mu](double rho, std::vector<double> grho) 
 	{
-		if (rho < 1e-16) {return 0.0;}
+		if (rho < 1e-20) {return 0.0;}
 		// Slater Exchange
 		double e_LDA;
 		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho * rho * rho * rho);
@@ -540,7 +540,6 @@ double R_PBE_X_E(const XC_inp& inp){
 		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
 		kF = cbrt(3 * M_PI * M_PI * rho);
 		s2 = grho2 / (4 * kF * kF * rho * rho);
-		if (s2 < 1e-16) {return e_LDA;}	
 
 		return e_LDA * (1 + kappa - kappa / (1 + mu * s2 / kappa));
 	};
@@ -562,7 +561,7 @@ XC_ret U_PBE_X(const XC_inp& inp){
 		if     (spin == 0) {rho_s = 2 * rho_a; grho_s = grho_a;}
 		else if(spin == 1) {rho_s = 2 * rho_b; grho_s = grho_b;}
 		else{assert((spin==0) || (spin==1));}
-		if (rho_s < 1e-16) {return 0.0;}
+		if (rho_s / 2 < 1e-20) {return 0.0;}
 		// Slater Exchange
 		double v_LDA, e_LDA;
 		v_LDA = -cbrt(3 * rho_s / M_PI);
@@ -573,7 +572,6 @@ XC_ret U_PBE_X(const XC_inp& inp){
 		grho2 = 4 * (grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2]);
 		kF = cbrt(3 * M_PI * M_PI * rho_s);
 		s2 = grho2 / (4 * kF * kF * rho_s * rho_s);
-		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
 
 		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
 		ds2_drho = -8 * s2 / (3 * rho_s);
@@ -587,9 +585,9 @@ XC_ret U_PBE_X(const XC_inp& inp){
 		double de_drho = 2 * (v_LDA * FX + e_LDA * dFX_drho);
 		double de_dgrho2 = 4 * e_LDA * dFX_dgrho2;
 
-		return 0.5 * (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
+		return 0.5 * (phi1 * de_drho * phi2 + 2 * de_dgrho2 * 
 			   (phi1 * (grho_s[0] * gpx2 + grho_s[1] * gpy2 + grho_s[2] * gpz2) + 
-			    phi2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1));
+			    phi2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1)));
 	};
 	return F_XC_GGA<1>(inp, v);
 }
@@ -601,7 +599,7 @@ double U_PBE_X_E(const XC_inp& inp){
 	auto e = [kappa, mu](double rho_a, double rho_b, std::vector<double> grho_a, std::vector<double> grho_b) 
 	{
 		double rho = rho_a + rho_b;
-		if (rho < 1e-16) {return 0.0;}
+		if (rho < 1e-20) {return 0.0;}
 		// Slater Exchange
 		double e_LDA_a = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_a * rho_a * rho_a * rho_a);
 		double e_LDA_b = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_b * rho_b * rho_b * rho_b);
