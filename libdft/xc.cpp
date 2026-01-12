@@ -487,7 +487,7 @@ XC_ret R_PBE_X(const XC_inp& inp){
 	const double beta = 0.066725;
 	const double kappa = 0.804;
 	const double mu = beta * (M_PI * M_PI / 3);
-	auto v = [kappa, mu](double rho, std::vector<double> grho, double phi1, double phi2, 
+	auto v = [kappa, mu](double rho, const std::vector<double>& grho, double phi1, double phi2, 
 						 double gpx1, double gpy1, double gpz1,
 					 	 double gpx2, double gpy2, double gpz2) 
 	{
@@ -552,26 +552,27 @@ XC_ret U_PBE_X(const XC_inp& inp){
 	const double beta = 0.066725;
 	const double kappa = 0.804;
 	const double mu = beta * (M_PI * M_PI / 3);
-	auto v = [kappa, mu](double rho_a, double rho_b, std::vector<double> grho_a, std::vector<double> grho_b, double phi1, double phi2, 
+	auto v = [kappa, mu](double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
+						 double phi1, double phi2, 
 						 double gpx1, double gpy1, double gpz1,
 					 	 double gpx2, double gpy2, double gpz2, int spin) 
 	{
 		double rho_s;
 		std::vector<double> grho_s;
-		if     (spin == 0) {rho_s = rho_a; grho_s = grho_a;}
-		else if(spin == 1) {rho_s = rho_b; grho_s = grho_b;}
+		if     (spin == 0) {rho_s = 2 * rho_a; grho_s = grho_a;}
+		else if(spin == 1) {rho_s = 2 * rho_b; grho_s = grho_b;}
 		else{assert((spin==0) || (spin==1));}
 		if (rho_s < 1e-16) {return 0.0;}
 		// Slater Exchange
 		double v_LDA, e_LDA;
-		v_LDA = -cbrt(3 * 16 * rho_s / M_PI);
-		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho_s * rho_s * rho_s * rho_s * 16);
+		v_LDA = -cbrt(3 * rho_s / M_PI);
+		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho_s * rho_s * rho_s * rho_s);
 
 		// Enhancement Factor
 		double grho2, kF, s2;
 		grho2 = 4 * (grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2]);
-		kF = cbrt(3 * M_PI * M_PI * 2 * rho_s);
-		s2 = grho2 / (4 * kF * kF * 2 * rho_s * 2 * rho_s);
+		kF = cbrt(3 * M_PI * M_PI * rho_s);
+		s2 = grho2 / (4 * kF * kF * rho_s * rho_s);
 		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
 
 		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
@@ -580,15 +581,15 @@ XC_ret U_PBE_X(const XC_inp& inp){
 		FX_d = 1 + mu * s2 / kappa;	
 		FX = 1 + kappa - kappa / FX_d;
 		dFX_ds2 = mu / (FX_d * FX_d);
-		dFX_drho = dFX_ds2 * ds2_drho; 
+		dFX_drho = dFX_ds2 * ds2_drho;
 		dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
  
-		double de_drho = v_LDA * FX + e_LDA * dFX_drho;
-		double de_dgrho2 = e_LDA * dFX_dgrho2;
+		double de_drho = 2 * (v_LDA * FX + e_LDA * dFX_drho);
+		double de_dgrho2 = 4 * e_LDA * dFX_dgrho2;
 
 		return 0.5 * (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
-			   (phi1 * 2 * (grho_s[0] * gpx2 + grho_s[1] * gpy2 + grho_s[2] * gpz2) + 
-			    phi2 * 2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1));
+			   (phi1 * (grho_s[0] * gpx2 + grho_s[1] * gpy2 + grho_s[2] * gpz2) + 
+			    phi2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1));
 	};
 	return F_XC_GGA<1>(inp, v);
 }

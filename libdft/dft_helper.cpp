@@ -12,7 +12,7 @@ double density(double x, double y, double z, const std::vector<double>& phis, co
 }
 
 std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, const std::vector<double>& gpx, 
-									 const std::vector<double> gpy, const std::vector<double> gpz, const Matrix& P)
+									 const std::vector<double>& gpy, const std::vector<double>& gpz, const Matrix& P)
 {
 	double temp;
 	std::vector<double> grad_rho = {0.0, 0.0, 0.0};
