@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/Ne.inp
+infile=inputs/H2O.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
 method=R_PBE

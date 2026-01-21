@@ -1,6 +1,6 @@
 #include "dft_helper.hpp"
 
-double density(double x, double y, double z, const std::vector<double>& phis, const Matrix& P){
+double density(const std::vector<double>& phis, const Matrix& P){
 	double rho = 0;
 	for(int i = 0; i < P.rows; i++){
 			for(int j = i+1; j < P.cols; j++){
@@ -11,8 +11,8 @@ double density(double x, double y, double z, const std::vector<double>& phis, co
 	return rho;
 }
 
-std::vector<double> density_gradient(double x, double y, double z, const std::vector<double>& phis, const std::vector<double>& gpx, 
-									 const std::vector<double>& gpy, const std::vector<double>& gpz, const Matrix& P)
+std::vector<double> density_gradient(const std::vector<double>& phis, const std::vector<double>& gpx, const std::vector<double>& gpy, 
+									 const std::vector<double>& gpz, const Matrix& P)
 {
 	double temp;
 	std::vector<double> grad_rho = {0.0, 0.0, 0.0};
@@ -28,6 +28,16 @@ std::vector<double> density_gradient(double x, double y, double z, const std::ve
 	grad_rho[1] *= 2;
 	grad_rho[2] *= 2;
 	return grad_rho;
+}
+
+double ke_density(const std::vector<double>& gpx, const std::vector<double>& gpy, const std::vector<double>& gpz, const Matrix& P){
+	double tau = 0;
+	for(int i = 0; i < P.rows; i++){
+		for(int j = 0; j < P.cols; j++){
+			tau += P.matrix[i][j] * (gpx[i] * gpx[j] + gpy[i] * gpy[j] + gpz[i] * gpz[j]);
+		}
+	}
+	return 0.5 * tau;
 }
 
 double f_zeta(double zeta){
@@ -93,6 +103,66 @@ double PW92_dalpha_drs(double rs){
 	double Q1  =  2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs);
 	double Q1p =      A * (b1 / sqrt(rs) + 2 * b2 + 3 * b3 * sqrt(rs) + 4 * b4 * rs);
 	return 2 * A * a1 * log(1 + 1 / Q1) + Q0 * Q1p / (Q1 * Q1 + Q1);
+}
+
+double ke_density_ueg(double rho){
+	return (3.0 / 5.0) * cbrt(36 * intpow(M_PI, 4) * intpow(rho, 5));
+}
+
+double e_X_ueg(double rho){
+	return -(3.0 / 2.0) * cbrt(intpow(rho, 4) * 3.0 / (4.0 * M_PI));
+}
+
+// per particle!
+double eps_c_pw92(double rho_a, double rho_b){
+	// zeta = 0
+	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
+	const double a1_0 = 0.21370;
+	const double b1_0 = 7.5957;
+	const double b2_0 = 3.5876;
+	const double b3_0 = 1.6382;
+	const double b4_0 = 0.49294;
+	// zeta = 1
+	const double A_1  = A_0 / 2;
+	const double a1_1 = 0.20548;
+	const double b1_1 = 14.1189;
+	const double b2_1 = 6.1977;
+	const double b3_1 = 3.3662;
+	const double b4_1 = 0.62517;
+
+	double rho = rho_a + rho_b;
+	if (rho < 1e-20) {return 0.0;}
+	double rs = cbrt(3 / (4 * M_PI * rho));
+		
+	double zeta = (rho_a - rho_b) / rho;
+	double zeta4 = zeta * zeta * zeta * zeta;
+	double f = f_zeta(zeta);
+	double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
+	double alpha = PW92_alpha(rs);
+
+	double epsc_0 = -2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
+				    (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs)));
+	double epsc_1 = -2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
+				  (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs)));
+
+	return epsc_0 + alpha * (f / ddf0) * (1 - zeta4) + (epsc_1 - epsc_0) * f * zeta4;
+}
+
+// Capital Phi in the VV10 paper
+double VV10_kernel(double b, double C, double R2, double rho_1, double rho_2, double nrm_grho_1, double nrm_grho_2){
+	double omega_p2_1 = 4 * M_PI * rho_1;
+	double omega_p2_2 = 4 * M_PI * rho_2;
+	double omega_g2_1 = C * intpow(nrm_grho_1 / rho_1, 4);
+	double omega_g2_2 = C * intpow(nrm_grho_2 / rho_2, 4);
+	double omega_0_1 = sqrt(omega_g2_1 + omega_p2_1 / 3);
+	double omega_0_2 = sqrt(omega_g2_2 + omega_p2_2 / 3);
+	double kappa_1 = b * intpow(cbrt(3 * M_PI * M_PI * rho_1), 2) / sqrt(omega_p2_1);
+	double kappa_2 = b * intpow(cbrt(3 * M_PI * M_PI * rho_2), 2) / sqrt(omega_p2_2);
+
+	double g_1 = omega_0_1 * R2 + kappa_1;
+	double g_2 = omega_0_2 * R2 + kappa_2;
+
+	return -3 / (2 * g_1 * g_2 * (g_1 + g_2));
 }
 
 // Old density function

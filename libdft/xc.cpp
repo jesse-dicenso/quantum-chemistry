@@ -445,7 +445,7 @@ double U_PW92_c_E(const XC_inp& inp){
 	const double b3_1 = 3.3662;
 	const double b4_1 = 0.62517;
 
-	auto v = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b){
+	auto e = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b){
 		double rho = rho_a + rho_b;
 		if (rho < 1e-20) {return 0.0;}
 		double rs = cbrt(3 / (4 * M_PI * rho));
@@ -463,7 +463,7 @@ double U_PW92_c_E(const XC_inp& inp){
 
 		return ec_0 + rho * alpha * (f / ddf0) * (1 - zeta4) + (ec_1 - ec_0) * f * zeta4;
 	};
-	return E_XC_LDA<1>(inp, v);
+	return E_XC_LDA<1>(inp, e);
 }
 
 XC_ret R_PW92(const XC_inp& inp){
@@ -636,7 +636,7 @@ XC_ret R_PBE_c(const XC_inp& inp){
 	const double beta = 0.066725;
 	const double gamma = A;
 
-	auto v = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, std::vector<double> grho, double phi1, double phi2,
+	auto v = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, const std::vector<double>& grho, double phi1, double phi2,
 						 						  double gpx1, double gpy1, double gpz1,
 					 	 						  double gpx2, double gpy2, double gpz2) 
 	{
@@ -689,7 +689,7 @@ double R_PBE_c_E(const XC_inp& inp){
 	const double beta = 0.066725;
 	const double gamma = A;
 
-	auto e = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, std::vector<double> grho){
+	auto e = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, const std::vector<double>& grho){
 		if(rho < 1e-20) {return 0.0;}
 		double rs, e_LDA, kF, ks, grho2, t2, A_PBE, Q;
 		rs = cbrt(3 / (4 * M_PI * rho));
@@ -713,4 +713,144 @@ XC_ret R_PBE(const XC_inp& inp){
 
 double R_PBE_E(const XC_inp& inp){
 	return R_PBE_c_E(inp) + R_PBE_X_E(inp);
+}
+
+// Meta GGA //
+
+XC_ret U_B97M_V(const XC_inp& inp){
+	//
+}
+
+double U_B97M_V_E(const XC_inp& inp){
+	// Parameters
+	double c_x00, c_x10, c_x01, c_x11, c_x02;
+	double c_css00, c_css10, c_css02, c_css32, c_css42;
+	double c_cos00, c_cos10, c_cos01, c_cos32, c_cos03;
+	double b, C;
+
+	c_x00 = 1.000;
+	c_x10 = 0.416;
+	c_x01 = 1.308;
+	c_x11 = 3.070;
+	c_x02 = 1.901;
+
+	c_css00 =  1.000;
+	c_css10 = -5.668;
+	c_css02 = -1.855;
+	c_css32 = -20.497;
+	c_css42 = -20.364;
+
+	c_cos00 =  1.000;
+	c_cos10 =  2.535;
+	c_cos01 =  1.573;
+	c_cos32 = -6.427;
+	c_cos03 = -6.298;
+
+	b = 6.00;
+	C = 0.01;
+	
+	// E = e_X + e_css + e_cos + e_VV10
+	auto e = [c_x00, c_x10, c_x01, c_x11, c_x02, 
+			  c_css00, c_css10, c_css02, c_css32, c_css42, 
+			  c_cos00, c_cos10, c_cos01, c_cos32, c_cos03, 
+			  b, C]
+	(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, double tau_a, double tau_b, 
+	 Molecule* m, grid* g, Matrix* pa, Matrix* pb, int gidx)
+	{
+		double rho = rho_a + rho_b;
+		if(rho < 1e-20){return 0.0;}
+		std::vector<double> grho = {grho_a[0] + grho_b[0], grho_a[1] + grho_b[1], grho_a[2] + grho_b[2]};
+
+		double nrm_grho_a = sqrt(grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2]);
+		double nrm_grho_b = sqrt(grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2]);
+		double nrm_grho   = sqrt(grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2]);
+
+		double t_a = ke_density_ueg(rho_a) / tau_a;
+		double t_b = ke_density_ueg(rho_b) / tau_b;
+		
+		// e_X
+		double s_a, s_b, wx_a, wx_b, ux_a, ux_b, gx_a, gx_b, e_X;
+		s_a = nrm_grho_a / cbrt(intpow(rho_a, 4));
+		s_b = nrm_grho_b / cbrt(intpow(rho_b, 4));
+		wx_a = (t_a - 1) / (t_a + 1);
+		wx_b = (t_b - 1) / (t_b + 1);
+		ux_a = 0.004 * s_a * s_a / (1 + 0.004 * s_a * s_a);
+		ux_b = 0.004 * s_b * s_b / (1 + 0.004 * s_b * s_b);
+
+		gx_a = c_x00 + c_x10 * wx_a + c_x01 * ux_a + c_x11 * wx_a * ux_a + c_x02 * ux_a * ux_a;
+		gx_b = c_x00 + c_x10 * wx_b + c_x01 * ux_b + c_x11 * wx_b * ux_b + c_x02 * ux_b * ux_b;
+
+		e_X = e_X_ueg(rho_a) * gx_a + e_X_ueg(rho_b) * gx_b;
+		
+		// e_css
+		double e_pw92_aa, e_pw92_bb, wc_aa, wc_bb, uc_aa, uc_bb, gcss_aa, gcss_bb, e_css;
+		e_pw92_aa = rho_a * eps_c_pw92(rho_a, 0);
+		e_pw92_bb = rho_b * eps_c_pw92(0, rho_b);
+		wc_aa = wx_a;
+		wc_bb = wx_b;
+		uc_aa = 0.2 * s_a * s_a / (1 + 0.2 * s_a * s_a);
+		uc_bb = 0.2 * s_b * s_b / (1 + 0.2 * s_b * s_b);
+
+		gcss_aa = c_css00 + c_css10 * wc_aa + c_css02 * uc_aa * uc_aa + c_css32 * intpow(wc_aa, 3) * uc_aa * uc_aa + 
+			 	  c_css42 * intpow(wc_aa, 4) * uc_aa * uc_aa;
+		gcss_bb = c_css00 + c_css10 * wc_bb + c_css02 * uc_bb * uc_bb + c_css32 * intpow(wc_bb, 3) * uc_bb * uc_bb + 
+				  c_css42 * intpow(wc_bb, 4) * uc_bb * uc_bb;
+
+		e_css = e_pw92_aa * gcss_aa + e_pw92_bb * gcss_bb;
+		
+		// e_cos
+		double t_ab, s2ab, e_pw92_ab, wc_ab, uc_ab, gcos, e_cos;
+		t_ab = 0.5 * (t_a + t_b);
+		s2ab = 0.5 * (s_a * s_a + s_b * s_b);
+		e_pw92_ab = rho * eps_c_pw92(rho_a, rho_b) - e_pw92_aa - e_pw92_bb;
+		wc_ab = (t_ab - 1) / (t_ab + 1);
+		uc_ab = 0.006 * s2ab / (1 + 0.006 * s2ab);
+
+		gcos = c_cos00 + c_cos10 * wc_ab + c_cos01 * uc_ab + c_cos32 * intpow(wc_ab, 3) * uc_ab * uc_ab + c_cos03 * intpow(uc_ab, 3);
+
+		e_cos = e_pw92_ab * gcos;
+
+		// e_VV10	
+		double e_VV10 = 0;
+
+		int num_gpts = g->num_gridpoints;
+		std::vector<double> phi_buf(m->AOs.size());
+		std::vector<double> gpx_buf(m->AOs.size());
+		std::vector<double> gpy_buf(m->AOs.size());
+		std::vector<double> gpz_buf(m->AOs.size());
+		std::vector<double> tmp_grd(3);
+		double rho_a_j, rho_b_j, rho_j, nrm_grho_j, R2;
+		std::vector<double> grho_a_j(3);
+		std::vector<double> grho_b_j(3);
+		std::vector<double> grho_j(3);
+		for(int j = 0; j < num_gpts; j++){
+			for(int k = 0; k < m->AOs.size(); k++){
+				phi_buf[k] = m->AOs[k].evaluate(g->x[j], g->y[j], g->z[j]);
+				tmp_grd = m->AOs[k].evaluate_gradient(g->x[j], g->y[j], g->z[j]);
+				gpx_buf[k] = tmp_grd[0];
+				gpy_buf[k] = tmp_grd[1];
+				gpz_buf[k] = tmp_grd[2];
+			}
+
+			R2 = intpow(g->x[gidx] - g->x[j], 2) + intpow(g->y[gidx] - g->y[j], 2) + intpow(g->z[gidx] - g->z[j], 2);
+	
+			rho_a_j = density(phi_buf, *pa);
+			rho_b_j = density(phi_buf, *pb);
+			rho_j = rho_a_j + rho_b_j;
+			grho_a_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pa);
+			grho_b_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pb);
+			
+			grho_j[0] = grho_a_j[0] + grho_b_j[0];
+			grho_j[1] = grho_a_j[1] + grho_b_j[1];
+			grho_j[2] = grho_a_j[2] + grho_b_j[2];
+
+			nrm_grho_j = sqrt(grho_j[0] * grho_j[0] + grho_j[1] * grho_j[1] + grho_j[2] * grho_j[2]);
+
+			e_VV10 += g->w[j] * VV10_kernel(b, C, R2, rho, rho_j, nrm_grho, nrm_grho_j) * rho_j;
+		}
+		e_VV10 *= 0.5 * rho;
+
+		return e_X + e_css + e_cos + e_VV10;
+	};
+	return E_XC_MGGA<1>(inp, e);
 }
