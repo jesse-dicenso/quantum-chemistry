@@ -848,7 +848,9 @@ double U_B97M_V_E(const XC_inp& inp){
 
 			e_VV10 += g->w[j] * VV10_kernel(b, C, R2, rho, rho_j, nrm_grho, nrm_grho_j) * rho_j;
 		}
-		e_VV10 *= 0.5 * rho;
+		e_VV10 *= 0.5;
+		e_VV10 += sqrt(sqrt(intpow(3 / (b * b), 3))) / 32;
+		e_VV10 *= rho;
 
 		return e_X + e_css + e_cos + e_VV10;
 	};
