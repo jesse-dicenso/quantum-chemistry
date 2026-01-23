@@ -25,36 +25,26 @@ int main(int argc, char* argv[]){
 	cin >> max_cycles;
 	cin >> pop;
 
-	int N;
-	int K;
-	int nupdown;
-	int Na;
-	int Nb;
-	bool r;
-	double S2_e;
-	double S2_UHF;
 	int cycles = 1;
 	double err = eps + 1;
-	vector<vector<vector<vector<double>>>> eris;
 
-	double nuc;
 	double Eo;
 	double temp_Eo;
 	double E_tot;
 	int icd = 0;
 
 	//////////////////////////////////////////////////
-	// s		// overlap			//
-	// t		// kinetic			//
-	// v		// nuclear attraction		//
-	// hcore	// core Hamiltonian		//
-	// x		// orthogonalization (symmetric)//
-	// p		// density			//
-	// c		// coefficient			//
-	// c		// orthogonalized coefficient	//
-	// f		// fock				//
-	// fo		// orthogonalized fock		//
-	// e		// orbital energies		//
+	// s		// overlap							//
+	// t		// kinetic							//
+	// v		// nuclear attraction				//
+	// hcore	// core Hamiltonian					//
+	// x		// orthogonalization (symmetric)	//
+	// p		// density							//
+	// c		// coefficient						//
+	// c		// orthogonalized coefficient		//
+	// f		// fock								//
+	// fo		// orthogonalized fock				//
+	// e		// orbital energies					//
 	//////////////////////////////////////////////////
 	
 	cout << "*************************\n";
@@ -66,11 +56,16 @@ int main(int argc, char* argv[]){
 	cout << "SUMMER 2024 - (probably May 2030?)\n\n";
 
 	cout << "Reading input...\n\n";
-	
-	Molecule M(infile, basis_set);
-	N = M.Nelec;
-	K = M.AOs.size();
-	nupdown = M.NUPDOWN;
+		
+	const Molecule M(infile, basis_set);
+	const int N = M.Nelec;
+	const int K = M.AOs.size();
+	const int nupdown = M.NUPDOWN;
+	const int Na = (N+nupdown)/2;
+	const int Nb = (N-nupdown)/2;
+	const double S2_e = 0.5*(Na-Nb)*(0.5*(Na-Nb)+1);
+
+	bool r;
 	if(method.substr(0,2)=="R_"){
 		r = true;
 	}
@@ -82,12 +77,10 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 	if(r && (nupdown!=0)){
-		cerr << "ERR: Restricted calculation cannot be performed for NUPDOWN!=0! (Try unrestricted...)\n";
+		cerr << "ERR: Restricted calculation forbidden for NUPDOWN!=0! (Try unrestricted...)\n";
 		return 0;
 	}
-	Na = (N+nupdown)/2;
-	Nb = (N-nupdown)/2;
-	S2_e = 0.5*(Na-Nb)*(0.5*(Na-Nb)+1);
+	
 	cout << "\tinfile\t\t" << infile << '\n';
 	cout << "\tmethod\t\t" << method << '\n';
 	cout << "\tbasis\t\t"  << basis_set << '\n';
@@ -114,21 +107,19 @@ int main(int argc, char* argv[]){
 	}
 	cout << "--------------------------------------------------------------\n";
 	cout << "Success! There are " << N << " electrons " << "(" << Na << " alpha and " << Nb << " beta) and " << K << " basis functions.\n"; 
-	nuc = nucrepl(M.Zvals, M.xyz);
+	const double nuc = nucrepl(M.Zvals, M.xyz);
 	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
     cout.flush();
 	
 	cout << "Computing ERIs..." << endl;
-	eris = ERIs(M.AOs);
+	const vector<vector<vector<vector<double>>>> eris = ERIs(M.AOs);
 	cout << "ERIs computed.\n" << endl;
 
-	grid mol_grid(M);
-	XC_inp xc_inp(method);
-	xc_inp.eris = &eris;
-	if(!xc_inp.is_HF){
-		xc_inp.g = &mol_grid;
-		xc_inp.mol = &M;
-	}
+	const grid mol_grid(M);
+	XC xc(method);
+	xc.eris = &eris;
+	xc.g    = &mol_grid;
+	xc.mol  = &M;
 
 	if(r){
 		cout << "Performing restricted calculation...\n";	
@@ -146,16 +137,19 @@ int main(int argc, char* argv[]){
 	cout << "----------------------------------------------------\n";
 	cout.flush();	
 
-	Matrix s = overlap(M.AOs);
-	Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
-	Matrix x = m_inv_sqrt(s);
+	const Matrix s = overlap(M.AOs);
+	const Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
+	const Matrix x = m_inv_sqrt(s);
 	
 	// Restricted
 	if(r){
 		vector<Matrix> temp_e_c;
 		
-		Matrix p (K, K);
-		xc_inp.PT = &p;
+		Matrix p  (K, K);
+		Matrix fxc(K, K);
+		
+		xc.P   = &p;
+		xc.FXC = &fxc;
 
 		Matrix f (K, K);
 		Matrix fo(K, K);
@@ -164,7 +158,7 @@ int main(int argc, char* argv[]){
 		Matrix c (K, K);
 		
 		f = hcore;
-		Eo = R_E0(&xc_inp, hcore, f, zero(K,K));
+		Eo = E0(xc, hcore, zero(K,K));
 		fo = transpose(x) * f * x;
 		temp_e_c = diagonalize(fo);
 		e = temp_e_c[0];
@@ -174,7 +168,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_FPI(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
+				R_FPI(s, hcore, x, &xc, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 				cycles+=1;
 			}
 		}
@@ -182,7 +176,7 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPf;
 			vector<Matrix> SPe;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				R_DIIS(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd);
+				R_DIIS(s, hcore, x, &xc, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles, SPf, SPe, sps, &icd);
 				if(icd!=0){
 					break;
 				}
@@ -191,7 +185,7 @@ int main(int argc, char* argv[]){
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					R_FPI(s, hcore, x, &xc_inp, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
+					R_FPI(s, hcore, x, &xc, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}
@@ -246,12 +240,17 @@ int main(int argc, char* argv[]){
 		vector<Matrix> temp_e_c_a;
 		vector<Matrix> temp_e_c_b;
 		
-		Matrix pt (K, K);
-		Matrix pa (K, K);
-		Matrix pb (K, K);
-		xc_inp.PT = &pt;
-		xc_inp.PA = &pa;
-		xc_inp.PB = &pb;
+		Matrix pt  (K, K);
+		Matrix pa  (K, K);
+		Matrix pb  (K, K);
+		Matrix fxca(K, K);
+		Matrix fxcb(K, K);
+		
+		xc.P     = &pt;
+		xc.P_A   = &pa;
+		xc.P_B   = &pb;
+		xc.FXC_A = &fxca;	
+		xc.FXC_B = &fxcb;	
 
 		Matrix fa (K, K);
 		Matrix fb (K, K);
@@ -266,7 +265,7 @@ int main(int argc, char* argv[]){
 		
 		fa = hcore;
 		fb = hcore;
-		Eo = UR_E0(&xc_inp, hcore, fa, fb, zero(K,K));
+		Eo = E0(xc, hcore, zero(K,K));
 		fao = transpose(x) * fa * x;
 		fbo = transpose(x) * fb * x;
 		temp_e_c_a = diagonalize(fao);
@@ -283,7 +282,7 @@ int main(int argc, char* argv[]){
 
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_FPI(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
+				UR_FPI(s, hcore, x, &xc, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 				cycles+=1;
 			}
 		}
@@ -293,7 +292,7 @@ int main(int argc, char* argv[]){
 			vector<Matrix> SPea;
 			vector<Matrix> SPeb;
 			while((abs(err) > eps) && (cycles <= max_cycles)){
-				UR_DIIS(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, 
+				UR_DIIS(s, hcore, x, &xc, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, 
 						&cb, &Eo, &err, Na, Nb, cycles, SPfa, SPfb, SPea, SPeb, sps, &icd);
 				if(icd!=0){
 					break;
@@ -303,7 +302,7 @@ int main(int argc, char* argv[]){
 			if(icd!=0){
 			int fpi_forced_three;
 				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
-					UR_FPI(s, hcore, x, &xc_inp, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
+					UR_FPI(s, hcore, x, &xc, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
 				}
@@ -320,7 +319,7 @@ int main(int argc, char* argv[]){
 			
 			E_tot = Eo + nuc;
 
-			S2_UHF = S2_e + Nb;
+			double S2_UHF = S2_e + Nb;
 			for(int i = 0; i < Na; i++){
 				for(int j = 0; j < Nb; j++){
 					double tempsum = 0;

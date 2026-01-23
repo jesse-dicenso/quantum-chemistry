@@ -14,44 +14,18 @@ Matrix UR_density_matrix(const Matrix& C, int N){
 	return P;
 }
 
-double UR_E0(XC_inp* xc_inp, const Matrix& Hcore, const Matrix& Fa, const Matrix& Fb, const Matrix& J){
-	double sum = 0;
-	if(xc_inp->is_HF){
-		for(int i = 0; i < xc_inp->PT->rows; i++){
-			for(int j = 0; j < xc_inp->PT->cols; j++){
-				sum += xc_inp->PT->matrix[j][i] * Hcore.matrix[i][j] + 
-					   xc_inp->PA->matrix[j][i] * Fa.matrix[i][j]    + 
-					   xc_inp->PB->matrix[j][i] * Fb.matrix[i][j];
-			}
-		}
-		return 0.5 * sum;
-	}
-	else{
-		for(int i = 0; i < xc_inp->PT->rows; i++){
-			for(int j = 0; j < xc_inp->PT->cols; j++){
-				sum += xc_inp->PT->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
-			}
-		}
-		return sum + E_XC(xc_inp);
-	}
-}
-
-void UR_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
-			 Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i)
+void UR_FPI(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
+		    Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i)
 {
 	std::vector<Matrix> tec_a(2);
 	std::vector<Matrix> tec_b(2);
-	double tEo;
 
-	Matrix j  = coulomb(*(xc_inp->PT), *(xc_inp->eris));
-	XC_ret fxc = F_XC(xc_inp);
-	Matrix fxca = fxc.F_XC_1;
-	Matrix fxcb = fxc.F_XC_2;
-
-	*fa = fock(hcore, j, fxca);
-	*fb = fock(hcore, j, fxcb);
+	Matrix j  = coulomb(*(xc->P), *(xc->eris));
+	call_xc_functional(xc);
+	*fa = fock(hcore, j, *(xc->FXC_A));
+	*fb = fock(hcore, j, *(xc->FXC_B));
 	
-	tEo = UR_E0(xc_inp, hcore, *fa, *fb, j);
+	double tEo = E0(*xc, hcore, j);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
@@ -66,24 +40,24 @@ void UR_FPI (const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 	*ca  = x * (*cao);
 	*cb  = x * (*cbo);
 
-	*(xc_inp->PA) = UR_density_matrix(*ca, Na);
-	*(xc_inp->PB) = UR_density_matrix(*cb, Nb);
-	*(xc_inp->PT) = (*(xc_inp->PA)) + (*(xc_inp->PB));
+	*(xc->P_A) = UR_density_matrix(*ca, Na);
+	*(xc->P_B) = UR_density_matrix(*cb, Nb);
+	*(xc->P)   = (*(xc->P_A)) + (*(xc->P_B));
 	
 	std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err << std::setw(10) << "fp" << std::endl;
 }
 
-void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_inp, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
+void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
 			 Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i, 
 			 std::vector<Matrix>& SPfa, std::vector<Matrix>& SPfb, std::vector<Matrix>& SPea, std::vector<Matrix>& SPeb, int sps, int* icd)
 {
 	// Uses commutation of F and P for error metric
 	if(i <= 3){
-		UR_FPI(s, hcore, x, xc_inp, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb, i);
+		UR_FPI(s, hcore, x, xc, fa, fb, fao, fbo, ea, eb, cao, cbo, ca, cb, Eo, err, Na, Nb, i);
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
-		SPea.push_back((*fa) * (*(xc_inp->PA)) * s - s * (*(xc_inp->PA)) * (*fa));
-		SPeb.push_back((*fb) * (*(xc_inp->PB)) * s - s * (*(xc_inp->PB)) * (*fb));
+		SPea.push_back((*fa) * (*(xc->P_A)) * s - s * (*(xc->P_A)) * (*fa));
+		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
 	}
 	else if(i < sps){
 		std::vector<Matrix> tec_a(2);
@@ -91,18 +65,15 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 		std::vector<double> weights(sps+1);
 		double terr = 0;
 	
-		Matrix j    = coulomb(*(xc_inp->PT), *(xc_inp->eris));
-		XC_ret fxc  = F_XC(xc_inp);
-		Matrix fxca = fxc.F_XC_1;
-		Matrix fxcb = fxc.F_XC_2;
-	
-		*fa = fock(hcore, j, fxca);
-		*fb = fock(hcore, j, fxcb);
+		Matrix j    = coulomb(*(xc->P), *(xc->eris));
+		call_xc_functional(xc);
+		*fa = fock(hcore, j, *(xc->FXC_A));
+		*fb = fock(hcore, j, *(xc->FXC_B));
 	
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
-		SPea.push_back((*fa) * (*(xc_inp->PA)) * s - s * (*(xc_inp->PA)) * (*fa));
-		SPeb.push_back((*fb) * (*(xc_inp->PB)) * s - s * (*(xc_inp->PB)) * (*fb));
+		SPea.push_back((*fa) * (*(xc->P_A)) * s - s * (*(xc->P_A)) * (*fa));
+		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
 
 		int n = SPea.size();
 	
@@ -137,11 +108,11 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 			return;
 		}
 		
-		*Eo = UR_E0(xc_inp, hcore, *fa, *fb, j);
+		*Eo = E0(*xc, hcore, j);
 		
 		// Build fock matrices from previous fock matrices and weights
-		*fa = zero(xc_inp->PT->rows, xc_inp->PT->cols);
-		*fb = zero(xc_inp->PT->rows, xc_inp->PT->cols);
+		*fa = zero(xc->P->rows, xc->P->cols);
+		*fb = zero(xc->P->rows, xc->P->cols);
 		for(int j = 0; j < n; j++){
 			*fa = *fa + SPfa[j] * weights[j];
 			*fb = *fb + SPfb[j] * weights[j];
@@ -157,9 +128,9 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 		*cbo  = tec_b[1];
 		*ca   = x * (*cao);
 		*cb   = x * (*cbo);
-		*(xc_inp->PA) = UR_density_matrix(*ca, Na);
-		*(xc_inp->PB) = UR_density_matrix(*cb, Nb);
-		*(xc_inp->PT) = *(xc_inp->PA) + *(xc_inp->PB);
+		*(xc->P_A) = UR_density_matrix(*ca, Na);
+		*(xc->P_B) = UR_density_matrix(*cb, Nb);
+		*(xc->P)   = *(xc->P_A) + *(xc->P_B);
 		
 		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << SPea.size() << ")" << std::endl;
@@ -170,18 +141,15 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 		std::vector<double> weights(sps+1);
 		double terr = 0;
 	
-		Matrix j  = coulomb(*(xc_inp->PT), *(xc_inp->eris));
-		XC_ret fxc = F_XC(xc_inp);
-		Matrix fxca = fxc.F_XC_1;
-		Matrix fxcb = fxc.F_XC_2;
-	
-		*fa = fock(hcore, j, fxca);
-		*fb = fock(hcore, j, fxcb);
+		Matrix j  = coulomb(*(xc->P), *(xc->eris));
+		call_xc_functional(xc);
+		*fa = fock(hcore, j, *(xc->FXC_A));
+		*fb = fock(hcore, j, *(xc->FXC_B));
 	
 		SPfa.push_back(*fa);
 		SPfb.push_back(*fb);
-		SPea.push_back((*fa) * (*(xc_inp->PA)) * s - s * (*(xc_inp->PA)) * (*fa));
-		SPeb.push_back((*fb) * (*(xc_inp->PB)) * s - s * (*(xc_inp->PB)) * (*fb));
+		SPea.push_back((*fa) * (*(xc->P_A)) * s - s * (*(xc->P_A)) * (*fa));
+		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
 	
 		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
@@ -214,11 +182,11 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 			return;
 		}
 		
-		*Eo = UR_E0(xc_inp, hcore, *fa, *fb, j);
+		*Eo = E0(*xc, hcore, j);
 		
 		// Build fock matrices from previous fock matrices and weights
-		*fa = zero(xc_inp->PT->rows, xc_inp->PT->cols);
-		*fb = zero(xc_inp->PT->rows, xc_inp->PT->cols);
+		*fa = zero(xc->P->rows, xc->P->cols);
+		*fb = zero(xc->P->rows, xc->P->cols);
 		for(int j = 0; j < sps; j++){
 			*fa = *fa + SPfa[j] * weights[j];
 			*fb = *fb + SPfb[j] * weights[j];
@@ -234,9 +202,9 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC_inp* xc_i
 		*cbo  = tec_b[1];
 		*ca   = x * (*cao);
 		*cb   = x * (*cbo);
-		*(xc_inp->PA) = UR_density_matrix(*ca, Na);
-		*(xc_inp->PB) = UR_density_matrix(*cb, Nb);
-		*(xc_inp->PT) = *(xc_inp->PA) + *(xc_inp->PB);
+		*(xc->P_A) = UR_density_matrix(*ca, Na);
+		*(xc->P_B) = UR_density_matrix(*cb, Nb);
+		*(xc->P)   = *(xc->P_A) + *(xc->P_B);
 		
 		std::cout << std::setw(3) << i << std::setw(20) << *Eo << std::setw(20) << *err;
 		std::cout << std::setw(9) << "diis(" << sps << ")" << std::endl;

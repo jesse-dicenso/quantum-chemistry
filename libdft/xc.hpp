@@ -3,46 +3,53 @@
 
 #include "dft_helper.hpp"
 
-#include <string>
 #include <functional>
-#include <unordered_map>
+#include <stdexcept>
+#include <string>
 
-
-class XC_inp{
+class XC{
 	public:
-		XC_inp(const std::string& method_name);
+		XC(const std::string& method);
 		
-		std::string method;
-	
-		bool is_HF;
-		bool is_LDA;
-		bool is_GGA;
-		
-		Matrix* PT = nullptr;
-		Matrix* PA = nullptr;
-		Matrix* PB = nullptr;
+		std::function<void(XC*)> xc_functional;
+		bool restricted;
+		double E_XC = 0.0;
 
-		std::vector<std::vector<std::vector<std::vector<double>>>>* eris = nullptr;
-		Molecule* mol = nullptr;
-		grid* g = nullptr;
+		Matrix* P   = nullptr;
+		Matrix* FXC = nullptr;		// restricted
+
+		Matrix* P_A   = nullptr;	// unrestricted
+		Matrix* P_B   = nullptr;	//
+		Matrix* FXC_A = nullptr;	//
+		Matrix* FXC_B = nullptr;	//
+
+		const std::vector<std::vector<std::vector<std::vector<double>>>>* eris = nullptr;
+		const Molecule* mol = nullptr;
+		const grid* g = nullptr;
+
+		double* rho   = nullptr;
+		double* rho_a = nullptr;
+		double* rho_b = nullptr;
+
+		double* gradient_rho   = nullptr;
+		double* gradient_rho_a = nullptr;
+		double* gradient_rho_b = nullptr;
+
+		double* ke_rho_a = nullptr;
+		double* ke_rho_b = nullptr;
+
 };
 
-struct XC_ret{
-	Matrix F_XC_1;	// F_XC if restricted; F_XC_a if unrestricted
-	Matrix F_XC_2;	// F_XC_b if unrestricted
-};
-
-extern std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_register;
-XC_ret F_XC(XC_inp* inp);
-
-extern std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_register;
-double E_XC(XC_inp* inp);
+extern std::unordered_map<std::string, std::function<void(XC* xc)>> xc_register;
+void call_xc_functional(XC* xc);
 
 // HF //
-XC_ret R_HF_X(const XC_inp& inp);
-XC_ret U_HF_X(const XC_inp& inp);
+void R_HF_X(XC* xc);
+void U_HF_X(XC* xc);
 
 // LDA //
+
+/*
 template <int sflag, typename F, typename... Args>
 XC_ret F_XC_LDA(const XC_inp& inp, F&& v_LDA, const Args&... args){
 	Molecule* m = inp.mol;
@@ -377,6 +384,7 @@ XC_ret F_XC_MGGA(const XC_inp& inp, F&& v_MGGA){
 		t_a = ke_density(gpx_buf, gpy_buf, gpz_buf, *pa);
 		t_b = ke_density(gpx_buf, gpy_buf, gpz_buf, *pb);
 
+		
 		for(int mu = 0; mu < F_XC_A.rows; mu++){
 			F_XC_A.matrix[mu][mu] += g->w[i] * v_MGGA(rho_a, rho_b, grho_a, grho_b, t_a, t_b, 0);
 			F_XC_B.matrix[mu][mu] += g->w[i] * v_MGGA(rho_a, rho_b, grho_a, grho_b, t_a, t_b, 1);
@@ -438,4 +446,7 @@ double E_XC_MGGA(const XC_inp& inp, F&& e_MGGA){
 	return E_XC;
 }
 
+XC_ret U_B97M_V(const XC_inp& inp);
+double U_B97M_V_E(const XC_inp& inp);
+*/
 #endif

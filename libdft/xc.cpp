@@ -1,119 +1,83 @@
 #include "xc.hpp"
 
-XC_inp::XC_inp(const std::string& method_name){
-	method = method_name;
-
-	is_HF = is_LDA = is_GGA = false;
-	assert((method.substr(0,2)=="R_") || (method.substr(0,2)=="U_"));
-	std::string sub = method.substr(2);
-	if      (sub=="HF"     )  {is_HF  = true;}
-	else if((sub=="Slater" ) || 
-			(sub=="VWN5_c" ) || 
-			(sub=="VWN5"   ) || 
-			(sub=="PW92_c" ) || 
-			(sub=="PW92"   )) {is_LDA = true;}
-	else if((sub=="PBE_X"  ) ||
-			(sub=="PBE_c"  ) ||
-			(sub=="PBE"    )) {is_GGA = true;}
-	else{
-		std::cerr << "Error: method " << method << " not found!" << std::endl;
-		assert(false);
-	}
+XC::XC(const std::string& method){
+	if		(method.substr(0,2)=="R_"){restricted=true;}
+	else if (method.substr(0,2)=="U_"){restricted=false;}
+	else{throw std::invalid_argument("ERR: method must be restricted 'R_' or unrestricted 'U_'");}
+	xc_functional = xc_register[method];
 }
 
-std::unordered_map<std::string, std::function<XC_ret(const XC_inp&)>> xc_v_register = 
+void call_xc_functional(XC* xc){
+	xc->xc_functional(xc);
+}
+
+std::unordered_map<std::string, std::function<void(XC* xc)>> xc_register = 
 {
-	{ "R_HF", R_HF_X },
-	{ "U_HF", U_HF_X },
-	{ "R_Slater", R_Slater_X },
-	{ "U_Slater", U_Slater_X },
-	{ "R_VWN5_c", R_VWN5_c },
-	{ "U_VWN5_c", U_VWN5_c },
-	{ "R_VWN5", R_VWN5 },
-	{ "U_VWN5", U_VWN5 },
-	{ "R_PW92_c", R_PW92_c },
-	{ "U_PW92_c", U_PW92_c },
-	{ "R_PW92", R_PW92 },
-	{ "U_PW92", U_PW92 },
-	{ "R_PBE_X", R_PBE_X },
-	{ "U_PBE_X", U_PBE_X },
-	{ "R_PBE_c", R_PBE_c },
-	{ "R_PBE", R_PBE }
+	{ "R_HF"     , R_HF_X   },
+	{ "U_HF"     , U_HF_X   }/*,
+	{ "R_Slater" , R_Slater },
+	{ "U_Slater" , U_Slater },
+	{ "R_VWN5"   , R_VWN5   },
+	{ "U_VWN5"   , U_VWN5   },
+	{ "R_PW92"   , R_PW92   },
+	{ "U_PW92"   , U_PW92   },
+	{ "R_PBE"    , R_PBE    },
+	{ "U_PBE_X"  , U_PBE_X  },
+	{ "U_B97M-V" , U_B97M_V },*/
 };
-
-XC_ret F_XC(XC_inp* inp){
-	assert(inp!=nullptr);
-	return xc_v_register[inp->method](*inp);
-}
-
-std::unordered_map<std::string, std::function<double(const XC_inp&)>> xc_E_register = 
-{
-	{ "R_Slater", R_Slater_X_E },
-	{ "U_Slater", U_Slater_X_E },
-	{ "R_VWN5_c", R_VWN5_c_E },
-	{ "U_VWN5_c", U_VWN5_c_E },
-	{ "R_VWN5", R_VWN5_E },
-	{ "U_VWN5", U_VWN5_E },
-	{ "R_PW92_c", R_PW92_E },
-	{ "U_PW92_c", U_PW92_E },
-	{ "R_PW92", R_PW92_E },
-	{ "U_PW92", U_PW92_E },
-	{ "R_PBE_X", R_PBE_X_E },
-	{ "U_PBE_X", U_PBE_X_E },
-	{ "R_PBE_c", R_PBE_c_E },
-	{ "R_PBE", R_PBE_E }
-};
-
-double E_XC(XC_inp* inp){
-	assert(inp!=nullptr);
-	return xc_E_register[inp->method](*inp);
-}
 
 // HF //
-XC_ret R_HF_X(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.eris!=nullptr));
-	Matrix F_XC(inp.PT->rows, inp.PT->cols);
-	Matrix null;
-	double sum;
-	for(int mu = 0; mu < F_XC.rows; mu++){
-		for(int nu = 0; nu < F_XC.cols; nu++){
-			sum = 0;
-			for(int ld = 0; ld < F_XC.rows; ld++){
-				for(int sg = 0; sg < F_XC.cols; sg++){
-					sum -= inp.PT->matrix[ld][sg] * (*inp.eris)[mu][ld][sg][nu];
+void R_HF_X(XC* xc){
+	assert((xc->P!=nullptr) && (xc->eris!=nullptr) && (xc->FXC!=nullptr));
+	double fxc = 0;
+	xc->E_XC = 0;
+	for(int mu = 0; mu < xc->FXC->rows; mu++){
+		for(int nu = 0; nu < xc->FXC->cols; nu++){
+			fxc = 0;
+			for(int ld = 0; ld < xc->FXC->rows; ld++){
+				for(int sg = 0; sg < xc->FXC->cols; sg++){
+					fxc -= xc->P->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
 				}
 			}
-			F_XC.matrix[mu][nu] = 0.5 * sum;
+			xc->FXC->matrix[mu][nu] = 0.5 * fxc;
+			xc->E_XC += xc->FXC->matrix[mu][nu] * xc->P->matrix[mu][nu];
 		}
 	}
-	return {F_XC, null};
+	xc->E_XC *= 0.5;
 }
 
-XC_ret U_HF_X(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.eris!=nullptr));
-	Matrix F_XC_a(inp.PA->rows, inp.PA->cols);
-	Matrix F_XC_b(inp.PB->rows, inp.PB->cols);
-	double sum_a, sum_b;
-	for(int mu = 0; mu < F_XC_a.rows; mu++){
-		for(int nu = 0; nu < F_XC_a.cols; nu++){
-			sum_a = 0;
-			sum_b = 0;
-			for(int ld = 0; ld < F_XC_a.rows; ld++){
-				for(int sg = 0; sg < F_XC_a.cols; sg++){
-					sum_a -= inp.PA->matrix[ld][sg] * (*inp.eris)[mu][ld][sg][nu];
-					sum_b -= inp.PB->matrix[ld][sg] * (*inp.eris)[mu][ld][sg][nu];
+void U_HF_X(XC* xc){
+	assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr) && (xc->eris!=nullptr) && (xc->FXC_A!=nullptr) && (xc->FXC_B!=nullptr));
+	double fxc_a, fxc_b;
+	xc->E_XC = 0;
+	for(int mu = 0; mu < xc->FXC_A->rows; mu++){
+		for(int nu = 0; nu < xc->FXC_A->cols; nu++){
+			fxc_a = 0;
+			fxc_b = 0;
+			for(int ld = 0; ld < xc->FXC_A->rows; ld++){
+				for(int sg = 0; sg < xc->FXC_A->cols; sg++){
+					fxc_a -= xc->P_A->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
+					fxc_b -= xc->P_B->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
 				}
 			}
-			F_XC_a.matrix[mu][nu] = sum_a;
-			F_XC_b.matrix[mu][nu] = sum_b;
+			xc->FXC_A->matrix[mu][nu] = fxc_a;
+			xc->FXC_B->matrix[mu][nu] = fxc_b;
+			xc->E_XC += xc->P_A->matrix[mu][nu] * xc->FXC_A->matrix[mu][nu] + xc->P_B->matrix[mu][nu] * xc->FXC_B->matrix[mu][nu];
 		}
 	}
-	return {F_XC_a, F_XC_b};
+	xc->E_XC *= 0.5;
 }
 
-//////////////////////////////////////////////////////////// LDA //
-XC_ret R_Slater_X(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
+///////////////////////////////////////////////////////////////
+// !!!													 !!! //
+// !!! Functionals below give PER GRID-POINT F_XC / E_XC !!! //
+// !!!													 !!! //
+///////////////////////////////////////////////////////////////
+
+// LDA ////////////////////////////////////////////////////////
+/*
+void R_Slater_X(XC_inp* xc){
+	assert((xc.P!=nullptr) && (xc.mol!=nullptr) && (xc.g!=nullptr));
 	auto v = [](double rho) {
 		return -cbrt(3 * rho / M_PI);
 	};
@@ -485,7 +449,7 @@ double U_PW92_E(const XC_inp& inp){
 	return U_PW92_c_E(inp) + U_Slater_X_E(inp);
 }
 
-//////////////////////////////////////////////////////////// GGA //
+// GGA ////////////////////////////////////////////////////////
 XC_ret R_PBE_X(const XC_inp& inp){
 	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	const double beta = 0.066725;
@@ -715,10 +679,97 @@ double R_PBE_E(const XC_inp& inp){
 	return R_PBE_c_E(inp) + R_PBE_X_E(inp);
 }
 
-// Meta GGA //
+// MGGA ///////////////////////////////////////////////////////
+Matrix F_VV10(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
+			  double phi1, double phi2, double gpx1, double gpy1, double gpz1, double gpx2, double gpy2, double gpz2, 
+			  Molecule* m, grid* g, Matrix* pa, Matrix* pb, int gidx)
+{
+	const double b = 6.00;
+	const double C = 0.01;
+
+	Matrix F(pa->rows, pa->cols);
+	double rho = rho_a + rho_b;
+	if (rho < 1e-16) {return 0.0;}
+	double nrm_grho = sqrt(grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2]);
+
+	int num_gpts = g->num_gridpoints;
+	std::vector<double> phi_buf(m->AOs.size());
+	std::vector<double> gpx_buf(m->AOs.size());
+	std::vector<double> gpy_buf(m->AOs.size());
+	std::vector<double> gpz_buf(m->AOs.size());
+	std::vector<double> tmp_grd(3);
+	double rho_a_j, rho_b_j, rho_j, nrm_grho_j, R2;
+	std::vector<double> grho_a_j(3);
+	std::vector<double> grho_b_j(3);
+	std::vector<double> grho_j(3);
+	for(int j = 0; j < num_gpts; j++){
+		for(int k = 0; k < m->AOs.size(); k++){
+			phi_buf[k] = m->AOs[k].evaluate(g->x[j], g->y[j], g->z[j]);
+			tmp_grd = m->AOs[k].evaluate_gradient(g->x[j], g->y[j], g->z[j]);
+			gpx_buf[k] = tmp_grd[0];
+			gpy_buf[k] = tmp_grd[1];
+			gpz_buf[k] = tmp_grd[2];
+		}
+
+		R2 = intpow(g->x[gidx] - g->x[j], 2) + intpow(g->y[gidx] - g->y[j], 2) + intpow(g->z[gidx] - g->z[j], 2);
+
+		rho_a_j = density(phi_buf, *pa);
+		rho_b_j = density(phi_buf, *pb);
+		rho_j = rho_a_j + rho_b_j;
+		grho_a_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pa);
+		grho_b_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pb);
+		
+		grho_j[0] = grho_a_j[0] + grho_b_j[0];
+		grho_j[1] = grho_a_j[1] + grho_b_j[1];
+		grho_j[2] = grho_a_j[2] + grho_b_j[2];
+
+		nrm_grho_j = sqrt(grho_j[0] * grho_j[0] + grho_j[1] * grho_j[1] + grho_j[2] * grho_j[2]);
+
+		e_VV10 += g->w[j] * VV10_kernel(b, C, R2, rho, rho_j, nrm_grho, nrm_grho_j) * rho_j;
+	}
+	e_VV10 *= 0.5;
+	e_VV10 += sqrt(sqrt(intpow(3 / (b * b), 3))) / 32;
+	e_VV10 *= rho;
+}
 
 XC_ret U_B97M_V(const XC_inp& inp){
-	//
+	// Parameters
+	double c_x00, c_x10, c_x01, c_x11, c_x02;
+	double c_css00, c_css10, c_css02, c_css32, c_css42;
+	double c_cos00, c_cos10, c_cos01, c_cos32, c_cos03;
+	double b, C;
+
+	c_x00 = 1.000;
+	c_x10 = 0.416;
+	c_x01 = 1.308;
+	c_x11 = 3.070;
+	c_x02 = 1.901;
+
+	c_css00 =  1.000;
+	c_css10 = -5.668;
+	c_css02 = -1.855;
+	c_css32 = -20.497;
+	c_css42 = -20.364;
+
+	c_cos00 =  1.000;
+	c_cos10 =  2.535;
+	c_cos01 =  1.573;
+	c_cos32 = -6.427;
+	c_cos03 = -6.298;
+
+	b = 6.00;
+	C = 0.01;
+
+	auto v_ = [c_x00, c_x10, c_x01, c_x11, c_x02, 
+			  c_css00, c_css10, c_css02, c_css32, c_css42, 
+			  c_cos00, c_cos10, c_cos01, c_cos32, c_cos03, 
+			  ]
+	(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, double tau_a, double tau_b, int spin)
+	{
+		//
+	};
+
+	return F_XC_MGGA<1>(inp, v);
 }
 
 double U_B97M_V_E(const XC_inp& inp){
@@ -856,3 +907,4 @@ double U_B97M_V_E(const XC_inp& inp){
 	};
 	return E_XC_MGGA<1>(inp, e);
 }
+*/

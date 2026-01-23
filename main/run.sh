@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/H2O.inp
+infile=inputs/CH3.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5)
-method=R_PBE
+method=U_HF
 
 # basis set
 basis=STO-3G

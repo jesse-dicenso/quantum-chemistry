@@ -12,5 +12,6 @@ Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const
 Matrix coulomb(const Matrix& P, const std::vector<std::vector<std::vector<std::vector<double>>>>& g);
 Matrix fock(const Matrix& Hcore, const Matrix& J, const Matrix& K);
 double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>& xyzN);
+double E0(const XC& xc, const Matrix& Hcore, const Matrix& J);
 
 #endif

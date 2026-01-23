@@ -148,6 +148,60 @@ double eps_c_pw92(double rho_a, double rho_b){
 	return epsc_0 + alpha * (f / ddf0) * (1 - zeta4) + (epsc_1 - epsc_0) * f * zeta4;
 }
 
+double deps_c_dns_pw92(double rho_a, double rho_b, int spin){
+	// zeta = 0
+	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
+	const double a1_0 = 0.21370;
+	const double b1_0 = 7.5957;
+	const double b2_0 = 3.5876;
+	const double b3_0 = 1.6382;
+	const double b4_0 = 0.49294;
+	// zeta = 1
+	const double A_1  = A_0 / 2;
+	const double a1_1 = 0.20548;
+	const double b1_1 = 14.1189;
+	const double b2_1 = 6.1977;
+	const double b3_1 = 3.3662;
+	const double b4_1 = 0.62517;
+
+	double rho = rho_a + rho_b;
+	if (rho < 1e-20) {return 0.0;}
+	double rs = cbrt(3 / (4 * M_PI * rho));
+
+	int sgn_spin;
+	if(spin == 0)		{sgn_spin =  1;}
+	else if (spin == 1) {sgn_spin = -1;}
+	else {assert((spin == 0) || (spin == 1));}
+	double zeta = (rho_a - rho_b) / rho;
+	double zeta3 = zeta * zeta * zeta;
+	double zeta4 = zeta3 * zeta;
+	double f = f_zeta(zeta);
+	double df = df_zeta(zeta);
+	double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
+	double alpha = PW92_alpha(rs);
+	double dalpha_drs = PW92_dalpha_drs(rs);
+
+	double eps_0 = -2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
+				  (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs)));
+	double eps_1 = -2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
+				  (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs)));
+
+	double Q0_0   = -2 * A_0 * (1 + a1_0 * rs);
+	double Q1_0   =  2 * A_0 * (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs);
+	double Q1p_0  =      A_0 * (b1_0 / sqrt(rs) + 2 * b2_0 + 3 * b3_0 * sqrt(rs) + 4 * b4_0 * rs);
+	double deps_0 = -2 * A_0 * a1_0 * log(1 + 1 / Q1_0) - Q0_0 * Q1p_0 / (Q1_0 * Q1_0 + Q1_0);
+		
+	double Q0_1   = -2 * A_1 * (1 + a1_1 * rs);
+	double Q1_1   =  2 * A_1 * (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs);
+	double Q1p_1  =      A_1 * (b1_1 / sqrt(rs) + 2 * b2_1 + 3 * b3_1 * sqrt(rs) + 4 * b4_1 * rs);
+	double deps_1 = -2 * A_1 * a1_1 * log(1 + 1 / Q1_1) - Q0_1 * Q1p_1 / (Q1_1 * Q1_1 + Q1_1);
+
+	double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
+	double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
+
+	return -(rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz;
+}
+
 // Capital Phi in the VV10 paper
 double VV10_kernel(double b, double C, double R2, double rho_1, double rho_2, double nrm_grho_1, double nrm_grho_2){
 	double omega_p2_1 = 4 * M_PI * rho_1;

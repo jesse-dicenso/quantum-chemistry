@@ -22,6 +22,7 @@ double PW92_dalpha_drs(double rs);
 // GGA / Meta GGA helpers
 double e_X_ueg(double rho);
 double eps_c_pw92(double rho_a, double rho_b);
+double deps_c_dns_pw92(double rho_a, double rho_b, int spin);
 double ke_density_ueg(double rho);
 
 // VV10
