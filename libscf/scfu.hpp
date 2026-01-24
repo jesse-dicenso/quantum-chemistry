@@ -2,7 +2,7 @@
 #define SCFUHEADERDEF
 
 #include "scfgen.hpp"
-#include "../libdft/xc.hpp"
+#include "../libdft/func.hpp"
 
 Matrix UR_density_matrix(const Matrix& C, int N);
 

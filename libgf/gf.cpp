@@ -2,7 +2,8 @@
 
 // class GF
 
-GF::GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl, int atom_idx){
+GF::GF(const std::vector<double>& exponents, const std::vector<double>& coeffs, const std::vector<double>& pos, 
+	   const std::vector<int>& shl, int atom_idx){
 	assert(exponents.size()==coeffs.size());
 	assert(pos.size()==3);
 	assert(shl.size()==3);
@@ -108,7 +109,7 @@ double E(int i, int j, int t, double a, double b, double QAB){
 	}
 }
 
-std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2){
+std::vector<double> P(double exp1, double exp2, const std::vector<double>& xyz1, const std::vector<double>& xyz2){
 	std::vector<double> vec(3);
 	for(int i = 0; i < 3; i++){
 		vec[i] = (exp1*xyz1[i]+exp2*xyz2[i])/(exp1+exp2);

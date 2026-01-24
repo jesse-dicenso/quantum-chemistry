@@ -1,6 +1,6 @@
 #include "aux.hpp"
 
-std::vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
+std::vector<double> Lowdin_PA(const Molecule& M, const Matrix& P, const Matrix& S){
 	std::vector<double> LPA(M.Zvals.size());
 	Matrix ShPSh = m_sqrt(S) * P * m_sqrt(S);
 	for(int i = 0; i < M.Zvals.size(); i++){
@@ -15,7 +15,7 @@ std::vector<double> Lowdin_PA(Molecule M, Matrix P, Matrix S){
 	return LPA;
 }
 
-std::vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
+std::vector<double> Mulliken_PA(const Molecule& M, const Matrix& P, const Matrix& S){
 	std::vector<double> MPA(M.Zvals.size());
 	Matrix PS = P * S;
 	for(int i = 0; i < M.Zvals.size(); i++){
@@ -30,7 +30,7 @@ std::vector<double> Mulliken_PA(Molecule M, Matrix P, Matrix S){
 	return MPA;
 }
 
-void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
+void R_print_orbital_energies(const Matrix& E, int Nocc, int Kb){
 	std::cout << "***************\n";
 	std::cout << "* MO Energies *\n";
 	std::cout << "***************\n\n";
@@ -45,6 +45,9 @@ void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
 		}
 	}
 	std::cout << '\n';
+}
+
+void R_print_orbitals(const Matrix& C, int Nocc, int Kb){
 	std::cout << "*******************\n";
 	std::cout << "* MO Coefficients *\n";
 	std::cout << "*******************\n\n";
@@ -82,7 +85,7 @@ void R_print_orbitals(Matrix E, Matrix C, int Nocc, int Kb){
 	std::cout << '\n';
 }
 
-void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, int Noccb, int Kb){
+void UR_print_orbital_energies(const Matrix& Ea, const Matrix& Eb, int Nocca, int Noccb, int Kb){
 	std::cout << "***************\n";
 	std::cout << "* MO Energies *\n";
 	std::cout << "***************\n\n";
@@ -108,6 +111,9 @@ void UR_print_orbitals(Matrix Ea, Matrix Eb, Matrix Ca, Matrix Cb, int Nocca, in
 		}
 	}
 	std::cout << '\n';
+}
+
+void UR_print_orbitals(const Matrix& Ca, const Matrix& Cb, int Nocca, int Noccb, int Kb){
 	std::cout << "*******************\n";
 	std::cout << "* MO Coefficients *\n";
 	std::cout << "*******************\n\n";

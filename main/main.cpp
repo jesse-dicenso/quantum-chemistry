@@ -208,7 +208,8 @@ int main(int argc, char* argv[]){
 			cout << "Trace of PS = " << trps << '\n';
 			cout << "Integral of density = " << I_density << "\n\n";
 			
-			R_print_orbitals(e, c, N, K);
+			R_print_orbital_energies(e, N, K);
+			//R_print_orbitals(c, N, K);
 
 			vector<double> popa(M.Zvals.size());
 			if(pop=="lowdin"){
@@ -349,7 +350,8 @@ int main(int argc, char* argv[]){
 			cout << "Trace    of Pt*S  = " << trpts << '\n';
 			cout << "Integral of rho_t = " << I_density_t << "\n\n";
 			
-			UR_print_orbitals(ea, eb, ca, cb, Na, Nb, K);
+			UR_print_orbital_energies(ea, eb, Na, Nb, K);
+			//UR_print_orbitals(ca, cb, Na, Nb, K);
 
 			vector<double> popa(M.Zvals.size());
 			if(pop=="lowdin"){

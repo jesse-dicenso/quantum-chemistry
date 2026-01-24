@@ -37,7 +37,7 @@ double long dfact(double long n){
 	}
 }
 
-double dot(std::vector<double> a, std::vector<double> b){
+double dot(const std::vector<double>& a, const std::vector<double>& b){
 	assert(a.size()==b.size());
 	double sum = 0;
 	for(int i = 0; i < a.size(); i++){

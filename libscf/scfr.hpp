@@ -2,7 +2,7 @@
 #define SCFRHEADERDEF
 
 #include "scfgen.hpp"
-#include "../libdft/xc.hpp"
+#include "../libdft/func.hpp"
 
 Matrix R_density_matrix(const Matrix& C, int N);
 

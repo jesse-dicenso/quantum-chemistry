@@ -11,7 +11,8 @@
 
 class GF{
 	public:
-		GF(std::vector<double> exponents, std::vector<double> coeffs, std::vector<double> pos, std::vector<int> shl, int atom_idx);
+		GF(const std::vector<double>& exponents, const std::vector<double>& coeffs, const std::vector<double>& pos, 
+		   const std::vector<int>& shl, int atom_idx);
 		
 		std::vector<double> exps;
 		std::vector<double> d;
@@ -33,6 +34,6 @@ class GF{
 double E(int i, int j, int t, double a, double b, double QAB);
 
 // New Center
-std::vector<double> P(double exp1, double exp2, std::vector<double> xyz1, std::vector<double> xyz2);
+std::vector<double> P(double exp1, double exp2, const std::vector<double>& xyz1, const std::vector<double>& xyz2);
 
 #endif

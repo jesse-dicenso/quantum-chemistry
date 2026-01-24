@@ -1,4 +1,5 @@
-#include "xc.hpp"
+#include "func.hpp"
+#include "eval.hpp"
 
 XC::XC(const std::string& method){
 	if		(method.substr(0,2)=="R_"){restricted=true;}
@@ -11,19 +12,19 @@ void call_xc_functional(XC* xc){
 	xc->xc_functional(xc);
 }
 
-std::unordered_map<std::string, std::function<void(XC* xc)>> xc_register = 
+std::unordered_map<std::string, void(XC*)> xc_register = 
 {
 	{ "R_HF"     , R_HF_X   },
-	{ "U_HF"     , U_HF_X   }/*,
-	{ "R_Slater" , R_Slater },
-	{ "U_Slater" , U_Slater },
+	{ "U_HF"     , U_HF_X   },
+	{ "R_Slater" , Slater },
+	{ "U_Slater" , Slater } /*,
 	{ "R_VWN5"   , R_VWN5   },
 	{ "U_VWN5"   , U_VWN5   },
 	{ "R_PW92"   , R_PW92   },
 	{ "U_PW92"   , U_PW92   },
 	{ "R_PBE"    , R_PBE    },
 	{ "U_PBE_X"  , U_PBE_X  },
-	{ "U_B97M-V" , U_B97M_V },*/
+	{ "U_B97M-V" , B97M_V   },*/
 };
 
 // HF //
@@ -75,16 +76,39 @@ void U_HF_X(XC* xc){
 ///////////////////////////////////////////////////////////////
 
 // LDA ////////////////////////////////////////////////////////
-/*
-void R_Slater_X(XC_inp* xc){
-	assert((xc.P!=nullptr) && (xc.mol!=nullptr) && (xc.g!=nullptr));
-	auto v = [](double rho) {
-		return -cbrt(3 * rho / M_PI);
-	};
-	return F_XC_LDA<0>(inp, v);
-}
 
-double R_Slater_X_E(const XC_inp& inp){
+void Slater(XC* xc){
+	assert((xc.mol!=nullptr) && (xc.g!=nullptr));
+	if(xc->restricted){assert(xc->P!=nullptr);}
+	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
+
+	constexpr C_X = -(3.0 / 4.0) * cbrt(3.0 / M_PI);
+	auto func_r = [C_X](XC* inp) {
+		XC_ret ret;
+		double rho_3 = cbrt(xc->rho);
+
+		ret.E_XC =  C_X * intpow(rho_3, 4);
+		ret.V_XC = {C_X * (4.0 / 3.0) * rho_3};
+
+		return xc_ret;
+	};
+	auto func_u = [C_X](XC* inp) {
+		XC_ret ret;
+		double rho_a_3 = cbrt(xc->rho_a);
+		double rho_b_3 = cbrt(xc->rho_b);
+		
+		ret.E_XC =  C_X * cbrt(2.0) * (intpow(rho_a_3, 4) + intpow(rho_b_3, 4));
+		ret.V_XC = {C_X * cbrt(2.0) * (4.0 / 3.0) * rho_a_3, 
+					C_X * cbrt(2.0) * (4.0 / 3.0) * rho_b_3 };
+ 
+		return xc_ret;
+	};
+	std::vector<double>(XC*) func = (xc->restricted ? func_r : func_u);
+	LDA(xc, func);
+}
+/*
+
+double R_Slater(const XC_inp& inp){
 	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	auto e = [](double rho) {
 		return cbrt(rho * rho * rho * rho);

@@ -130,7 +130,7 @@ Matrix Matrix::operator*(const Matrix& A) const{
 	return product;	
 }
 
-Matrix transpose(const Matrix A){
+Matrix transpose(const Matrix& A){
 	Matrix tp(A.cols, A.rows);
 	for(int i = 0; i < A.rows; i++){
 		for(int j = 0; j < A.cols; j++){
@@ -175,7 +175,7 @@ Matrix zero(int r, int c){
 	return z;
 }
 
-double Tr(Matrix A){
+double Tr(const Matrix& A){
 	assert(A.rows==A.cols);
 	double sum = 0;
 	for(int i = 0; i < A.rows; i++){
@@ -184,7 +184,7 @@ double Tr(Matrix A){
 	return sum;
 }
 
-std::vector<Matrix> diagonalize(Matrix A){
+std::vector<Matrix> diagonalize(const Matrix& A){
 	assert(A.rows==A.cols);
 	// * DSYEV options * //
 	char jobz = 'V';		// eigenvalues & eigenvectors
@@ -243,7 +243,7 @@ std::vector<Matrix> diagonalize(Matrix A){
 	return result;
 }
 
-Matrix m_sqrt(const Matrix A){
+Matrix m_sqrt(const Matrix& A){
 	assert(A.rows==A.cols);
 	std::vector<Matrix> QR = diagonalize(A);
 	for(int i = 0; i < QR[0].rows; i++){
@@ -253,7 +253,7 @@ Matrix m_sqrt(const Matrix A){
 	return QR[1] * QR[0] * transpose(QR[1]);
 }
 
-Matrix m_inv_sqrt(const Matrix A){
+Matrix m_inv_sqrt(const Matrix& A){
 	assert(A.rows==A.cols);
 	std::vector<Matrix> QR = diagonalize(A);
 	for(int i = 0; i < QR[0].rows; i++){
@@ -263,27 +263,27 @@ Matrix m_inv_sqrt(const Matrix A){
 	return QR[1] * QR[0] * transpose(QR[1]);
 }
 
-std::vector<double> sym_linear_solve(Matrix A, Matrix B, int* icd){
+std::vector<double> sym_linear_solve(const Matrix& A, const Matrix& B, int* icd){
 	assert(A.rows==A.cols);
 	assert((B.rows==A.rows) && (B.cols==1));
 	// * DSYSV options * //
-	char uplo = 'U';		// upper triangular
-	int n = A.cols;			// A matrix size
-	int nrhs = 1;			// 1 column B matrix
+	char uplo = 'U';			// upper triangular
+	int n = A.cols;				// A matrix size
+	int nrhs = 1;				// 1 column B matrix
 	std::vector<double> a(n*n);	// A matrix, column-major
 	for(int i = 0; i < n; i++){
 		for(int j = 0; j < n; j++){
 			a[i+n*j] = A.matrix[i][j];
 		}
 	}
-	int lda = n;			// leading dimension of A
+	int lda = n;				// leading dimension of A
 	std::vector<int> ipiv(n);	// Details of D
 	std::vector<double> b(n);	// B matrix, column-major
 	for(int i = 0; i < n; i++){
 		b[i] = B.matrix[i][0];
 	}
-	int ldb = n;			// leading dimension of B
-	int info;			// successful if info == 0
+	int ldb = n;				// leading dimension of B
+	int info;					// successful if info == 0
 	
 	// workspace query
 	double works;

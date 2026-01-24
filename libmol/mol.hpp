@@ -9,7 +9,7 @@
 
 class Molecule{
 	public:
-		Molecule(std::string file, std::string bfs);
+		Molecule(const std::string& file, const std::string& bfs);
 
 		int Natoms;
 		std::vector<int> Zvals;
@@ -22,6 +22,7 @@ class Molecule{
 		std::vector<GF> AOs;
 };
 
-std::vector<GF> AOfunctions(std::string bfs, int Zval, const std::vector<double>& xyz, int atom_idx);
+std::vector<GF> AOfunctions(const std::string& bfs, int Zval, const std::vector<double>& xyz, int atom_idx);
+extern const std::vector<std::string> elements;
 
 #endif

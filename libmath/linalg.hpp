@@ -40,14 +40,14 @@ class Matrix{
 Matrix I(int r, int c);
 Matrix zero(int r, int c);
 
-Matrix transpose(const Matrix A);
+Matrix transpose(const Matrix& A);
 
-double Tr(Matrix A);
+double Tr(const Matrix& A);
 
-std::vector<Matrix> diagonalize(Matrix A);
-Matrix m_sqrt(const Matrix A);
-Matrix m_inv_sqrt(const Matrix A);
+std::vector<Matrix> diagonalize(const Matrix& A);
+Matrix m_sqrt(const Matrix& A);
+Matrix m_inv_sqrt(const Matrix& A);
 
-std::vector<double> sym_linear_solve(Matrix A, Matrix B, int* icd);
+std::vector<double> sym_linear_solve(const Matrix& A, const Matrix& B, int* icd);
 
 #endif
