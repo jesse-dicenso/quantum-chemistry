@@ -408,7 +408,7 @@ void PBE(XC* xc){
 	using namespace _PW92;
 	using namespace _PBE;
 	assert(xc->restricted); // only restricted PBE for now!
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P!=nullptr));}	
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P!=nullptr));	
 	auto func_r = [](XC* inp) {
 		// Slater Exchange
 		const double rho = inp->rho;
@@ -460,7 +460,7 @@ void PBE(XC* xc){
 		const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
 		const double H = gamma * log(Q);
 
-		const double dH_dt2 = (beta / Q) * (1 + 2 * A_P * t2) / (dnm * dnm);
+		const double dH_dt2 = (beta / Q) * (1 + 2 * A_PBE * t2) / (dnm * dnm);
 		const double dt2_dn = -(7.0 / 3.0) * t2 / rho;
 		const double dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
 		const double dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
@@ -476,97 +476,6 @@ void PBE(XC* xc){
 }
 
 /*
-XC_ret R_PBE_c(const XC_inp& inp){
-	// PW92 params
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1 = 0.21370;
-	const double b1 = 7.5957;
-	const double b2 = 3.5876;
-	const double b3 = 1.6382;
-	const double b4 = 0.49294;
-	// PBE params
-	const double beta = 0.066725;
-	const double gamma = A;
-
-	auto v = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, const std::vector<double>& grho, double phi1, double phi2,
-						 						  double gpx1, double gpy1, double gpz1,
-					 	 						  double gpx2, double gpy2, double gpz2) 
-	{
-		if(rho < 1e-20) {return 0.0;}
-		double rs, e_LDA, Q0, Q1, Q1p, v_LDA, deps_dn, kF, ks, grho2, t2, A_PBE, dnm, Q, H;
-		rs = cbrt(3 / (4 * M_PI * rho));
-		e_LDA = -rho * 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs)));
-
-		Q0  = -2 * A * (1 + a1 * rs);
-		Q1  =  2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs);
-		Q1p =      A * (b1 / sqrt(rs) + 2 * b2 + 3 * b3 * sqrt(rs) + 4 * b4 * rs);
-		
-		v_LDA = - 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs))); 
-		deps_dn = -(rs / 3) * (-2 * A * a1 * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1));
-		v_LDA += deps_dn;
-
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		ks = sqrt(4 * kF / M_PI);
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		t2 = grho2 / (4 * ks * ks * rho * rho);
-		A_PBE = (beta / gamma) / (exp(-e_LDA / (rho * gamma)) - 1);
-		if(A_PBE > 1e50) {return phi1 * v_LDA * phi2;}
-		dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
-		Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
-		H = gamma * log(Q);
-
-		double dH_dt2, dt2_dn, dH_dA_PBE, dA_PBE_deps, dt2_dgrho2;
-		dH_dt2 = (beta / Q) * (1 + 2 * A * t2) / (dnm * dnm);
-		dt2_dn = -(7.0 / 3.0) * t2 / rho;
-		dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
-		dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
-		dt2_dgrho2 = t2 / grho2;
-
-		return phi1 * (v_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_dn)) * phi2 + 
-			   2 * rho * dH_dt2 * dt2_dgrho2 * (phi2 * (grho[0] * gpx1 + grho[1] * gpy1 + grho[3] * gpz1) + 
-			   phi1 * (grho[0] * gpx2 + grho[1] * gpy2 + grho[2] * gpz2));
-	};
-	return F_XC_GGA<0>(inp, v);
-}
-
-double R_PBE_c_E(const XC_inp& inp){
-	// PW92 params
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1 = 0.21370;
-	const double b1 = 7.5957;
-	const double b2 = 3.5876;
-	const double b3 = 1.6382;
-	const double b4 = 0.49294;
-	// PBE params
-	const double beta = 0.066725;
-	const double gamma = A;
-
-	auto e = [A, a1, b1, b2, b3, b4, beta, gamma](double rho, const std::vector<double>& grho){
-		if(rho < 1e-20) {return 0.0;}
-		double rs, e_LDA, kF, ks, grho2, t2, A_PBE, Q;
-		rs = cbrt(3 / (4 * M_PI * rho));
-		e_LDA = -rho * 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs)));
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		ks = sqrt(4 * kF / M_PI);
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		t2 = grho2 / (4 * ks * ks * rho * rho);
-		A_PBE = (beta / gamma) / (exp(-e_LDA / (rho * gamma)) - 1);
-		if(A_PBE > 1e50) {return e_LDA;}
-		Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / (1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2);
-		return e_LDA + rho * gamma * log (Q);
-	};
-	return E_XC_GGA<0>(inp, e);
-}
-
-XC_ret R_PBE(const XC_inp& inp){
-	Matrix null;
-	return {R_PBE_c(inp).F_XC_1 + R_PBE_X(inp).F_XC_1, null};
-}
-
-double R_PBE_E(const XC_inp& inp){
-	return R_PBE_c_E(inp) + R_PBE_X_E(inp);
-}
-
 // MGGA ///////////////////////////////////////////////////////
 Matrix F_VV10(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
 			  double phi1, double phi2, double gpx1, double gpy1, double gpz1, double gpx2, double gpy2, double gpz2, 
