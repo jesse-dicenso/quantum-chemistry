@@ -19,11 +19,12 @@ std::unordered_map<std::string, void (*)(XC*)> xc_register =
 	{ "R_Slater" , Slater  },
 	{ "U_Slater" , Slater  },
 	{ "R_VWN5"   , VWN5    },
-	{ "U_VWN5"   , VWN5    }/*,
+	{ "U_VWN5"   , VWN5    },
 	{ "R_PW92"   , PW92    },
 	{ "U_PW92"   , PW92    },
-	{ "R_PBE"    , R_PBE   },
-	{ "U_PBE_X"  , U_PBE_X },
+	{ "R_PBE_X"  , PBE_X   },
+	{ "U_PBE_X"  , PBE_X   },
+	{ "R_PBE"    , PBE     }/*,
 	{ "U_B97M-V" , B97M_V  },*/
 };
 
@@ -91,7 +92,7 @@ void Slater(XC* xc){
 	auto func_r = [](XC* inp) {
 		const double rho   = inp->rho;
 		const double rho_3 = cbrt(rho);
-		XC_ret ret;
+		LDA_ret ret;
 		ret.e_XC = R * (3.0 / 4.0) * rho * rho_3;
 		ret.v_XC = {R * rho_3};
 		return ret;
@@ -101,32 +102,31 @@ void Slater(XC* xc){
 		const double rho_b   = inp->rho_b;
 		const double rho_a_3 = cbrt(rho_a);
 		const double rho_b_3 = cbrt(rho_b);	
-		XC_ret ret;
+		LDA_ret ret;
 		ret.e_XC = U * (3.0 / 4.0) * (rho_a * rho_a_3 + rho_b * rho_b_3);
 		ret.v_XC = { U * rho_a_3, U * rho_b_3 };
 		return ret;
 	};
-	XC_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
+	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
 	LDA(xc, func);
 }
 
 namespace _VWN5{
 	// Paramagnetic (zeta = 0)
-	const     double A_P  = (1 - log(2)) / (M_PI * M_PI);
-	constexpr double x0_P = -0.10498;
-	constexpr double b_P  =  3.72744;
-	constexpr double c_P  =  12.9352;
-	constexpr double X0_P =  x0_P * x0_P + b_P * x0_P + c_P;
-	const     double Q_P  =  sqrt(4 * c_P - b_P * b_P);
+	inline const     double A_P  = (1 - log(2)) / (M_PI * M_PI);
+	inline constexpr double x0_P = -0.10498;
+	inline constexpr double b_P  =  3.72744;
+	inline constexpr double c_P  =  12.9352;
+	inline constexpr double X0_P =  x0_P * x0_P + b_P * x0_P + c_P;
+	inline const     double Q_P  =  sqrt(4 * c_P - b_P * b_P);
 	// Ferromagnetic (zeta = 1)
-	const     double A_F  =  A_P / 2;
-	constexpr double x0_F = -0.32500;
-	constexpr double b_F  =  7.06042;
-	constexpr double c_F  =  18.0578;
-	constexpr double X0_F =  x0_F * x0_F + b_F * x0_F + c_F;
-	const     double Q_F  =  sqrt(4 * c_F - b_F * b_F);
-
-	const     double ddf0 = 4.0 / (9.0 * (cbrt(2) - 1));
+	inline const     double A_F  =  A_P / 2;
+	inline constexpr double x0_F = -0.32500;
+	inline constexpr double b_F  =  7.06042;
+	inline constexpr double c_F  =  18.0578;
+	inline constexpr double X0_F =  x0_F * x0_F + b_F * x0_F + c_F;
+	inline const     double Q_F  =  sqrt(4 * c_F - b_F * b_F);
+	inline const     double ddf0 = 4.0 / (9.0 * (cbrt(2) - 1));
 }
 
 void VWN5(XC* xc){
@@ -151,7 +151,7 @@ void VWN5(XC* xc){
 		);
 		const double v_c = eps_c - A_P * (x / (3 * X)) * (c_P / x - b_P * x0_P / (x - x0_P));
 
-		XC_ret ret;
+		LDA_ret ret;
 		ret.e_XC = e_X + rho * eps_c;
 		ret.v_XC = { v_X + v_c };
 		return ret;
@@ -189,321 +189,293 @@ void VWN5(XC* xc){
 		const double v_c_P = eps_c_P - A_P * (x / (3 * X_P)) * (c_P / x - b_P * x0_P / (x - x0_P));
 		const double v_c_F = eps_c_F - A_F * (x / (3 * X_F)) * (c_F / x - b_F * x0_F / (x - x0_F));
 
-		for(int s = 0; s < 1; s++){
+		for(int s = 0; s < 2; s++){
 			v[s] += v_c_P + (alpha + rho * dalpha_drho) * (f / ddf0) * (1 - zeta3 * zeta) + 
 					rho * alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho[s] +
 					(v_c_F - v_c_P) * f * zeta3 * zeta + 
 					rho * (eps_c_F - eps_c_P) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho[s];	
 		}
-		XC_ret ret;
+		LDA_ret ret;
 		ret.e_XC = e_X + e_c;
 		ret.v_XC = v;
 		return ret;
 	};
-	XC_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
+	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
 	LDA(xc, func);
 }
-/*
-XC_ret R_PW92_c(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	// const double A  = 0.031091;
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1 = 0.21370;
-	const double b1 = 7.5957;
-	const double b2 = 3.5876;
-	const double b3 = 1.6382;
-	const double b4 = 0.49294;
 
-	auto v = [A, a1, b1, b2, b3, b4](double rho){
-		if(rho < 1e-20) {return 0.0;}
-		double rs = cbrt(3 / (4 * M_PI * rho));
-		double Q0  = -2 * A * (1 + a1 * rs);
-		double Q1  =  2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs);
-		double Q1p =      A * (b1 / sqrt(rs) + 2 * b2 + 3 * b3 * sqrt(rs) + 4 * b4 * rs);
+namespace _PW92 {
+	// Paramagnetic (zeta = 0)
+	inline const     double A_P  = (1 - log(2)) / (M_PI * M_PI);
+	inline constexpr double a1_P = 0.21370;
+	inline constexpr double b1_P = 7.5957;
+	inline constexpr double b2_P = 3.5876;
+	inline constexpr double b3_P = 1.6382;
+	inline constexpr double b4_P = 0.49294;
+	// Ferromagnetic (zeta = 1)
+	inline const     double A_F  = A_P / 2;
+	inline constexpr double a1_F = 0.20548;
+	inline constexpr double b1_F = 14.1189;
+	inline constexpr double b2_F = 6.1977;
+	inline constexpr double b3_F = 3.3662;
+	inline constexpr double b4_F = 0.62517;
+}
+
+void PW92(XC* xc){
+	using namespace _SLATER;
+	using namespace _PW92;
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
+	if(xc->restricted){assert(xc->P!=nullptr);}
+	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
+
+	auto func_r = [](XC* inp) {
+		const double rho = inp->rho;
+		const double rho_3 = cbrt(rho);
+		const double e_X   = R * (3.0 / 4.0) * rho * rho_3;
+		const double v_X   = R * rho_3;
 		
-		return - 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs))) 
-			   - (rs / 3) * (-2 * A * a1 * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1));
-	};
-	return F_XC_LDA<0>(inp, v);
-}
-
-double R_PW92_c_E(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	//const double A  = 0.031091;
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1 = 0.21370;
-	const double b1 = 7.5957;
-	const double b2 = 3.5876;
-	const double b3 = 1.6382;
-	const double b4 = 0.49294;
-
-	auto e = [A, a1, b1, b2, b3, b4](double rho){ 
-		if(rho < 1e-20) {return 0.0;}
-		double rs = cbrt(3 / (4 * M_PI * rho));
-		return -rho * 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs)));
-	};
-	return E_XC_LDA<0>(inp, e);
-}
-
-XC_ret U_PW92_c(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	// zeta = 0
-	// const double A_0  = 0.031091;
-	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1_0 = 0.21370;
-	const double b1_0 = 7.5957;
-	const double b2_0 = 3.5876;
-	const double b3_0 = 1.6382;
-	const double b4_0 = 0.49294;
-	// zeta = 1
-	// const double A_1  = 0.015545;
-	const double A_1  = A_0 / 2;
-	const double a1_1 = 0.20548;
-	const double b1_1 = 14.1189;
-	const double b2_1 = 6.1977;
-	const double b3_1 = 3.3662;
-	const double b4_1 = 0.62517;
-
-	auto v = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b, int spin){
-		double rho = rho_a + rho_b;
-		if (rho < 1e-20) {return 0.0;}
-		double rs = cbrt(3 / (4 * M_PI * rho));
-
-		int sgn_spin;
-		if(spin == 0)		{sgn_spin =  1;}
-		else if (spin == 1) {sgn_spin = -1;}
-		else {assert((spin == 0) || (spin == 1));}
-		double zeta = (rho_a - rho_b) / rho;
-		double zeta3 = zeta * zeta * zeta;
-		double zeta4 = zeta3 * zeta;
-		double f = f_zeta(zeta);
-		double df = df_zeta(zeta);
-		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
-		double alpha = PW92_alpha(rs);
-		double dalpha_drs = PW92_dalpha_drs(rs);
-
-		double eps_0 = -2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
-					  (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs)));
-		double eps_1 = -2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
-					  (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs)));
-		double eps = eps_0 + alpha * (f / ddf0) * (1 - zeta4) + (eps_1 - eps_0) * f * zeta4;
-
-		double Q0_0   = -2 * A_0 * (1 + a1_0 * rs);
-		double Q1_0   =  2 * A_0 * (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs);
-		double Q1p_0  =      A_0 * (b1_0 / sqrt(rs) + 2 * b2_0 + 3 * b3_0 * sqrt(rs) + 4 * b4_0 * rs);
-		double deps_0 = -2 * A_0 * a1_0 * log(1 + 1 / Q1_0) - Q0_0 * Q1p_0 / (Q1_0 * Q1_0 + Q1_0);
+		const double rs = cbrt(3 / (4 * M_PI * rho));
+		const double Q0  = -2 * A_P * (1 + a1_P * rs);
+		const double Q1  =  2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs);
+		const double Q1p =      A_P * (b1_P / sqrt(rs) + 2 * b2_P + 3 * b3_P * sqrt(rs) + 4 * b4_P * rs);
 		
-		double Q0_1   = -2 * A_1 * (1 + a1_1 * rs);
-		double Q1_1   =  2 * A_1 * (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs);
-		double Q1p_1  =      A_1 * (b1_1 / sqrt(rs) + 2 * b2_1 + 3 * b3_1 * sqrt(rs) + 4 * b4_1 * rs);
-		double deps_1 = -2 * A_1 * a1_1 * log(1 + 1 / Q1_1) - Q0_1 * Q1p_1 / (Q1_1 * Q1_1 + Q1_1);
-
-		double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
-		double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
-
-		return eps - (rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz;
-	};
-	return F_XC_LDA<2>(inp, v);
-}
-
-double U_PW92_c_E(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	// zeta = 0
-	// const double A_0  = 0.031091;
-	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1_0 = 0.21370;
-	const double b1_0 = 7.5957;
-	const double b2_0 = 3.5876;
-	const double b3_0 = 1.6382;
-	const double b4_0 = 0.49294;
-	// zeta = 1
-	// const double A_1  = 0.015545;
-	const double A_1  = A_0 / 2;
-	const double a1_1 = 0.20548;
-	const double b1_1 = 14.1189;
-	const double b2_1 = 6.1977;
-	const double b3_1 = 3.3662;
-	const double b4_1 = 0.62517;
-
-	auto e = [A_0, a1_0, b1_0, b2_0, b3_0, b4_0, A_1, a1_1, b1_1, b2_1, b3_1, b4_1] (double rho_a, double rho_b){
-		double rho = rho_a + rho_b;
-		if (rho < 1e-20) {return 0.0;}
-		double rs = cbrt(3 / (4 * M_PI * rho));
+		const double eps_c = -2 * A_P * (1 + a1_P * rs) * log(1 + 
+			1 / (2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
+		const double v_c = eps_c - (rs / 3) * (-2 * A_P * a1_P * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1));
 		
-		double zeta = (rho_a - rho_b) / rho;
-		double zeta4 = zeta * zeta * zeta * zeta;
-		double f = f_zeta(zeta);
-		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
-		double alpha = PW92_alpha(rs);
-
-		double ec_0 = -rho * 2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
-					  (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs)));
-		double ec_1 = -rho * 2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
-					  (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs)));
-
-		return ec_0 + rho * alpha * (f / ddf0) * (1 - zeta4) + (ec_1 - ec_0) * f * zeta4;
+		LDA_ret ret;
+		ret.e_XC = e_X + rho * eps_c;
+		ret.v_XC = { v_X + v_c };
+		return ret;
 	};
-	return E_XC_LDA<1>(inp, e);
-}
+	auto func_u = [](XC* inp) {
+		const double rho_a   = inp->rho_a;
+		const double rho_b   = inp->rho_b;
+		const double rho     = rho_a + rho_b;
+		const double rho_a_3 = cbrt(rho_a);
+		const double rho_b_3 = cbrt(rho_b);
+		const double e_X     = U * (3.0 / 4.0) * (rho_a * rho_a_3 + rho_b * rho_b_3);
+		std::vector<double> v = {U * rho_a_3, U * rho_b_3};
+		
+		double rs = cbrt(3 / (4 * M_PI * rho));
+		const double zeta = (rho_a - rho_b) / rho;
+		const double zeta3 = zeta * zeta * zeta;
+		const double zeta4 = zeta3 * zeta;
+		const double f = f_zeta(zeta);
+		const double df = df_zeta(zeta);
+		const double alpha = PW92_alpha(rs);
+		const double dalpha_drs = PW92_dalpha_drs(rs);
+		
+		const double eps_P = -2 * A_P * (1 + a1_P * rs) * log(1 + 1 / (2 * A_P * 
+			(b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
+		const double eps_F = -2 * A_F * (1 + a1_F * rs) * log(1 + 1 / (2 * A_F * 
+			(b1_F * sqrt(rs) + b2_F * rs + b3_F * sqrt(intpow(rs, 3)) + b4_F * rs * rs)));
+		const double eps = eps_P + alpha * (f / _VWN5::ddf0) * (1 - zeta4) + (eps_F - eps_P) * f * zeta4;
+		
+		const double Q0_P   = -2 * A_P * (1 + a1_P * rs);
+		const double Q1_P   =  2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs);
+		const double Q1p_P  =      A_P * (b1_P / sqrt(rs) + 2 * b2_P + 3 * b3_P * sqrt(rs) + 4 * b4_P * rs);
+		const double deps_P = -2 * A_P * a1_P * log(1 + 1 / Q1_P) - Q0_P * Q1p_P / (Q1_P * Q1_P + Q1_P);
+	
+		const double Q0_F   = -2 * A_F * (1 + a1_F * rs);
+		const double Q1_F   =  2 * A_F * (b1_F * sqrt(rs) + b2_F * rs + b3_F * sqrt(intpow(rs, 3)) + b4_F * rs * rs);
+		const double Q1p_F  =      A_F * (b1_F / sqrt(rs) + 2 * b2_F + 3 * b3_F * sqrt(rs) + 4 * b4_F * rs);
+		const double deps_F = -2 * A_F * a1_F * log(1 + 1 / Q1_F) - Q0_F * Q1p_F / (Q1_F * Q1_F + Q1_F);
+		
+		const double deps_dr = deps_P * (1 - f * zeta4) + deps_F * f * zeta4 + dalpha_drs * (f / _VWN5::ddf0) * (1 - zeta4);
+		const double deps_dz = 4 * zeta3 * f * (eps_F - eps_P - alpha / _VWN5::ddf0) + 
+			df * (zeta4 * (eps_F - eps_P) + (1 - zeta4) * alpha / _VWN5::ddf0);
+		
+		v[0] += eps - (rs / 3) * deps_dr - (zeta - 1) * deps_dz;
+		v[1] += eps - (rs / 3) * deps_dr - (zeta + 1) * deps_dz;
 
-XC_ret R_PW92(const XC_inp& inp){
-	Matrix null;
-	return {R_PW92_c(inp).F_XC_1 + R_Slater_X(inp).F_XC_1, null};
-}
-
-double R_PW92_E(const XC_inp& inp){
-	return R_PW92_c_E(inp) + R_Slater_X_E(inp);
-}
-
-XC_ret U_PW92(const XC_inp& inp){
-	XC_ret fx = U_Slater_X(inp);
-	XC_ret fc = U_PW92_c(inp);
-	return {fx.F_XC_1 + fc.F_XC_1, fx.F_XC_2 + fc.F_XC_2};
-}
-
-double U_PW92_E(const XC_inp& inp){
-	return U_PW92_c_E(inp) + U_Slater_X_E(inp);
+		LDA_ret ret;
+		ret.e_XC = e_X + rho * eps;
+		ret.v_XC = v;
+		return ret;
+	};
+	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
+	LDA(xc, func);
 }
 
 // GGA ////////////////////////////////////////////////////////
-XC_ret R_PBE_X(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	const double beta = 0.066725;
-	const double kappa = 0.804;
-	const double mu = beta * (M_PI * M_PI / 3);
-	auto v = [kappa, mu](double rho, const std::vector<double>& grho, double phi1, double phi2, 
-						 double gpx1, double gpy1, double gpz1,
-					 	 double gpx2, double gpy2, double gpz2) 
-	{
-		if (rho < 1e-16) {return 0.0;}
+
+namespace _PBE{
+	inline constexpr double beta = 0.066725;
+	inline constexpr double kappa = 0.804;
+	inline constexpr double mu = beta * (M_PI * M_PI / 3);
+	inline const     double gamma = (1 - log(2)) / (M_PI * M_PI);
+}
+
+void PBE_X(XC* xc){
+	using namespace _SLATER;
+	using namespace _PBE;
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
+	if(xc->restricted){assert(xc->P!=nullptr);}
+	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
+	
+	auto func_r = [](XC* inp) {
 		// Slater Exchange
-		double v_LDA, e_LDA;
-		v_LDA = -cbrt(3 * rho / M_PI);
-		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho * rho * rho * rho);
+		const double rho = inp->rho;
+		const double rho_3 = cbrt(rho);
+		const double e_LDA = R * (3.0 / 4.0) * rho * rho_3;
+		const double v_LDA = R * rho_3;
 
 		// Enhancement Factor
-		double grho2, kF, s2;
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		s2 = grho2 / (4 * kF * kF * rho * rho);
-		if (s2 < 1e-16) {return phi1 * v_LDA * phi2;}	
-
-		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
-		ds2_drho = -8.0 * s2 / (3.0 * rho);
-		ds2_dgrho2 = s2 / grho2;	
-		FX_d = 1 + mu * s2 / kappa;	
-		FX = 1 + kappa - kappa / FX_d;
-		dFX_ds2 = mu / (FX_d * FX_d);
-		dFX_drho = dFX_ds2 * ds2_drho; 
-		dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
+		const double grho2 = (
+			inp->gradient_rho[0] * inp->gradient_rho[0] + 
+			inp->gradient_rho[1] * inp->gradient_rho[1] + 
+			inp->gradient_rho[2] * inp->gradient_rho[2] 
+		);
+		const double kF = cbrt(3 * M_PI * M_PI * rho);
+		const double s2 = grho2 / (4 * kF * kF * rho * rho);
+		const double ds2_drho = -8.0 * s2 / (3.0 * rho);
+		const double ds2_dgrho2 = s2 / grho2;	
+		const double FX_d = 1 + mu * s2 / kappa;	
+		const double FX = 1 + kappa - kappa / FX_d;
+		const double dFX_ds2 = mu / (FX_d * FX_d);
+		const double dFX_drho = dFX_ds2 * ds2_drho; 
+		const double dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
  
-		double de_drho = v_LDA * FX + e_LDA * dFX_drho;
-		double de_dgrho2 = e_LDA * dFX_dgrho2;
+		const double de_drho = v_LDA * FX + e_LDA * dFX_drho;
+		const double de_dgrho2 = e_LDA * dFX_dgrho2;
 
-		return (phi1 * de_drho * phi2) + 2 * de_dgrho2 * 
-			   (phi1 * (grho[0] * gpx2 + grho[1] * gpy2 + grho[2] * gpz2) + 
-			    phi2 * (grho[0] * gpx1 + grho[1] * gpy1 + grho[2] * gpz1));
+		GGA_ret ret;
+		ret.e_XC = e_LDA * FX;
+		ret.drho_XC = {de_drho};
+		ret.dgamma_XC = {de_dgrho2};
+		return ret;
 	};
-	return F_XC_GGA<0>(inp, v);
+	auto func_u = [](XC* inp) {
+		// Slater Exchange
+		const double rho   = 2 * inp->rho;
+		const double rho_a = 2 * inp->rho_a;
+		const double rho_b = 2 * inp->rho_b;
+		const double rho_a_3 = cbrt(rho_a);
+		const double rho_b_3 = cbrt(rho_b);
+		const double e_LDA_a = (3.0 / 4.0) * R * rho_a * rho_a_3;
+		const double e_LDA_b = (3.0 / 4.0) * R * rho_b * rho_b_3;
+		const double v_LDA_a = R * rho_a_3;	// v_LDA_X spin scaling already accounted for!
+		const double v_LDA_b = R * rho_b_3;	// v_LDA_X spin scaling already accounted for!
+		
+		// Enhancement Factor
+		const double grho2_a = 4 * (
+			inp->gradient_rho_a[0] * inp->gradient_rho_a[0] + 
+			inp->gradient_rho_a[1] * inp->gradient_rho_a[1] + 
+			inp->gradient_rho_a[2] * inp->gradient_rho_a[2]
+		); 
+		const double grho2_b = 4 * (
+			inp->gradient_rho_b[0] * inp->gradient_rho_b[0] + 
+			inp->gradient_rho_b[1] * inp->gradient_rho_b[1] + 
+			inp->gradient_rho_b[2] * inp->gradient_rho_b[2]
+		); 
+		const double kF_a = cbrt(3 * M_PI * M_PI * rho_a);
+		const double kF_b = cbrt(3 * M_PI * M_PI * rho_b);
+		const double s2_a = grho2_a / (4 * kF_a * kF_a * rho_a * rho_a);
+		const double s2_b = grho2_b / (4 * kF_b * kF_b * rho_b * rho_b);
+		const double ds2_drho_a = -8.0 * s2_a / (3.0 * rho_a);
+		const double ds2_drho_b = -8.0 * s2_b / (3.0 * rho_b);
+		const double ds2_dgrho2_a = s2_a / grho2_a;	
+		const double ds2_dgrho2_b = s2_b / grho2_b;	
+		const double FX_d_a = 1 + mu * s2_a / kappa;	
+		const double FX_d_b = 1 + mu * s2_b / kappa;	
+		const double FX_a = 1 + kappa - kappa / FX_d_a;
+		const double FX_b = 1 + kappa - kappa / FX_d_b;
+		const double dFX_ds2_a = mu / (FX_d_a * FX_d_a);
+		const double dFX_ds2_b = mu / (FX_d_b * FX_d_b);
+		const double dFX_drho_a = dFX_ds2_a * ds2_drho_a;
+		const double dFX_drho_b = dFX_ds2_b * ds2_drho_b;
+		const double dFX_dgrho2_a = dFX_ds2_a * ds2_dgrho2_a;
+		const double dFX_dgrho2_b = dFX_ds2_b * ds2_dgrho2_b;
+		
+		const double de_drho_a = v_LDA_a * FX_a + e_LDA_a * dFX_drho_a;	// All divided by
+		const double de_drho_b = v_LDA_b * FX_b + e_LDA_b * dFX_drho_b;	// 2 to account
+		const double de_dgrho2_a = 2 * e_LDA_a * dFX_dgrho2_a;			// for spin scaling
+		const double de_dgrho2_b = 2 * e_LDA_b * dFX_dgrho2_b;			// of e_X and v_X
+
+		GGA_ret ret;
+		ret.e_XC = 0.5 * (e_LDA_a * FX_a + e_LDA_b * FX_b);
+		ret.drho_XC = {de_drho_a, de_drho_b};
+		ret.dgamma_XC = {de_dgrho2_a, de_dgrho2_b};
+		return ret;
+	};
+	GGA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
+	GGA(xc, func);
 }
 
-double R_PBE_X_E(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	const double beta = 0.066725;
-	const double kappa = 0.804;
-	const double mu = beta * (M_PI * M_PI / 3);
-	auto e = [kappa, mu](double rho, std::vector<double> grho) 
-	{
-		if (rho < 1e-20) {return 0.0;}
+void PBE(XC* xc){
+	using namespace _SLATER;
+	using namespace _PW92;
+	using namespace _PBE;
+	assert(xc->restricted); // only restricted PBE for now!
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P!=nullptr));}	
+	auto func_r = [](XC* inp) {
 		// Slater Exchange
-		double e_LDA;
-		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho * rho * rho * rho);
+		const double rho = inp->rho;
+		const double rho_3 = cbrt(rho);
+		const double e_LDA_X = R * (3.0 / 4.0) * rho * rho_3;
+		const double v_LDA_X = R * rho_3;
 
 		// Enhancement Factor
-		double grho2, kF, s2;
-		grho2 = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		kF = cbrt(3 * M_PI * M_PI * rho);
-		s2 = grho2 / (4 * kF * kF * rho * rho);
-
-		return e_LDA * (1 + kappa - kappa / (1 + mu * s2 / kappa));
-	};
-	return E_XC_GGA<0>(inp, e);
-}
-
-XC_ret U_PBE_X(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	const double beta = 0.066725;
-	const double kappa = 0.804;
-	const double mu = beta * (M_PI * M_PI / 3);
-	auto v = [kappa, mu](double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
-						 double phi1, double phi2, 
-						 double gpx1, double gpy1, double gpz1,
-					 	 double gpx2, double gpy2, double gpz2, int spin) 
-	{
-		double rho_s;
-		std::vector<double> grho_s;
-		if     (spin == 0) {rho_s = 2 * rho_a; grho_s = grho_a;}
-		else if(spin == 1) {rho_s = 2 * rho_b; grho_s = grho_b;}
-		else{assert((spin==0) || (spin==1));}
-		if (rho_s / 2 < 1e-20) {return 0.0;}
-		// Slater Exchange
-		double v_LDA, e_LDA;
-		v_LDA = -cbrt(3 * rho_s / M_PI);
-		e_LDA = -(3.0 / 4.0) * cbrt(3.0 / M_PI) * cbrt(rho_s * rho_s * rho_s * rho_s);
-
-		// Enhancement Factor
-		double grho2, kF, s2;
-		grho2 = 4 * (grho_s[0] * grho_s[0] + grho_s[1] * grho_s[1] + grho_s[2] * grho_s[2]);
-		kF = cbrt(3 * M_PI * M_PI * rho_s);
-		s2 = grho2 / (4 * kF * kF * rho_s * rho_s);
-
-		double ds2_drho, ds2_dgrho2, FX_d, FX, dFX_ds2, dFX_drho, dFX_dgrho2;
-		ds2_drho = -8.0 * s2 / (3.0 * rho_s);
-		ds2_dgrho2 = s2 / grho2;	
-		FX_d = 1 + mu * s2 / kappa;	
-		FX = 1 + kappa - kappa / FX_d;
-		dFX_ds2 = mu / (FX_d * FX_d);
-		dFX_drho = dFX_ds2 * ds2_drho;
-		dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
+		const double grho2 = (
+			inp->gradient_rho[0] * inp->gradient_rho[0] + 
+			inp->gradient_rho[1] * inp->gradient_rho[1] + 
+			inp->gradient_rho[2] * inp->gradient_rho[2] 
+		);
+		const double kF = cbrt(3 * M_PI * M_PI * rho);
+		const double s2 = grho2 / (4 * kF * kF * rho * rho);
+		const double ds2_drho = -8.0 * s2 / (3.0 * rho);
+		const double ds2_dgrho2 = s2 / grho2;	
+		const double FX_d = 1 + mu * s2 / kappa;	
+		const double FX = 1 + kappa - kappa / FX_d;
+		const double dFX_ds2 = mu / (FX_d * FX_d);
+		const double dFX_drho = dFX_ds2 * ds2_drho; 
+		const double dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
  
-		double de_drho = 2 * (v_LDA * FX + e_LDA * dFX_drho);
-		double de_dgrho2 = 4 * e_LDA * dFX_dgrho2;
+		const double de_X_drho = v_LDA_X * FX + e_LDA_X * dFX_drho;
+		const double de_X_dgrho2 = e_LDA_X * dFX_dgrho2;
 
-		return 0.5 * (phi1 * de_drho * phi2 + 2 * de_dgrho2 * 
-			   (phi1 * (grho_s[0] * gpx2 + grho_s[1] * gpy2 + grho_s[2] * gpz2) + 
-			    phi2 * (grho_s[0] * gpx1 + grho_s[1] * gpy1 + grho_s[2] * gpz1)));
+		GGA_ret ret;
+		ret.e_XC = e_LDA_X * FX;
+		ret.drho_XC = {de_X_drho};
+		ret.dgamma_XC = {de_X_dgrho2};
+
+		// PW92 correlation
+		const double rs = cbrt(3 / (4 * M_PI * rho));
+		const double Q0  = -2 * A_P * (1 + a1_P * rs);
+		const double Q1  =  2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs);
+		const double Q1p =      A_P * (b1_P / sqrt(rs) + 2 * b2_P + 3 * b3_P * sqrt(rs) + 4 * b4_P * rs);
+		
+		const double eps_c_LDA = -2 * A_P * (1 + a1_P * rs) * log(1 + 
+			1 / (2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
+		const double deps_c_LDA_dn = -(rs / 3) * (-2 * A_P * a1_P * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1)) / rho;
+		const double v_c_LDA = eps_c_LDA + rho * deps_c_LDA_dn;
+
+		// PBE correlation correction
+		const double ks = sqrt(4 * kF / M_PI);
+		const double t2 = grho2 / (4 * ks * ks * rho * rho);
+		const double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
+		if(A_PBE > 1e50) {return ret;}
+		const double dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
+		const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
+		const double H = gamma * log(Q);
+
+		const double dH_dt2 = (beta / Q) * (1 + 2 * A_P * t2) / (dnm * dnm);
+		const double dt2_dn = -(7.0 / 3.0) * t2 / rho;
+		const double dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
+		const double dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
+		const double dt2_dgrho2 = t2 / grho2;
+
+		ret.e_XC += rho * (eps_c_LDA + H);
+		ret.drho_XC[0] += v_c_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_c_LDA_dn);
+		ret.dgamma_XC[0] += rho * dH_dt2 * dt2_dgrho2;
+		return ret;
 	};
-	return F_XC_GGA<1>(inp, v);
+	GGA_ret (*func)(XC*) = func_r;
+	GGA(xc, func);
 }
 
-double U_PBE_X_E(const XC_inp& inp){
-	const double beta = 0.066725;
-	const double kappa = 0.804;
-	const double mu = beta * (M_PI * M_PI / 3);
-	auto e = [kappa, mu](double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b) 
-	{
-		double rho = rho_a + rho_b;
-		if (rho < 1e-20) {return 0.0;}
-		// Slater Exchange
-		double e_LDA_a = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_a * rho_a * rho_a * rho_a);
-		double e_LDA_b = -(3.0 / 4.0) * cbrt(6.0 / M_PI) * cbrt(rho_b * rho_b * rho_b * rho_b);
-
-		// Enhancement Factor
-		double grho2_a, grho2_b, kF_a, kF_b, s2_a, s2_b, FX_a, FX_b;
-		grho2_a = 4 * (grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2]);
-		grho2_b = 4 * (grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2]);
-		kF_a = cbrt(3 * M_PI * M_PI * rho_a * 2);
-		kF_b = cbrt(3 * M_PI * M_PI * rho_b * 2);
-		s2_a = grho2_a / (4 * kF_a * kF_a * rho_a * 2 * rho_a * 2);
-		s2_b = grho2_b / (4 * kF_b * kF_b * rho_b * 2 * rho_b * 2);
-
-		FX_a = (1 + kappa - kappa / (1 + mu * s2_a / kappa));
-		FX_b = (1 + kappa - kappa / (1 + mu * s2_b / kappa));
-		return e_LDA_a * FX_a + e_LDA_b * FX_b;
-	};
-	return E_XC_GGA<1>(inp, e);
-}
-
+/*
 XC_ret R_PBE_c(const XC_inp& inp){
 	// PW92 params
 	const double A  = (1 - log(2)) / (M_PI * M_PI);
