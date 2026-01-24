@@ -9,8 +9,8 @@ SUMMER 2024 - (probably May 2030?)
 
 Reading input...
 
-	infile		inputs/C.inp
-	method		U_VWN5
+	infile		inputs/Ne.inp
+	method		R_PBE
 	basis		STO-3G
 	sps			5 (DIIS)
 	eps			1.00e-08
@@ -20,16 +20,16 @@ Reading input...
 --------------------------------------------------------------
 Z            x (Bohr)            y (Bohr)            z (Bohr)
 --------------------------------------------------------------
-6    0.0000000000e+00    0.0000000000e+00    0.0000000000e+00
+10    0.0000000000e+00    0.0000000000e+00    0.0000000000e+00
 --------------------------------------------------------------
-Success! There are 6 electrons (4 alpha and 2 beta) and 5 basis functions.
+Success! There are 10 electrons (5 alpha and 5 beta) and 5 basis functions.
 Nuclear Repulsion Energy = 0.0000000000e+00 Ha
 
 Computing ERIs...
 ERIs computed.
 
-Performing unrestricted calculation...
-Using core Hamiltonian as initial guess to alpha/beta Fock matrices.
+Performing restricted calculation...
+Using core Hamiltonian as initial guess to Fock matrix.
 
                    *************
                    * BEGIN SCF *
@@ -38,55 +38,3 @@ Using core Hamiltonian as initial guess to alpha/beta Fock matrices.
 ----------------------------------------------------
   N                   E                 err     step
 ----------------------------------------------------
-  1   -3.6953385663e+01   -3.6953385663e+01        fp
-  2   -3.6953385663e+01   -1.2180123576e-10        fp
-----------------------------------------------------
-Convergence criterion met; exiting SCF loop.
-
-Total E     = -3.6953385663e+01 Ha
-Exact <S^2> = 2.0000000000e+00
-Calc. <S^2> = 2.0000000000e+00
-
-Trace    of Pa*S  = 4.0000000000e+00
-Integral of rho_a = 4.0000000000e+00
-Trace    of Pb*S  = 2.0000000000e+00
-Integral of rho_b = 2.0000000000e+00
-Trace    of Pt*S  = 6.0000000000e+00
-Integral of rho_t = 6.0000000000e+00
-
-***************
-* MO Energies *
-***************
-
-Occupied (alpha):
-   E1   -9.4879307703e+00
-   E2   -3.9703715856e-01
-   E3   -6.7649822550e-02
-   E4   -6.4875485522e-02
-Virtual (alpha):
-   E5   -6.4875485313e-02
-
-Occupied (beta):
-   E1   -9.3572280403e+00
-   E2   -2.1230311239e-01
-Virtual (beta):
-   E3    7.5292800014e-02
-   E4    1.4783008384e-01
-   E5    1.4783008384e-01
-
-=======================
-Löwdin Pop. Analysis
-=======================
-idx              charge
-=======================
-  1        0.0000000000
-=======================
-Sum of atomic charges = 0.0000000000
-
-
-***************************************
-*                                     *
-*     Thank you, have a nice day!     *
-*                                     *
-***************************************
-
