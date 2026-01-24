@@ -27,7 +27,6 @@ void GGA_per_gpt(XC* xc, GGA_ret (*func)(XC*), const std::vector<double>& phi_bu
 	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, int gpix);
 
 double GGA_F_second_term(const GGA_ret& ret, const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
-	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, const std::vector<std::vector<double>*>& grho, 
-	int mu, int nu, int s);
+	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, std::vector<double>* grho[2], int mu, int nu, int s);
 
 #endif

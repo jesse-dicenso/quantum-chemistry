@@ -6,8 +6,8 @@ int main(int argc, char* argv[]){
 	cout << fixed;
 	cout << scientific;
 
-	ofstream out("outfile.dat");
-	auto coutbuf = cout.rdbuf(out.rdbuf());
+	//ofstream out("outfile.dat");
+	//auto coutbuf = cout.rdbuf(out.rdbuf());
 
 	string infile;
 	string method;
@@ -80,11 +80,11 @@ int main(int argc, char* argv[]){
 		cerr << "ERR: Restricted calculation forbidden for NUPDOWN!=0! (Try unrestricted...)\n";
 		return 0;
 	}
-	
-	cout << "\tinfile\t\t" << infile << '\n';
-	cout << "\tmethod\t\t" << method << '\n';
-	cout << "\tbasis\t\t"  << basis_set << '\n';
-	cout << "\tsps\t\t\t" << sps << ' ';
+
+	cout << "\tinfile      " << infile << '\n';
+	cout << "\tmethod      " << method << '\n';
+	cout << "\tbasis       "  << basis_set << '\n';
+	cout << "\tsps         " << sps << ' ';
 	if(sps==0){
 		cout << "(fixed-point)\n";
 	}
@@ -95,9 +95,9 @@ int main(int argc, char* argv[]){
 		cerr << "ERR: Unknown SCF algorithm\n";
 		return 0;
 	}
-	cout << "\teps\t\t\t" << setprecision(2) << eps << '\n';
-	cout << "\tmax_cycles\t" << max_cycles << '\n';
-	cout << "\tpopulation\t" << pop << "\n\n";
+	cout << "\teps         " << setprecision(2) << eps << '\n';
+	cout << "\tmax_cycles  " << max_cycles << '\n';
+	cout << "\tpopulation  " << pop << "\n\n";
 	cout << setprecision(10);
 	cout << "--------------------------------------------------------------\n";
 	cout << "Z" << setw(20) << "x (Bohr)" << setw(20) << "y (Bohr)" << setw(20) <<  "z (Bohr)" << '\n';

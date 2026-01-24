@@ -90,19 +90,19 @@ void eval_density_grad_per_gpt(XC* xc, const std::vector<double>& phi_buf, const
 
 void LDA_per_gpt(XC* xc, LDA_ret (*func)(XC*), const std::vector<double>& phi_buf, int gpix){
 	if(xc->rho < 1e-20){return;}
-	std::vector<Matrix*> fxc(2);
+	Matrix* fxc[2];
 	fxc[0] = (xc->restricted ? xc->FXC : xc->FXC_A);
 	fxc[1] = (xc->restricted ? nullptr : xc->FXC_B);
 	const int dim   = (xc->restricted ? xc->FXC->rows : xc->FXC_A->rows);
 	const int spins = (xc->restricted ? 1 : 2);
-
+	const double w = xc->g->w[gpix];
 	LDA_ret ret = func(xc);
-	xc->E_XC += xc->g->w[gpix] * ret.e_XC;
+	xc->E_XC += w * ret.e_XC;
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
-			fxc[s]->matrix[mu][mu] += xc->g->w[gpix] * phi_buf[mu] * ret.v_XC[s] * phi_buf[mu];
+			fxc[s]->matrix[mu][mu] += w * phi_buf[mu] * ret.v_XC[s] * phi_buf[mu];
 			for(int nu = 0; nu < mu; nu++){
-				fxc[s]->matrix[mu][nu] += xc->g->w[gpix] * phi_buf[mu] * ret.v_XC[s] * phi_buf[nu];
+				fxc[s]->matrix[mu][nu] += w * phi_buf[mu] * ret.v_XC[s] * phi_buf[nu];
 				fxc[s]->matrix[nu][mu] = fxc[s]->matrix[mu][nu];
 			}
 		}
@@ -113,25 +113,25 @@ void GGA_per_gpt(XC* xc, GGA_ret (*func)(XC*), const std::vector<double>& phi_bu
 	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, int gpix)
 {
 	if(xc->rho < 1e-20){return;}
-	std::vector<Matrix*> fxc(2);
+	Matrix* fxc[2];
 	fxc[0] = (xc->restricted ? xc->FXC : xc->FXC_A);
 	fxc[1] = (xc->restricted ? nullptr : xc->FXC_B);
-	std::vector<std::vector<double>*> grho(2);
+	std::vector<double>* grho[2];
 	grho[0] = (xc->restricted ? &xc->gradient_rho : &xc->gradient_rho_a);
 	grho[1] = (xc->restricted ? nullptr           : &xc->gradient_rho_b);
 	const int dim   = (xc->restricted ? xc->FXC->rows : xc->FXC_A->rows);
 	const int spins = (xc->restricted ? 1 : 2);
-
+	const double w = xc->g->w[gpix];
 	GGA_ret ret = func(xc);
-	xc->E_XC += xc->g->w[gpix] * ret.e_XC;
+	xc->E_XC += w * ret.e_XC;
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
-			fxc[s]->matrix[mu][mu] += xc->g->w[gpix] * (
+			fxc[s]->matrix[mu][mu] += w * (
 				phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu] + 
 				GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, mu, s)
 			);
 			for(int nu = 0; nu < mu; nu++){
-				fxc[s]->matrix[mu][nu] += xc->g->w[gpix] * (
+				fxc[s]->matrix[mu][nu] += w * (
 					phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu] + 
 					GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, nu, s)
 				);
@@ -143,8 +143,7 @@ void GGA_per_gpt(XC* xc, GGA_ret (*func)(XC*), const std::vector<double>& phi_bu
 
 // 2\sum_{\sigma'} \frac{de_{XC}^{GGA}}{d\gamma_{\sigma\sigma'}} \nabla\rho_{\sigma'} \cdot \nabla(\phi_{\mu} \phi_{\nu})
 double GGA_F_second_term(const GGA_ret& ret, const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
-	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, const std::vector<std::vector<double>*>& grho, 
-	int mu, int nu, int s)
+	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, std::vector<double>* grho[2], int mu, int nu, int s)
 {
 	double result = ret.dgamma_XC[s] * (
 		phi_buf[nu] * ((*grho[s])[0] * gpx_buf[mu] + (*grho[s])[1] * gpy_buf[mu] + (*grho[s])[2] * gpz_buf[mu]) + 

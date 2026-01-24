@@ -26,7 +26,7 @@ With LAPACK and BLAS installed, simply download all of the program directories/f
 make
 ```
 
-The Makefile will automatically compile the program and will clean up all object files. The program is compiled with g++; it is important that your compiler knows where the LAPACK/BLAS libraries are located. The executable QC-EXEC should appear in the main/ directory, and it is ready to use.
+The Makefile will automatically compile the program and will clean up all object files. You may need to set the compiler/flags yourself. It is important that your compiler knows where the LAPACK/BLAS libraries are located. The executable QC-EXEC should appear in the main/ directory, and it is ready to use.
 
 ## How to use:
 The program requires a specific input file format. Sample inputs may be found in main/inputs. The input file must be located in the same directory as the executable.

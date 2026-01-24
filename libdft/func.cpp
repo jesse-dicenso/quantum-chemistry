@@ -454,8 +454,8 @@ void PBE(XC* xc){
 		// PBE correlation correction
 		const double ks = sqrt(4 * kF / M_PI);
 		const double t2 = grho2 / (4 * ks * ks * rho * rho);
-		const double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
-		if(A_PBE > 1e50) {return ret;}
+		double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
+		A_PBE = (A_PBE > 1e10 ? 1e10 : A_PBE);
 		const double dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
 		const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
 		const double H = gamma * log(Q);
