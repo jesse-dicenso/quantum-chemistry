@@ -5,12 +5,13 @@
 
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 class XC{
 	public:
 		XC(const std::string& method);
 		
-		void(XC*) xc_functional;
+		void (*xc_functional)(XC*);
 		bool restricted;
 
 		Matrix* P   = nullptr;
@@ -41,11 +42,11 @@ class XC{
 };
 
 struct XC_ret{
-	double E_XC = 0.0;
-	std::vector<double> V_XC;
+	double e_XC;				// energy density per grid point
+	std::vector<double> v_XC;	// potential(s, a/b) per grid point
 };
 
-extern std::unordered_map<std::string, void(XC*)> xc_register;
+extern std::unordered_map<std::string, void (*)(XC*)> xc_register;
 void call_xc_functional(XC* xc);
 
 // HF //
@@ -55,58 +56,8 @@ void U_HF_X(XC* xc);
 // LDA //
 
 void Slater(XC* xc);
+void VWN5(XC* xc);
 /*
-template <int sflag, typename F, typename... Args>
-double E_XC_LDA(const XC_inp& inp, F&& e_LDA, const Args&... args){
-	Molecule* m = inp.mol;
-	grid*     g = inp.g;
-	int num_gpts = g->num_gridpoints;
-	std::vector<double> phi_buf(m->AOs.size());
-	double E_XC = 0;
-	// Restricted: sflag = 0
-	if constexpr (sflag==0){
-		Matrix* p = inp.PT;
-		double rho;
-		for(int i = 0; i < num_gpts; i++){
-			for(int j = 0; j < m->AOs.size(); j++){
-				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
-			}
-			rho = density(phi_buf, *p);
-			E_XC += g->w[i] * e_LDA(rho, args...);
-		}
-	}
-	// Unrestricted: sflag = 1
-	else if constexpr (sflag==1){
-		Matrix* pa = inp.PA;
-		Matrix* pb = inp.PB;
-		double rho_a, rho_b;
-		for(int i = 0; i < num_gpts; i++){
-			for(int j = 0; j < m->AOs.size(); j++){
-				phi_buf[j] = m->AOs[j].evaluate(g->x[i], g->y[i], g->z[i]);
-			}
-			rho_a = density(phi_buf, *pa);
-			rho_b = density(phi_buf, *pb);
-			E_XC += g->w[i] * e_LDA(rho_a, rho_b, args...);
-		}
-	}
-	else{assert((sflag==0) || (sflag==1));}
-	return E_XC;
-}
-
-XC_ret R_Slater_X(const XC_inp& inp);
-double R_Slater_X_E(const XC_inp& inp);
-XC_ret U_Slater_X(const XC_inp& inp);
-double U_Slater_X_E(const XC_inp& inp);
-
-XC_ret R_VWN5_c(const XC_inp& inp);
-double R_VWN5_c_E(const XC_inp& inp);
-XC_ret U_VWN5_c(const XC_inp& inp);
-double U_VWN5_c_E(const XC_inp& inp);
-XC_ret R_VWN5(const XC_inp& inp);
-double R_VWN5_E(const XC_inp& inp);
-XC_ret U_VWN5(const XC_inp& inp);
-double U_VWN5_E(const XC_inp& inp);
-
 XC_ret R_PW92_c(const XC_inp& inp);
 double R_PW92_c_E(const XC_inp& inp);
 XC_ret U_PW92_c(const XC_inp& inp);

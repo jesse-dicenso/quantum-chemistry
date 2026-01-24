@@ -12,19 +12,19 @@ void call_xc_functional(XC* xc){
 	xc->xc_functional(xc);
 }
 
-std::unordered_map<std::string, void(XC*)> xc_register = 
+std::unordered_map<std::string, void (*)(XC*)> xc_register = 
 {
-	{ "R_HF"     , R_HF_X   },
-	{ "U_HF"     , U_HF_X   },
-	{ "R_Slater" , Slater },
-	{ "U_Slater" , Slater } /*,
-	{ "R_VWN5"   , R_VWN5   },
-	{ "U_VWN5"   , U_VWN5   },
-	{ "R_PW92"   , R_PW92   },
-	{ "U_PW92"   , U_PW92   },
-	{ "R_PBE"    , R_PBE    },
-	{ "U_PBE_X"  , U_PBE_X  },
-	{ "U_B97M-V" , B97M_V   },*/
+	{ "R_HF"     , R_HF_X  },
+	{ "U_HF"     , U_HF_X  },
+	{ "R_Slater" , Slater  },
+	{ "U_Slater" , Slater  },
+	{ "R_VWN5"   , VWN5    },
+	{ "U_VWN5"   , VWN5    }/*,
+	{ "R_PW92"   , PW92    },
+	{ "U_PW92"   , PW92    },
+	{ "R_PBE"    , R_PBE   },
+	{ "U_PBE_X"  , U_PBE_X },
+	{ "U_B97M-V" , B97M_V  },*/
 };
 
 // HF //
@@ -71,247 +71,139 @@ void U_HF_X(XC* xc){
 
 ///////////////////////////////////////////////////////////////
 // !!!													 !!! //
-// !!! Functionals below give PER GRID-POINT F_XC / E_XC !!! //
+// !!!   Lambdas below give PER GRID-POINT F_XC / E_XC   !!! //
 // !!!													 !!! //
 ///////////////////////////////////////////////////////////////
 
 // LDA ////////////////////////////////////////////////////////
 
+namespace _SLATER{
+	inline const double R = -cbrt(3.0 / M_PI);
+	inline const double U = -cbrt(6.0 / M_PI);
+}
+
 void Slater(XC* xc){
-	assert((xc.mol!=nullptr) && (xc.g!=nullptr));
+	using namespace _SLATER;
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
 	if(xc->restricted){assert(xc->P!=nullptr);}
 	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
 
-	constexpr C_X = -(3.0 / 4.0) * cbrt(3.0 / M_PI);
-	auto func_r = [C_X](XC* inp) {
+	auto func_r = [](XC* inp) {
+		const double rho   = inp->rho;
+		const double rho_3 = cbrt(rho);
 		XC_ret ret;
-		double rho_3 = cbrt(xc->rho);
-
-		ret.E_XC =  C_X * intpow(rho_3, 4);
-		ret.V_XC = {C_X * (4.0 / 3.0) * rho_3};
-
-		return xc_ret;
+		ret.e_XC = R * (3.0 / 4.0) * rho * rho_3;
+		ret.v_XC = {R * rho_3};
+		return ret;
 	};
-	auto func_u = [C_X](XC* inp) {
+	auto func_u = [](XC* inp) {
+		const double rho_a   = inp->rho_a;
+		const double rho_b   = inp->rho_b;
+		const double rho_a_3 = cbrt(rho_a);
+		const double rho_b_3 = cbrt(rho_b);	
 		XC_ret ret;
-		double rho_a_3 = cbrt(xc->rho_a);
-		double rho_b_3 = cbrt(xc->rho_b);
+		ret.e_XC = U * (3.0 / 4.0) * (rho_a * rho_a_3 + rho_b * rho_b_3);
+		ret.v_XC = { U * rho_a_3, U * rho_b_3 };
+		return ret;
+	};
+	XC_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
+	LDA(xc, func);
+}
+
+namespace _VWN5{
+	// Paramagnetic (zeta = 0)
+	const     double A_P  = (1 - log(2)) / (M_PI * M_PI);
+	constexpr double x0_P = -0.10498;
+	constexpr double b_P  =  3.72744;
+	constexpr double c_P  =  12.9352;
+	constexpr double X0_P =  x0_P * x0_P + b_P * x0_P + c_P;
+	const     double Q_P  =  sqrt(4 * c_P - b_P * b_P);
+	// Ferromagnetic (zeta = 1)
+	const     double A_F  =  A_P / 2;
+	constexpr double x0_F = -0.32500;
+	constexpr double b_F  =  7.06042;
+	constexpr double c_F  =  18.0578;
+	constexpr double X0_F =  x0_F * x0_F + b_F * x0_F + c_F;
+	const     double Q_F  =  sqrt(4 * c_F - b_F * b_F);
+
+	const     double ddf0 = 4.0 / (9.0 * (cbrt(2) - 1));
+}
+
+void VWN5(XC* xc){
+	using namespace _SLATER;
+	using namespace _VWN5;
+	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
+	if(xc->restricted){assert(xc->P!=nullptr);}
+	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
+	
+	auto func_r = [](XC* inp) {
+		const double rho = inp->rho;
+		const double rho_3 = cbrt(rho);
+		const double e_X   = R * (3.0 / 4.0) * rho * rho_3;
+		const double v_X   = R * rho_3;
+
+		const double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+		const double X  = x * x + b_P * x + c_P;
+
+		const double eps_c = A_P * (
+			log(x * x / X) + (2 * b_P / Q_P) * (1 - (2 * x0_P + b_P) * x0_P / X0_P) * atan(Q_P / (2 * x + b_P)) - 
+			(b_P * x0_P / X0_P) * log((x - x0_P) * (x - x0_P) / X)
+		);
+		const double v_c = eps_c - A_P * (x / (3 * X)) * (c_P / x - b_P * x0_P / (x - x0_P));
+
+		XC_ret ret;
+		ret.e_XC = e_X + rho * eps_c;
+		ret.v_XC = { v_X + v_c };
+		return ret;
+	};
+	auto func_u = [](XC* inp) {
+		const double rho_a   = inp->rho_a;
+		const double rho_b   = inp->rho_b;
+		const double rho     = rho_a + rho_b;
+		const double rho_a_3 = cbrt(rho_a);
+		const double rho_b_3 = cbrt(rho_b);
+		const double e_X     = U * (3.0 / 4.0) * (rho_a * rho_a_3 + rho_b * rho_b_3);
+		std::vector<double> v = {U * rho_a_3, U * rho_b_3};
 		
-		ret.E_XC =  C_X * cbrt(2.0) * (intpow(rho_a_3, 4) + intpow(rho_b_3, 4));
-		ret.V_XC = {C_X * cbrt(2.0) * (4.0 / 3.0) * rho_a_3, 
-					C_X * cbrt(2.0) * (4.0 / 3.0) * rho_b_3 };
- 
-		return xc_ret;
+		const double x = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
+		const double zeta = ( rho_a - rho_b ) / rho;
+		const double zeta3 = zeta * zeta * zeta;
+		const std::vector<double> dzeta_drho = {2 * rho_b / (rho * rho), -2 * rho_a / (rho * rho)};
+		const double f  = f_zeta(zeta);
+		const double df = df_zeta(zeta);
+		const double alpha = VWN_alpha(x);
+		const double dalpha_drho = VWN_dalpha_drho(x, rho);
+		const double X_P  = x * x + b_P * x + c_P;
+		const double X_F  = x * x + b_F * x + c_F;
+		
+		const double eps_c_P = A_P * (
+			log(x * x / X_P) + (2 * b_P / Q_P) * (1 - (2 * x0_P + b_P) * x0_P / X0_P) * 
+			atan(Q_P / (2 * x + b_P)) - (b_P * x0_P / X0_P) * log((x - x0_P) * (x - x0_P) / X_P)
+		);
+		const double eps_c_F = A_F * (
+			log(x * x / X_F) + (2 * b_F / Q_F) * (1 - (2 * x0_F + b_F) * x0_F / X0_F) * 
+			atan(Q_F / (2 * x + b_F)) - (b_F * x0_F / X0_F) * log((x - x0_F) * (x - x0_F) / X_F)
+		);
+		const double e_c = rho * eps_c_P + rho * alpha * (f / ddf0) * (1 - zeta3 * zeta) + rho * (eps_c_F - eps_c_P) * f * zeta3 * zeta;
+		
+		const double v_c_P = eps_c_P - A_P * (x / (3 * X_P)) * (c_P / x - b_P * x0_P / (x - x0_P));
+		const double v_c_F = eps_c_F - A_F * (x / (3 * X_F)) * (c_F / x - b_F * x0_F / (x - x0_F));
+
+		for(int s = 0; s < 1; s++){
+			v[s] += v_c_P + (alpha + rho * dalpha_drho) * (f / ddf0) * (1 - zeta3 * zeta) + 
+					rho * alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho[s] +
+					(v_c_F - v_c_P) * f * zeta3 * zeta + 
+					rho * (eps_c_F - eps_c_P) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho[s];	
+		}
+		XC_ret ret;
+		ret.e_XC = e_X + e_c;
+		ret.v_XC = v;
+		return ret;
 	};
-	std::vector<double>(XC*) func = (xc->restricted ? func_r : func_u);
+	XC_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
 	LDA(xc, func);
 }
 /*
-
-double R_Slater(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	auto e = [](double rho) {
-		return cbrt(rho * rho * rho * rho);
-	};
-	return -(3.0/4.0) * cbrt(3.0 / M_PI) * E_XC_LDA<0>(inp, e);
-}
-
-XC_ret U_Slater_X(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	auto v = [](double rho_s) {
-		return -cbrt(6 * rho_s / M_PI);
-	};
-	return F_XC_LDA<1>(inp, v);
-}
-
-double U_Slater_X_E(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	auto e = [](double rho_a, double rho_b) {
-		return cbrt(rho_a * rho_a * rho_a * rho_a) + cbrt(rho_b * rho_b * rho_b * rho_b);
-	};
-	return -(3.0/4.0) * cbrt(6.0 / M_PI) * E_XC_LDA<1>(inp, e);
-}
-
-XC_ret R_VWN5_c(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double x0 = -0.10498;
-	const double b  =  3.72744;
-	const double c  =  12.9352;
-	const double X0 = x0 * x0 + b * x0 + c;
-	const double Q  = sqrt(4 * c - b * b);
-	auto v = [A, x0, b, c, X0, Q](double rho) {
-		if(rho < 1e-20) {return 0.0;}
-		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
-		double X  = x * x + b * x + c;
-		double vc = (
-			log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
-		);
-		vc -= (x / (3 * X)) * (c / x - b * x0 / (x - x0));
-		vc *= A;
-		return vc; 
-	};
-	return F_XC_LDA<0>(inp, v);
-}
-
-double R_VWN5_c_E(const XC_inp& inp){
-	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	const double A  = (1 - log(2)) / (M_PI * M_PI);
-	const double x0 = -0.10498;
-	const double b  =  3.72744;
-	const double c  =  12.9352;
-	const double Q  = sqrt(4 * c - b * b);
-	const double X0 = x0 * x0 + b * x0 + c;
-	auto e = [A, x0, b, c, X0, Q](double rho) {
-		if(rho < 1e-20) {return 0.0;}
-		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
-		double X  = x * x + b * x + c;
-		double ec = rho * A * (
-			log(x * x / X) + (2 * b / Q) * (1 - (2 * x0 + b) * x0 / X0) * atan(Q / (2 * x + b)) - (b * x0 / X0) * log((x - x0) * (x - x0) / X)
-		);
-		return ec; 
-	};
-	return E_XC_LDA<0>(inp, e);
-}
-
-XC_ret U_VWN5_c(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	// zeta = 0 constants
-	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
-	const double x0_0 = -0.10498;
-	const double b_0  =  3.72744;
-	const double c_0  =  12.9352;
-	const double X0_0 =  x0_0 * x0_0 + b_0 * x0_0 + c_0;
-	const double Q_0  =  sqrt(4 * c_0 - b_0 * b_0);
-	// zeta = 1 constants
-	const double A_1  =  A_0 / 2;
-	const double x0_1 = -0.32500;
-	const double b_1  =  7.06042;
-	const double c_1  =  18.0578;
-	const double X0_1 =  x0_1 * x0_1 + b_1 * x0_1 + c_1;
-	const double Q_1  =  sqrt(4 * c_1 - b_1 * b_1);
-	auto v = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double rho_a, double rho_b, int spin) 
-	{
-		double rho = rho_a + rho_b;
-		if(rho < 1e-20) {return 0.0;}
-		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
-
-		double zeta = ( rho_a - rho_b ) / rho;
-		double zeta3 = zeta * zeta * zeta;
-		// spin = 0 -> alpha, spin = 1 -> beta
-		double dzeta_drho;
-		if(spin == 0) {dzeta_drho = 2 * rho_b / (rho * rho);}
-		else if(spin == 1) {dzeta_drho = -2 * rho_a / (rho * rho);}
-		else{assert((spin==0) || (spin==1));}
-		double f  = f_zeta(zeta);
-		double df = df_zeta(zeta);
-		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
-		double alpha = VWN_alpha(x);
-		double dalpha_drho = VWN_dalpha_drho(x, rho);
-
-		// evaluate energy densities and potentials for zeta = 0, 1
-		double X_0  = x * x + b_0 * x + c_0;
-		double X_1  = x * x + b_1 * x + c_1;
-
-		double ec_0 = rho * A_0 * (
-			log(x * x / X_0) + (2 * b_0 / Q_0) * (1 - (2 * x0_0 + b_0) * x0_0 / X0_0) * 
-			atan(Q_0 / (2 * x + b_0)) - (b_0 * x0_0 / X0_0) * log((x - x0_0) * (x - x0_0) / X_0)
-		);
-		double ec_1 = rho * A_1 * (
-			log(x * x / X_1) + (2 * b_1 / Q_1) * (1 - (2 * x0_1 + b_1) * x0_1 / X0_1) * 
-			atan(Q_1 / (2 * x + b_1)) - (b_1 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
-		);
-	
-		double vc_0 = (
-			log(x * x / X_0) + (2 * b_0 / Q_0) * (1 - (2 * x0_0 + b_0) * x0_0 / X0_0) * 
-			atan(Q_0 / (2 * x + b_0)) - (b_0 * x0_0 / X0_0) * log((x - x0_0) * (x - x0_0) / X_0)
-		);
-		vc_0 -= (x / (3 * X_0)) * (c_0 / x - b_0 * x0_0 / (x - x0_0));
-		vc_0 *= A_0;	
-		double vc_1 = (
-			log(x * x / X_1) + (2 * b_1 / Q_1) * (1 - (2 * x0_1 + b_1) * x0_1 / X0_1) * 
-			atan(Q_1 / (2 * x + b_1)) - (b_1 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
-		);
-		vc_1 -= (x / (3 * X_1)) * (c_1 / x - b_1 * x0_1 / (x - x0_1));
-		vc_1 *= A_1;
-
-		double vc_s = vc_0 + (alpha + rho * dalpha_drho) * (f / ddf0) * (1 - zeta3 * zeta) + 
-					  rho * alpha * ((df/ddf0) * (1 - zeta3 * zeta) - 4 * zeta3 * (f / ddf0)) * dzeta_drho +
-					  (vc_1 - vc_0) * f * zeta3 * zeta + 
-					  (ec_1 - ec_0) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho;
-					  
-		return vc_s; 
-	};
-	return F_XC_LDA<2>(inp, v);
-}
-
-double U_VWN5_c_E(const XC_inp& inp){
-	assert((inp.PA!=nullptr) && (inp.PB!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
-	// zeta = 0 constants
-	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
-	const double x0_0 = -0.10498;
-	const double b_0  =  3.72744;
-	const double c_0  =  12.9352;
-	const double X0_0 = x0_0 * x0_0 + b_0 * x0_0 + c_0;
-	const double Q_0  = sqrt(4 * c_0 - b_0 * b_0);
-
-	// zeta = 1 constants
-	const double A_1  =  A_0 / 2;
-	const double x0_1 = -0.32500;
-	const double b_1  =  7.06042;
-	const double c_1  =  18.0578;
-	const double X0_1 = x0_1 * x0_1 + b_1 * x0_1 + c_1;
-	const double Q_1  = sqrt(4 * c_1 - b_1 * b_1);
-	
-	auto e = [A_0, x0_0, b_0, c_0, X0_0, Q_0, A_1, x0_1, b_1, c_1, X0_1, Q_1](double rho_a, double rho_b) 
-	{
-		double rho = rho_a + rho_b;
-		if(rho < 1e-20) {return 0.0;}
-		double x  = sqrt(cbrt(3.0 / (4.0 * M_PI * rho)));
-
-		double zeta = ( rho_a - rho_b ) / rho;
-		double zeta4 = zeta * zeta * zeta * zeta;
-		double f = f_zeta(zeta);
-		double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
-		double alpha = VWN_alpha(x);
-
-		// evaluate energy densities for zeta = 0, 1
-		double X_0  = x * x + b_0 * x + c_0;
-		double X_1  = x * x + b_1 * x + c_1;
-
-		double ec_0 = rho * A_0 * (
-			log(x * x / X_0) + (2 * b_0 / Q_0) * (1 - (2 * x0_0 + b_0) * x0_0 / X0_0) * 
-			atan(Q_0 / (2 * x + b_0)) - (b_0 * x0_0 / X0_0) * log((x - x0_0) * (x - x0_0) / X_0)
-		);
-		double ec_1 = rho * A_1 * (
-			log(x * x / X_1) + (2 * b_1 / Q_1) * (1 - (2 * x0_1 + b_1) * x0_1 / X0_1) * 
-			atan(Q_1 / (2 * x + b_1)) - (b_1 * x0_1 / X0_1) * log((x - x0_1) * (x - x0_1) / X_1)
-		);
-
-		return ec_0 + rho * alpha * (f / ddf0) * (1 - zeta4) + (ec_1 - ec_0) * f * zeta4;
-	};
-	return E_XC_LDA<1>(inp, e);	
-}
-
-XC_ret R_VWN5(const XC_inp& inp){
-	Matrix null;
-	return {R_VWN5_c(inp).F_XC_1 + R_Slater_X(inp).F_XC_1, null};
-}
-
-double R_VWN5_E(const XC_inp& inp){
-	return R_VWN5_c_E(inp) + R_Slater_X_E(inp);
-}
-
-XC_ret U_VWN5(const XC_inp& inp){
-	XC_ret fx = U_Slater_X(inp);
-	XC_ret fc = U_VWN5_c(inp);
-	return {fx.F_XC_1 + fc.F_XC_1, fx.F_XC_2 + fc.F_XC_2};
-}
-
-double U_VWN5_E(const XC_inp& inp){
-	return U_VWN5_c_E(inp) + U_Slater_X_E(inp);
-}
-
 XC_ret R_PW92_c(const XC_inp& inp){
 	assert((inp.PT!=nullptr) && (inp.mol!=nullptr) && (inp.g!=nullptr));
 	// const double A  = 0.031091;
