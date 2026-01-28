@@ -511,8 +511,8 @@ void PBE(XC* xc){
 	GGA(xc, func);
 }
 
-/*
 // MGGA ///////////////////////////////////////////////////////
+/*
 Matrix F_VV10(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
 			  double phi1, double phi2, double gpx1, double gpy1, double gpz1, double gpx2, double gpy2, double gpz2, 
 			  Molecule* m, grid* g, Matrix* pa, Matrix* pb, int gidx)
@@ -563,46 +563,6 @@ Matrix F_VV10(double rho_a, double rho_b, const std::vector<double>& grho_a, con
 	e_VV10 *= 0.5;
 	e_VV10 += sqrt(sqrt(intpow(3 / (b * b), 3))) / 32;
 	e_VV10 *= rho;
-}
-
-XC_ret U_B97M_V(const XC_inp& inp){
-	// Parameters
-	double c_x00, c_x10, c_x01, c_x11, c_x02;
-	double c_css00, c_css10, c_css02, c_css32, c_css42;
-	double c_cos00, c_cos10, c_cos01, c_cos32, c_cos03;
-	double b, C;
-
-	c_x00 = 1.000;
-	c_x10 = 0.416;
-	c_x01 = 1.308;
-	c_x11 = 3.070;
-	c_x02 = 1.901;
-
-	c_css00 =  1.000;
-	c_css10 = -5.668;
-	c_css02 = -1.855;
-	c_css32 = -20.497;
-	c_css42 = -20.364;
-
-	c_cos00 =  1.000;
-	c_cos10 =  2.535;
-	c_cos01 =  1.573;
-	c_cos32 = -6.427;
-	c_cos03 = -6.298;
-
-	b = 6.00;
-	C = 0.01;
-
-	auto v_ = [c_x00, c_x10, c_x01, c_x11, c_x02, 
-			  c_css00, c_css10, c_css02, c_css32, c_css42, 
-			  c_cos00, c_cos10, c_cos01, c_cos32, c_cos03, 
-			  ]
-	(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, double tau_a, double tau_b, int spin)
-	{
-		//
-	};
-
-	return F_XC_MGGA<1>(inp, v);
 }
 */
 namespace _B97M_V{
@@ -663,7 +623,9 @@ double B97M_V_E(const XC_inp& inp){
 		const double t_b = tau_ueg_b / tau_b;
 		const double dt_a_drho_a = (5.0 / 3.0) * t_a / rho_a;
 		const double dt_b_drho_b = (5.0 / 3.0) * t_b / rho_b;
-		
+		const double dt_a_dtau_a = -t_a / tau_a;
+		const double dt_b_dtau_b = -t_b / tau_b;
+
 		// e_X
 		const double e_X_ueg_a = UX * (3.0 / 4.0) * (rho_a * cbrt(rho_a));
 		const double e_X_ueg_b = UX * (3.0 / 4.0) * (rho_b * cbrt(rho_b));
@@ -686,6 +648,8 @@ double B97M_V_E(const XC_inp& inp){
 		const double de_X_ueg_b_drho_b = UX * cbrt(rho_b);
 		const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a;
 		const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b;
+		const double ds2_a_dgrho2_a = s2_a / (nrm_grho_a * nrm_grho_a);
+		const double ds2_b_dgrho2_b = s2_b / (nrm_grho_b * nrm_grho_b);
 		const double dwx_a_dt_a = 2.0 / ((t_a + 1) * (t_a + 1));
 		const double dwx_b_dt_b = 2.0 / ((t_b + 1) * (t_b + 1));
 		const double dux_a_ds2_a = gamma_x / ((1 + gamma_x * s2_a) * (1 + gamma_x * s2_a));
@@ -700,15 +664,15 @@ double B97M_V_E(const XC_inp& inp){
 		const double de_X_drho_b = de_X_ueg_drho_b * gx_b + 
 			e_X_ueg_b * (dgx_b_dwx_b * dwx_b_dt_b * dt_b_drho_b + dgx_b_dux_b * dux_b_ds2_b * ds2_b_drho_b);
 
-		const double de_X_dgrho2_a = e_X_ueg_a * dgx_a_dux_a * dux_a_ds2_a * (s2_a / (nrm_grho_a * nrm_grho_a));
-		const double de_X_dgrho2_b = e_X_ueg_b * dgx_a_dux_b * dux_a_ds2_b * (s2_b / (nrm_grho_b * nrm_grho_b));
+		const double de_X_dgrho2_a = e_X_ueg_a * dgx_a_dux_a * dux_a_ds2_a * ds2_a_dgrho2_a;
+		const double de_X_dgrho2_b = e_X_ueg_b * dgx_a_dux_b * dux_a_ds2_b * ds2_b_dgrho2_b;
 
-		const double de_X_dtau_a = e_X_ueg_a * dgx_a_dwx_a * dwx_a_dt_a * (-t_a / tau_a);
-		const double de_X_dtau_b = e_X_ueg_b * dgx_b_dwx_b * dwx_b_dt_b * (-t_b / tau_b);
+		const double de_X_dtau_a = e_X_ueg_a * dgx_a_dwx_a * dwx_a_dt_a * dt_a_dtau_a;
+		const double de_X_dtau_b = e_X_ueg_b * dgx_b_dwx_b * dwx_b_dt_b * dt_b_dtau_b;
 	
 		// e_css
-		const double e_pw92_aa = rho_a * eps_c_pw92(rho_a, 0);
-		const double e_pw92_bb = rho_b * eps_c_pw92(0, rho_b);
+		const double eps_pw92_aa = eps_c_pw92(rho_a, 0.0);
+		const double eps_pw92_bb = eps_c_pw92(0.0, rho_b);
 		const double wc_aa = wx_a;
 		const double wc_bb = wx_b;
 		const double uc_aa = gamma_css * s_a * s_a / (1 + gamma_css * s_a * s_a);
@@ -719,39 +683,86 @@ double B97M_V_E(const XC_inp& inp){
 		const double gcss_bb = c_css00 + (c_css10 * wc_bb) + (c_css02 * uc_bb * uc_bb) + (c_css32 * intpow(wc_bb, 3) * uc_bb * uc_bb) + 
 			(c_css42 * intpow(wc_bb, 4) * uc_bb * uc_bb);
 
-		const double e_css = e_pw92_aa * gcss_aa + e_pw92_bb * gcss_bb;
+		const double e_css = (rho_a * eps_pw92_aa * gcss_aa) + (rho_b * eps_pw92_bb * gcss_bb);
 
 		// e_css_derivatives
+		const double deps_pw92_aa_drho_a = deps_c_dns_pw92(rho_a, 0.0, 0);
+		const double deps_pw92_bb_drho_b = deps_c_dns_pw92(0.0, rho_b, 1);
+		const double dwc_aa_dt_a = dwx_a_dt_a;
+		const double dwc_bb_dt_b = dwx_b_dt_b;
+		const double duc_ab_ds2_a = gamma_css / ((1 + gamma_css * s2_a) * (1 + gamma_css * s2_a));
+		const double duc_bb_ds2_b = gamma_css / ((1 + gamma_css * s2_b) * (1 + gamma_css * s2_b));
+		
+		const double dgcss_aa_dwc_aa = c_css10 + (3 * c_css32 * wc_aa * wc_aa * uc_aa * uc_aa) + 
+			(4 * c_css42 * intpow(wc_aa, 3) * uc_aa * uc_aa);
+		const double dgcss_bb_dwc_bb = c_css10 + (3 * c_css32 * wc_bb * wc_bb * uc_bb * uc_bb) + 
+			(4 * c_css42 * intpow(wc_bb, 3) * uc_bb * uc_bb);
 
-		// deps_c_dns_pw92(rho_a, rho_b, int spin);
+		const double dgcss_aa_duc_aa = (2 * c_css02 * uc_aa) + (2 * c_css32 * intpow(wc_aa, 3) * uc_aa) + 
+			(2 * c_css42 * intpow(wc_aa, 4) * uc_aa); 
+		const double dgcss_bb_duc_bb = (2 * c_css02 * uc_bb) + (2 * c_css32 * intpow(wc_bb, 3) * uc_bb) + 
+			(2 * c_css42 * intpow(wc_bb, 4) * uc_bb);
+
+		const double de_css_drho_a = (eps_pw92_aa + rho_a * deps_pw92_drho_a) * gcss_aa + 
+			rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_drho_a + dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_drho_a);
+		const double de_css_drho_b = (eps_pw92_bb + rho_b * deps_pw92_drho_b) * gcss_bb + 
+			rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_drho_b + dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_drho_b);
+	
+		const double de_css_dgrho2_a = rho_a * eps_pw92_aa * (dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_dgrho2_a);
+		const double de_css_dgrho2_b = rho_b * eps_pw92_bb * (dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_dgrho2_b);
+
+		const double de_css_dtau_a = rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_dtau_a);
+		const double de_css_dtau_b = rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_dtau_b);
 	
 		// e_cos
 		const double t_ab = 0.5 * (t_a + t_b);
 		const double s2ab = 0.5 * (s_a * s_a + s_b * s_b);
-		const double e_pw92_ab = rho * eps_c_pw92(rho_a, rho_b) - e_pw92_aa - e_pw92_bb;
+		const double e_pw92_ab = rho * eps_c_pw92(rho_a, rho_b) - rho_a * eps_pw92_aa - rho_b * eps_pw92_bb;
 		const double wc_ab = (t_ab - 1) / (t_ab + 1);
-		const double uc_ab = 0.006 * s2ab / (1 + 0.006 * s2ab);
+		const double uc_ab = gamma_cos * s2ab / (1 + gamma_cos * s2ab);
 
 		const double gcos = c_cos00 + (c_cos10 * wc_ab) + (c_cos01 * uc_ab) + (c_cos32 * intpow(wc_ab, 3) * uc_ab * uc_ab) + 
 			(c_cos03 * intpow(uc_ab, 3));
 
-		const double e_cos = e_pw92_ab * gcos;
+		// e_cos derivatives
+		const double de_pw92_ab_drho_a = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 0)) - 
+			(eps_pw92_aa + rho_a * deps_pw92_aa_drho_a);
+		const double de_pw92_ab_drho_b = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 1)) - 
+			(eps_pw92_bb + rho_b * deps_pw92_bb_drho_b);
+		const double dwc_ab_dt_ab = 2.0 / ((t_ab + 1) * (t_ab + 1));
+		const double duc_ab_ds2_ab = gamma_cos / ((1 + gamma_cos * s2ab) * (1 + gamma_cos * s2ab));
+		
+		const double dgcos_dwc_ab = c_cos10 + (3 * c_cos32 * wc_ab * wc_ab * uc_ab * uc_ab);
+		const double dgcos_duc_ab = c_cos01 + (2 * c_cos32 * wc_ab * wc_ab * wc_ab * uc_ab) + (3 * c_cos03 * uc_ab * uc_ab);
+
+		const double de_cos_drho_a = de_pw92_ab_drho_a * gcos + e_pw92_ab * 
+			(dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_drho_a + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_drho_a);
+		const double de_cos_drho_b = de_pw92_ab_drho_b * gcos + e_pw92_ab * 
+			(dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_drho_b + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_drho_b);
+
+		const double de_cos_dgrho2_a = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_dgrho2_a);
+		const double de_cos_dgrho2_b = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_dgrho2_b);
+
+		const double de_cos_dtau_a = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_dtau_a);
+		const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
 
 		// e_VV10
+
+		// e_VV10 derivatives
 
 		MGGA_ret ret;
 		ret.e_XC = e_X + e_css + e_cos + e_VV10;
 		ret.drho_XC = {
-			(de_X_drho_a + /**/),
-			(de_X_drho_b + /**/)
+			(de_X_drho_a + de_css_drho_a + de_cos_drho_a + /**/),
+			(de_X_drho_b + de_css_drho_b + de_cos_drho_b + /**/)
 		};
 		ret.dgamma_XC = {
-			(de_X_dgrho2_a + /**/), 
-			(de_X_dgrho2_b + /**/)
+			(de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a + /**/), 
+			(de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b + /**/)
 		};
 		ret.dtau_XC = {
-			(de_X_dtau_a + /**/), 
-			(de_X_dtau_b + /**/)
+			(de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a + /**/), 
+			(de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b + /**/)
 		};
 		return ret;
 	};
