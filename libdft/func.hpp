@@ -27,6 +27,8 @@ class XC{
 		const Molecule* mol = nullptr;
 		const grid* g = nullptr;
 
+		int main_iter = 0;
+
 		double E_XC = 0.0;
 		
 		double rho   = 0.0;

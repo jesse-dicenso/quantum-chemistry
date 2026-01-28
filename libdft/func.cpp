@@ -512,59 +512,7 @@ void PBE(XC* xc){
 }
 
 // MGGA ///////////////////////////////////////////////////////
-/*
-Matrix F_VV10(double rho_a, double rho_b, const std::vector<double>& grho_a, const std::vector<double>& grho_b, 
-			  double phi1, double phi2, double gpx1, double gpy1, double gpz1, double gpx2, double gpy2, double gpz2, 
-			  Molecule* m, grid* g, Matrix* pa, Matrix* pb, int gidx)
-{
-	const double b = 6.00;
-	const double C = 0.01;
 
-	Matrix F(pa->rows, pa->cols);
-	double rho = rho_a + rho_b;
-	if (rho < 1e-16) {return 0.0;}
-	double nrm_grho = sqrt(grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2]);
-
-	int num_gpts = g->num_gridpoints;
-	std::vector<double> phi_buf(m->AOs.size());
-	std::vector<double> gpx_buf(m->AOs.size());
-	std::vector<double> gpy_buf(m->AOs.size());
-	std::vector<double> gpz_buf(m->AOs.size());
-	std::vector<double> tmp_grd(3);
-	double rho_a_j, rho_b_j, rho_j, nrm_grho_j, R2;
-	std::vector<double> grho_a_j(3);
-	std::vector<double> grho_b_j(3);
-	std::vector<double> grho_j(3);
-	for(int j = 0; j < num_gpts; j++){
-		for(int k = 0; k < m->AOs.size(); k++){
-			phi_buf[k] = m->AOs[k].evaluate(g->x[j], g->y[j], g->z[j]);
-			tmp_grd = m->AOs[k].evaluate_gradient(g->x[j], g->y[j], g->z[j]);
-			gpx_buf[k] = tmp_grd[0];
-			gpy_buf[k] = tmp_grd[1];
-			gpz_buf[k] = tmp_grd[2];
-		}
-
-		R2 = intpow(g->x[gidx] - g->x[j], 2) + intpow(g->y[gidx] - g->y[j], 2) + intpow(g->z[gidx] - g->z[j], 2);
-
-		rho_a_j = density(phi_buf, *pa);
-		rho_b_j = density(phi_buf, *pb);
-		rho_j = rho_a_j + rho_b_j;
-		grho_a_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pa);
-		grho_b_j = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *pb);
-		
-		grho_j[0] = grho_a_j[0] + grho_b_j[0];
-		grho_j[1] = grho_a_j[1] + grho_b_j[1];
-		grho_j[2] = grho_a_j[2] + grho_b_j[2];
-
-		nrm_grho_j = sqrt(grho_j[0] * grho_j[0] + grho_j[1] * grho_j[1] + grho_j[2] * grho_j[2]);
-
-		e_VV10 += g->w[j] * VV10_kernel(b, C, R2, rho, rho_j, nrm_grho, nrm_grho_j) * rho_j;
-	}
-	e_VV10 *= 0.5;
-	e_VV10 += sqrt(sqrt(intpow(3 / (b * b), 3))) / 32;
-	e_VV10 *= rho;
-}
-*/
 namespace _B97M_V{
 	inline const double c_tau_ueg = 3.0 * cbrt(36 * M_PI) * M_PI / 5.0;
 
@@ -594,7 +542,7 @@ namespace _B97M_V{
 	inline constexpr double C_VV10 = 0.01;
 }
 
-double B97M_V_E(const XC_inp& inp){
+void B97M_V_E(XC* xc){
 	using namespace _B97M_V;
 	assert(!xc->restricted);
 	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P_A!=nullptr) && (xc->P_B!=nullptr));	
@@ -746,25 +694,73 @@ double B97M_V_E(const XC_inp& inp){
 		const double de_cos_dtau_a = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_dtau_a);
 		const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
 
-		// e_VV10
+		// VV10
 
-		// e_VV10 derivatives
+		GGA_ret VV10_ret = VV10_per_gpt(*xc, rho, grho2, b_VV10, C_VV10);
+		const double e_VV10 = VV10_ret.e_XC;
+		const double de_VV10_drho = VV10_ret.drho_XC[0];
+		const double de_VV10_dgrho2 = VV10_ret.dgamma_XC[0];
 
 		MGGA_ret ret;
 		ret.e_XC = e_X + e_css + e_cos + e_VV10;
 		ret.drho_XC = {
-			(de_X_drho_a + de_css_drho_a + de_cos_drho_a + /**/),
-			(de_X_drho_b + de_css_drho_b + de_cos_drho_b + /**/)
+			(de_X_drho_a + de_css_drho_a + de_cos_drho_a + de_VV10_drho),
+			(de_X_drho_b + de_css_drho_b + de_cos_drho_b + de_VV10_drho)
 		};
 		ret.dgamma_XC = {
-			(de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a + /**/), 
-			(de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b + /**/)
+			(de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a + de_VV10_dgrho2), 
+			(de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b + de_VV10_dgrho2)
 		};
 		ret.dtau_XC = {
-			(de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a + /**/), 
-			(de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b + /**/)
+			(de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a), 
+			(de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b)
 		};
 		return ret;
 	};
 	MGGA(xc, func);
 }
+
+GGA_ret VV10_per_gpt(const XC& xc, double ref_rho, double ref_grho2, const double b, const double C){
+	using namespace _B97M_V;
+	
+	const int ref_gpt = xc.main_iter;
+	const double beta = sqrt(sqrt(27.0) / b) / 32.0 / b;
+	
+	double e_VV10  = 0.0;
+	double F_rho   = 0.0;
+	double F_gamma = 0.0;
+	std::vector<double> phi_buf(m->AOs.size());
+	std::vector<double> gpx_buf(m->AOs.size());
+	std::vector<double> gpy_buf(m->AOs.size());
+	std::vector<double> gpz_buf(m->AOs.size());
+	std::vector<double> tmp_grd(3);
+	double rho_gpt, grho2_gpt, R2, PHI;
+
+	Matrix* p = xc->P_T;
+	const std::vector<double>& gx = xc.g->x;
+	const std::vector<double>& gy = xc.g->y;
+	const std::vector<double>& gz = xc.g->z;
+	const std::vector<double>& gw = xc.g->w;
+	for(int gpt = 0; gpt < xc.g->num_gridpoints; gpt++){
+		eval_bfs_grad_per_gpt(&xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, tmp_grd, gpt);
+		rho_gpt = density(phi_buf, *p);
+		tmp_grd = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *p);
+		grho2_gpt = (
+			tmp_grd[0] * tmp_grd[0] +
+			tmp_grd[1] * tmp_grd[1] +
+			tmp_grd[2] * tmp_grd[2]
+		);	
+		R2 = intpow(x[ref_gpt] - x[gpt], 2) + intpow(y[ref_gpt] - y[gpt], 2) + intpow(z[ref_gpt] - z[gpt], 2);
+		PHI = /* VV10_kernel */;
+		e_VV10 += gw[gpt] * rho_gpt * PHI;
+	}
+	e_VV10 = ref_rho * (beta + 0.5 * e_VV10);
+	F_rho += beta;
+
+	GGA_ret ret;
+	ret.e_XC = e_VV10;
+	ret.drho_XC = {F_rho};
+	ret.dgamma_XC = {F_gamma};
+	return ret;
+}
+
