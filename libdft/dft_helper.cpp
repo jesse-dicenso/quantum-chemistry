@@ -164,40 +164,39 @@ double deps_c_dns_pw92(double rho_a, double rho_b, int spin){
 	const double b3_1 = 3.3662;
 	const double b4_1 = 0.62517;
 
-	double rho = rho_a + rho_b;
+	const double rho = rho_a + rho_b;
 	if (rho < 1e-20) {return 0.0;}
-	double rs = cbrt(3 / (4 * M_PI * rho));
+	const double rs = cbrt(3 / (4 * M_PI * rho));
 
-	int sgn_spin;
-	if(spin == 0)		{sgn_spin =  1;}
-	else if (spin == 1) {sgn_spin = -1;}
-	else {assert((spin == 0) || (spin == 1));}
-	double zeta = (rho_a - rho_b) / rho;
-	double zeta3 = zeta * zeta * zeta;
-	double zeta4 = zeta3 * zeta;
-	double f = f_zeta(zeta);
-	double df = df_zeta(zeta);
-	double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
-	double alpha = PW92_alpha(rs);
-	double dalpha_drs = PW92_dalpha_drs(rs);
+	// spin == 0 : take derivative w.r.t. rho_a
+	// spin == 1 : take derivative w.r.t. rho_b
+	const int sgn_spin = (spin==0 ? 1 : -1);
+	const double zeta = (rho_a - rho_b) / rho;
+	const double zeta3 = zeta * zeta * zeta;
+	const double zeta4 = zeta3 * zeta;
+	const double f = f_zeta(zeta);
+	const double df = df_zeta(zeta);
+	const double ddf0 = 4.0 / ( 9.0 * ( cbrt(2) - 1 ) );
+	const double alpha = PW92_alpha(rs);
+	const double dalpha_drs = PW92_dalpha_drs(rs);
 
-	double eps_0 = -2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
+	const double eps_0 = -2 * A_0 * (1 + a1_0 * rs) * log(1 + 1 / (2 * A_0 * 
 				  (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs)));
-	double eps_1 = -2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
+	const double eps_1 = -2 * A_1 * (1 + a1_1 * rs) * log(1 + 1 / (2 * A_1 * 
 				  (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs)));
 
-	double Q0_0   = -2 * A_0 * (1 + a1_0 * rs);
-	double Q1_0   =  2 * A_0 * (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs);
-	double Q1p_0  =      A_0 * (b1_0 / sqrt(rs) + 2 * b2_0 + 3 * b3_0 * sqrt(rs) + 4 * b4_0 * rs);
-	double deps_0 = -2 * A_0 * a1_0 * log(1 + 1 / Q1_0) - Q0_0 * Q1p_0 / (Q1_0 * Q1_0 + Q1_0);
+	const double Q0_0   = -2 * A_0 * (1 + a1_0 * rs);
+	const double Q1_0   =  2 * A_0 * (b1_0 * sqrt(rs) + b2_0 * rs + b3_0 * sqrt(intpow(rs, 3)) + b4_0 * rs * rs);
+	const double Q1p_0  =      A_0 * (b1_0 / sqrt(rs) + 2 * b2_0 + 3 * b3_0 * sqrt(rs) + 4 * b4_0 * rs);
+	const double deps_0 = -2 * A_0 * a1_0 * log(1 + 1 / Q1_0) - Q0_0 * Q1p_0 / (Q1_0 * Q1_0 + Q1_0);
 		
-	double Q0_1   = -2 * A_1 * (1 + a1_1 * rs);
-	double Q1_1   =  2 * A_1 * (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs);
-	double Q1p_1  =      A_1 * (b1_1 / sqrt(rs) + 2 * b2_1 + 3 * b3_1 * sqrt(rs) + 4 * b4_1 * rs);
-	double deps_1 = -2 * A_1 * a1_1 * log(1 + 1 / Q1_1) - Q0_1 * Q1p_1 / (Q1_1 * Q1_1 + Q1_1);
+	const double Q0_1   = -2 * A_1 * (1 + a1_1 * rs);
+	const double Q1_1   =  2 * A_1 * (b1_1 * sqrt(rs) + b2_1 * rs + b3_1 * sqrt(intpow(rs, 3)) + b4_1 * rs * rs);
+	const double Q1p_1  =      A_1 * (b1_1 / sqrt(rs) + 2 * b2_1 + 3 * b3_1 * sqrt(rs) + 4 * b4_1 * rs);
+	const double deps_1 = -2 * A_1 * a1_1 * log(1 + 1 / Q1_1) - Q0_1 * Q1p_1 / (Q1_1 * Q1_1 + Q1_1);
 
-	double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
-	double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
+	const double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
+	const double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
 
 	return -(rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz;
 }

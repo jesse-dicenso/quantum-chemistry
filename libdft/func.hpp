@@ -1,6 +1,7 @@
 #ifndef FUNCHEADERDEF
 #define FUNCHEADERDEF
 
+#include "../libint/1e.hpp"
 #include "dft_helper.hpp"
 
 #include <stdexcept>
@@ -36,9 +37,9 @@ class XC{
 		std::vector<double> gradient_rho_a = {0.0, 0.0, 0.0};
 		std::vector<double> gradient_rho_b = {0.0, 0.0, 0.0};
 
-		double ke_rho_a = 0.0;
-		double ke_rho_b = 0.0;
-
+		double ke_density   = 0.0;
+		double ke_density_a = 0.0;
+		double ke_density_b = 0.0;
 };
 
 // *_ret objects are per-grid point properties
@@ -58,12 +59,20 @@ struct GGA_ret{
 	else: dgamma_XC is derivative w.r.t. {\gamma_{aa}, \gamma_{bb}, \gamma_{ab}} */
 };
 
+struct MGGA_ret{
+	double e_XC;
+	std::vector<double> drho_XC;
+	std::vector<double> dgamma_XC;
+	std::vector<double> dtau_XC;
+};
+
 extern std::unordered_map<std::string, void (*)(XC*)> xc_register;
 void call_xc_functional(XC* xc);
 
 // HF //
 void R_HF_X(XC* xc);
 void U_HF_X(XC* xc);
+void R_HF_SNX(XC* xc);	// Seminumerical Exchange
 
 // LDA //
 void Slater(XC* xc);
