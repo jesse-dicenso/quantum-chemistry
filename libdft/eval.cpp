@@ -6,8 +6,8 @@
 void LDA(XC* xc, LDA_ret (*func)(XC*)){
 	std::vector<double> phi_buf(xc->mol->AOs.size());
 	zero_xc_data(xc);
-	int &gpt = &(xc->main_iter);
-	for(gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
+	int &gpt = xc->main_iter;
+	for(xc->main_iter = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_per_gpt(xc, phi_buf, gpt);
 		eval_density_per_gpt(xc, phi_buf);
 		LDA_per_gpt(xc, func, phi_buf, gpt);
@@ -21,7 +21,7 @@ void GGA(XC* xc, GGA_ret (*func)(XC*)){
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> temp_grad(3);
 	zero_xc_data(xc);
-	int &gpt = &(xc->main_iter);
+	int &gpt = xc->main_iter;
 	for(gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
@@ -36,7 +36,7 @@ void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> temp_grad(3);
 	zero_xc_data(xc);
-	int &gpt = &(xc->main_iter);
+	int &gpt = xc->main_iter;
 	for(gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_ke_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
@@ -219,7 +219,7 @@ double GGA_F_second_term(const GGA_ret& ret, const std::vector<double>& phi_buf,
 	return result; 
 }
 
-void MGGA_per_gpt(XC* xc, GGA_ret (*func)(XC*), const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
+void MGGA_per_gpt(XC* xc, MGGA_ret (*func)(XC*), const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
 	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf, int gpix)
 {
 	if(xc->rho < 1e-20){return;}
@@ -232,20 +232,23 @@ void MGGA_per_gpt(XC* xc, GGA_ret (*func)(XC*), const std::vector<double>& phi_b
 	const int dim   = (xc->restricted ? xc->FXC->rows : xc->FXC_A->rows);
 	const int spins = (xc->restricted ? 1 : 2);
 	const double w = xc->g->w[gpix];
-	MGGA_ret ret = func(xc);
-	xc->E_XC += w * ret.e_XC;
+	MGGA_ret mgga_ret = func(xc);
+	GGA_ret tmp_gga_ret;
+	tmp_gga_ret.drho_XC = mgga_ret.drho_XC;
+	tmp_gga_ret.dgamma_XC = mgga_ret.dgamma_XC;
+	xc->E_XC += w * mgga_ret.e_XC;
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
 			fxc[s]->matrix[mu][mu] += w * (
-				phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu] + 
-				GGA_F_second_term (ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, mu, s) + 
-				MGGA_F_third_term(ret, gpx_buf, gpy_buf, gpz_buf, mu, mu, s);
+				phi_buf[mu] * mgga_ret.drho_XC[s] * phi_buf[mu] + 
+				GGA_F_second_term(tmp_gga_ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, mu, s) + 
+				MGGA_F_third_term(mgga_ret, gpx_buf, gpy_buf, gpz_buf, mu, mu, s)
 			);
 			for(int nu = 0; nu < mu; nu++){
 				fxc[s]->matrix[mu][nu] += w * (
-					phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu] + 
-					GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, nu, s) +
-					MGGA_F_third_term(ret, gpx_buf, gpy_buf, gpz_buf, mu, nu, s);
+					phi_buf[mu] * mgga_ret.drho_XC[s] * phi_buf[nu] + 
+					GGA_F_second_term(tmp_gga_ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, nu, s) +
+					MGGA_F_third_term(mgga_ret, gpx_buf, gpy_buf, gpz_buf, mu, nu, s)
 				);
 				fxc[s]->matrix[nu][mu] = fxc[s]->matrix[mu][nu];
 			}

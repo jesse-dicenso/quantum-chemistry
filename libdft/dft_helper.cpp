@@ -201,23 +201,23 @@ double deps_c_dns_pw92(double rho_a, double rho_b, int spin){
 	return -(rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz;
 }
 
-// Capital Phi in the VV10 paper
+/* Capital Phi in the VV10 paper
 double VV10_kernel(double b, double C, double R2, double rho_1, double rho_2, double nrm_grho_1, double nrm_grho_2){
-	double omega_p2_1 = 4 * M_PI * rho_1;
-	double omega_p2_2 = 4 * M_PI * rho_2;
-	double omega_g2_1 = C * intpow(nrm_grho_1 / rho_1, 4);
-	double omega_g2_2 = C * intpow(nrm_grho_2 / rho_2, 4);
-	double omega_0_1 = sqrt(omega_g2_1 + omega_p2_1 / 3);
-	double omega_0_2 = sqrt(omega_g2_2 + omega_p2_2 / 3);
-	double kappa_1 = b * intpow(cbrt(3 * M_PI * M_PI * rho_1), 2) / sqrt(omega_p2_1);
-	double kappa_2 = b * intpow(cbrt(3 * M_PI * M_PI * rho_2), 2) / sqrt(omega_p2_2);
+	const double omega_p2_1 = 4 * M_PI * rho_1;
+	const double omega_p2_2 = 4 * M_PI * rho_2;
+	const double omega_g2_1 = C * intpow(nrm_grho_1 / rho_1, 4);
+	const double omega_g2_2 = C * intpow(nrm_grho_2 / rho_2, 4);
+	const double omega_0_1 = sqrt(omega_g2_1 + omega_p2_1 / 3);
+	const double omega_0_2 = sqrt(omega_g2_2 + omega_p2_2 / 3);
+	const double kappa_1 = b * intpow(cbrt(3 * M_PI * M_PI * rho_1), 2) / sqrt(omega_p2_1);
+	const double kappa_2 = b * intpow(cbrt(3 * M_PI * M_PI * rho_2), 2) / sqrt(omega_p2_2);
 
-	double g_1 = omega_0_1 * R2 + kappa_1;
-	double g_2 = omega_0_2 * R2 + kappa_2;
+	const double g_1 = omega_0_1 * R2 + kappa_1;
+	const double g_2 = omega_0_2 * R2 + kappa_2;
 
 	return -3 / (2 * g_1 * g_2 * (g_1 + g_2));
 }
-
+*/
 // Old density function
 double density2(double x, double y, double z, const Molecule& mol, const Matrix& P){
 	double rho = 0;

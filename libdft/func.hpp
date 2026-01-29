@@ -88,4 +88,7 @@ void PBE(XC* xc);
 // Meta GGA //
 void B97M_V(XC* xc);
 
+// NLC (per grid point) //
+GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C);
+
 #endif
