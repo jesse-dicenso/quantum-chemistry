@@ -611,8 +611,8 @@ void B97M_V(XC* xc){
 		const double de_X_ueg_b_drho_b = UX * cbrt(rho_b);
 		const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a_div;
 		const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b_div;
-		const double ds2_a_dgrho2_a = s2_a / grho2_a;
-		const double ds2_b_dgrho2_b = s2_b / grho2_b;
+		const double ds2_a_dgrho2_a = s2_a / grho2_a_div;
+		const double ds2_b_dgrho2_b = s2_b / grho2_b_div;
 		const double dwx_a_dt_a = 2.0 / ((t_a + 1) * (t_a + 1));
 		const double dwx_b_dt_b = 2.0 / ((t_b + 1) * (t_b + 1));
 		const double dux_a_ds2_a = gamma_x / ((1 + gamma_x * s2_a) * (1 + gamma_x * s2_a));
@@ -774,6 +774,7 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	for(int gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, tmp_grd, gpt);
 		rho_gpt = density(phi_buf, *p);
+		if(rho_gpt < 1e-20){continue;}
 		tmp_grd = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *p);
 		grho2_gpt = (
 			tmp_grd[0] * tmp_grd[0] +
