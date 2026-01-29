@@ -552,34 +552,50 @@ void B97M_V(XC* xc){
 	   E = e_X + e_css + e_cos + e_VV10 */
 	auto func = [](XC* inp)
 	{
+		constexpr double DIV_0_GUARD = 1e-20;
+
 		const double rho   = inp->rho;
 		const double rho_a = inp->rho_a;
 		const double rho_b = inp->rho_b;
+
+		const double rho_div = (rho > DIV_0_GUARD ? rho : DIV_0_GUARD);
+		const double rho_a_div = (rho_a > DIV_0_GUARD ? rho_a : DIV_0_GUARD);
+		const double rho_b_div = (rho_b > DIV_0_GUARD ? rho_b : DIV_0_GUARD);
+
 		const std::vector<double>& grho   = inp->gradient_rho;
 		const std::vector<double>& grho_a = inp->gradient_rho_a;
 		const std::vector<double>& grho_b = inp->gradient_rho_b;
+
 		const double tau_a = inp->ke_density_a;
 		const double tau_b = inp->ke_density_b;
 
+		const double tau_a_div = (tau_a > DIV_0_GUARD ? tau_a : DIV_0_GUARD);
+		const double tau_b_div = (tau_b > DIV_0_GUARD ? tau_b : DIV_0_GUARD);
+		
 		const double grho2   = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
 		const double grho2_a = grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2];
 		const double grho2_b = grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2];
 
+		const double grho2_div   = (grho2 > DIV_0_GUARD ? grho2 : DIV_0_GUARD);
+		const double grho2_a_div = (grho2_a > DIV_0_GUARD ? grho2_a : DIV_0_GUARD);
+		const double grho2_b_div = (grho2_b > DIV_0_GUARD ? grho2_b : DIV_0_GUARD);
+		
 		const double tau_ueg_a = c_tau_ueg * rho_a * cbrt(rho_a * rho_a);
 		const double tau_ueg_b = c_tau_ueg * rho_b * cbrt(rho_b * rho_b);
 
-		const double t_a = tau_ueg_a / tau_a;
-		const double t_b = tau_ueg_b / tau_b;
-		const double dt_a_drho_a = (5.0 / 3.0) * t_a / rho_a;
-		const double dt_b_drho_b = (5.0 / 3.0) * t_b / rho_b;
-		const double dt_a_dtau_a = -t_a / tau_a;
-		const double dt_b_dtau_b = -t_b / tau_b;
+		const double t_a = tau_ueg_a / tau_a_div;
+		const double t_b = tau_ueg_b / tau_b_div;
+
+		const double dt_a_drho_a = (5.0 / 3.0) * t_a / rho_a_div;
+		const double dt_b_drho_b = (5.0 / 3.0) * t_b / rho_b_div;
+		const double dt_a_dtau_a = -t_a / tau_a_div;
+		const double dt_b_dtau_b = -t_b / tau_b_div;
 
 		// e_X
 		const double e_X_ueg_a = UX * (3.0 / 4.0) * (rho_a * cbrt(rho_a));
 		const double e_X_ueg_b = UX * (3.0 / 4.0) * (rho_b * cbrt(rho_b));
-		const double s2_a = grho2_a / (rho_a * rho_a * cbrt(rho_a * rho_a));
-		const double s2_b = grho2_b / (rho_b * rho_b * cbrt(rho_b * rho_b));
+		const double s2_a = grho2_a / (rho_a_div * rho_a_div * cbrt(rho_a_div * rho_a_div));
+		const double s2_b = grho2_b / (rho_b_div * rho_b_div * cbrt(rho_b_div * rho_b_div));
 		const double wx_a = (t_a - 1) / (t_a + 1);
 		const double wx_b = (t_b - 1) / (t_b + 1);
 		const double ux_a = gamma_x * s2_a / (1 + gamma_x * s2_a);
@@ -593,8 +609,8 @@ void B97M_V(XC* xc){
 		// e_X derivatives
 		const double de_X_ueg_a_drho_a = UX * cbrt(rho_a);
 		const double de_X_ueg_b_drho_b = UX * cbrt(rho_b);
-		const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a;
-		const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b;
+		const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a_div;
+		const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b_div;
 		const double ds2_a_dgrho2_a = s2_a / grho2_a;
 		const double ds2_b_dgrho2_b = s2_b / grho2_b;
 		const double dwx_a_dt_a = 2.0 / ((t_a + 1) * (t_a + 1));
@@ -724,6 +740,11 @@ void B97M_V(XC* xc){
 GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C){
 	using namespace _B97M_V;
 	
+	constexpr double DIV_0_GUARD = 1e-20;
+	
+	const double ref_rho_div   = (ref_rho   > DIV_0_GUARD ? ref_rho   : DIV_0_GUARD);
+	const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
+	
 	const int ref_gpt = xc->main_iter;
 	const double beta = sqrt(sqrt(27.0) / b) / 32.0 / b;
 
@@ -737,10 +758,10 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	std::vector<double> gpy_buf(xc->mol->AOs.size());
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> tmp_grd(3);
-	double rho_gpt, grho2_gpt, R2;
+	double rho_gpt, rho_gpt_div, grho2_gpt, grho2_gpt_div, R2;
 
 	const double ref_omega_p2 = 4.0 * M_PI * ref_rho;
-	const double ref_omega_g2 = C * ref_grho2 * ref_grho2 / (ref_rho * ref_rho * ref_rho * ref_rho);
+	const double ref_omega_g2 = C * ref_grho2 * ref_grho2 / (ref_rho_div * ref_rho_div * ref_rho_div * ref_rho_div);
 	const double ref_omega_0 = sqrt(ref_omega_g2 + ref_omega_p2 / 3.0);
 	const double ref_kappa = b * (3.0 * M_PI / 2.0) * cbrt(cbrt(ref_rho / (9.0 * M_PI)));
 	double omega_p2, omega_g2, omega_0, kappa, ref_g, g_prime, PHI;
@@ -759,10 +780,13 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 			tmp_grd[1] * tmp_grd[1] +
 			tmp_grd[2] * tmp_grd[2]
 		);	
+		rho_gpt_div = (rho_gpt > DIV_0_GUARD ? rho_gpt : DIV_0_GUARD);
+		grho2_gpt_div = (grho2_gpt > DIV_0_GUARD ? grho2_gpt : DIV_0_GUARD);
+
 		R2 = intpow(gx[ref_gpt] - gx[gpt], 2) + intpow(gy[ref_gpt] - gy[gpt], 2) + intpow(gz[ref_gpt] - gz[gpt], 2);
 
 		omega_p2 = 4.0 * M_PI * rho_gpt;
-		omega_g2 = C * grho2_gpt * grho2_gpt / (rho_gpt * rho_gpt * rho_gpt * rho_gpt);
+		omega_g2 = C * grho2_gpt * grho2_gpt / (rho_gpt_div * rho_gpt_div * rho_gpt_div * rho_gpt_div);
 		omega_0 = sqrt(omega_g2 + omega_p2 / 3.0);
 		kappa = b * (3.0 * M_PI / 2.0) * cbrt(cbrt(rho_gpt / (9.0 * M_PI)));
 
@@ -773,15 +797,15 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 		
 		n_PHI += gw[gpt] * rho_gpt * PHI;
 		U -= gw[gpt] * rho_gpt * PHI * (1 / ref_g + 1 / (ref_g + g_prime));
-		W = U * R2;
+		W -= gw[gpt] * rho_gpt * PHI * (1 / ref_g + 1 / (ref_g + g_prime)) * R2;
 	}
 	const double e_VV10  = ref_rho * (beta + 0.5 * n_PHI);
 	
-	const double ref_dkappa_drho = ref_kappa / (6.0 * ref_rho);
-	const double ref_domega_0_drho = (2.0 / ref_omega_0) * (M_PI / 3.0 - ref_omega_g2 / ref_rho);
-	const double ref_domega_0_dgamma = ref_omega_g2 / (ref_grho2 * ref_omega_0);
+	const double ref_dkappa_drho = ref_kappa / (6.0 * ref_rho_div);
+	const double ref_domega_0_drho = (2.0 / ref_omega_0) * (M_PI / 3.0 - ref_omega_g2 / ref_rho_div);
+	const double ref_domega_0_dgamma = ref_omega_g2 / (ref_grho2_div * ref_omega_0);
 	const double F_rho   = beta + n_PHI + ref_rho * (ref_dkappa_drho * U + ref_domega_0_drho * W);
-	const double F_gamma = ref_rho * ref_domega_0_drho * W;
+	const double F_gamma = ref_rho * ref_domega_0_dgamma * W;
 
 	GGA_ret ret;
 	ret.e_XC = e_VV10;
