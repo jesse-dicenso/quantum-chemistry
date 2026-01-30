@@ -17,24 +17,26 @@ class Matrix{
 	public:
 		Matrix(int r, int c, bool sym=false);
 		Matrix(const Matrix& A);
+		Matrix(Matrix&& A) noexcept;
 		Matrix();
 		~Matrix();
 
 		int rows;
 		int cols;
 		double **matrix;
-		bool isSymmetric;
 		
 		void printMatrix(int w=20);
 		Matrix getrow(int i);
 		Matrix getcol(int i);
 
 		Matrix operator-() const;
-		Matrix& operator=(const Matrix&A);
-		Matrix operator+(const Matrix&A) const;
+		Matrix& operator=(Matrix A);
+		Matrix operator+(const Matrix& A) const;
 		Matrix operator-(const Matrix& A) const;
 		Matrix operator*(double c) const;
 		Matrix operator*(const Matrix& A) const;
+
+		friend void swap(Matrix& A, Matrix& B) noexcept;
 };
 
 Matrix I(int r, int c);

@@ -4,13 +4,19 @@
 // Evaluate E_XC, F_XC //////////////////////////////////////////
 
 void LDA(XC* xc, LDA_ret (*func)(XC*)){
-	std::vector<double> phi_buf(xc->mol->AOs.size());
+	const int size_g = xc->g->num_gridpoints;
+	const int size_phi = xc->mol->AOs.size();
+	const std::vector<double> density_per_gpt = 
 	zero_xc_data(xc);
-	int &gpt = xc->main_iter;
-	for(xc->main_iter = 0; gpt < xc->g->num_gridpoints; gpt++){
-		eval_bfs_per_gpt(xc, phi_buf, gpt);
-		eval_density_per_gpt(xc, phi_buf);
-		LDA_per_gpt(xc, func, phi_buf, gpt);
+	#pragma omp parallel
+	{
+		std::vector<double> phi_buf(size_phi);
+		#pragma omp for
+		for(int g = 0; g < size_g; g++){
+			eval_bfs_per_gpt(xc, phi_buf, g);
+			eval_density_per_gpt(xc, phi_buf);
+			LDA_per_gpt(xc, func, phi_buf, g);
+		}
 	}
 }
 
@@ -21,8 +27,7 @@ void GGA(XC* xc, GGA_ret (*func)(XC*)){
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> temp_grad(3);
 	zero_xc_data(xc);
-	int &gpt = xc->main_iter;
-	for(gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
+	for(int gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
 		GGA_per_gpt(xc, func, phi_buf, gpx_buf, gpy_buf, gpz_buf, gpt);
@@ -260,6 +265,6 @@ void MGGA_per_gpt(XC* xc, MGGA_ret (*func)(XC*), const std::vector<double>& phi_
 double MGGA_F_third_term(const MGGA_ret& ret, const std::vector<double>& gpx_buf, const std::vector<double>& gpy_buf, 
 	const std::vector<double>& gpz_buf, int mu, int nu, int s)
 {
-	return 0.5 * ret.dtau_XC[s] * (gpx_buf[mu] * gpx_buf[nu] + gpy_buf[mu] * gpy_buf[nu] + gpz_buf[mu] * gpz_buf[nu]);
+	return ret.dtau_XC[s] * (gpx_buf[mu] * gpx_buf[nu] + gpy_buf[mu] * gpy_buf[nu] + gpz_buf[mu] * gpz_buf[nu]);
 }
 

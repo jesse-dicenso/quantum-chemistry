@@ -3,6 +3,7 @@
 
 #include "../libmath/linalg.hpp"
 
+#include <omp.h>
 #include <vector>
 
 class  XC;

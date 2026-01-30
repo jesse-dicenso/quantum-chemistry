@@ -712,7 +712,6 @@ void B97M_V(XC* xc){
 		const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
 
 		// VV10
-
 		GGA_ret VV10_ret = VV10_per_gpt(inp, rho, grho2, b_VV10, C_VV10);
 		const double e_VV10 = VV10_ret.e_XC;
 		const double de_VV10_drho = VV10_ret.drho_XC[0];

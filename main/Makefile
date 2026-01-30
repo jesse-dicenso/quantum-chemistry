@@ -1,12 +1,12 @@
-CXX := clang++
-CXXFLAGS := -O2 -Wno-c++17-extensions
+CXX := g++
+CXXFLAGS := -O2 -Wno-c++17-extensions #-fopenmp
 
 SRC_DIRS := . ../libaux ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
 SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 OBJ := $(SRC:.cpp=.o)
 TARGET := QC-EXEC
 
-LIBS := -lblas -llapack
+LIBS := -lblas -llapack #-lgomp
 
 all: $(TARGET)
 

@@ -37,7 +37,8 @@ double ke_density(const std::vector<double>& gpx, const std::vector<double>& gpy
 			tau += P.matrix[i][j] * (gpx[i] * gpx[j] + gpy[i] * gpy[j] + gpz[i] * gpz[j]);
 		}
 	}
-	return 0.5 * tau;
+	return tau;
+	/* B97M-V does not have the 1/2 prefactor! */
 }
 
 double f_zeta(double zeta){
@@ -198,26 +199,9 @@ double deps_c_dns_pw92(double rho_a, double rho_b, int spin){
 	const double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
 	const double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
 
-	return -(rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz;
+	return -((rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz) / rho;
 }
 
-/* Capital Phi in the VV10 paper
-double VV10_kernel(double b, double C, double R2, double rho_1, double rho_2, double nrm_grho_1, double nrm_grho_2){
-	const double omega_p2_1 = 4 * M_PI * rho_1;
-	const double omega_p2_2 = 4 * M_PI * rho_2;
-	const double omega_g2_1 = C * intpow(nrm_grho_1 / rho_1, 4);
-	const double omega_g2_2 = C * intpow(nrm_grho_2 / rho_2, 4);
-	const double omega_0_1 = sqrt(omega_g2_1 + omega_p2_1 / 3);
-	const double omega_0_2 = sqrt(omega_g2_2 + omega_p2_2 / 3);
-	const double kappa_1 = b * intpow(cbrt(3 * M_PI * M_PI * rho_1), 2) / sqrt(omega_p2_1);
-	const double kappa_2 = b * intpow(cbrt(3 * M_PI * M_PI * rho_2), 2) / sqrt(omega_p2_2);
-
-	const double g_1 = omega_0_1 * R2 + kappa_1;
-	const double g_2 = omega_0_2 * R2 + kappa_2;
-
-	return -3 / (2 * g_1 * g_2 * (g_1 + g_2));
-}
-*/
 // Old density function
 double density2(double x, double y, double z, const Molecule& mol, const Matrix& P){
 	double rho = 0;

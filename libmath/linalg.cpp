@@ -3,7 +3,6 @@
 Matrix::Matrix(int r, int c, bool sym){
 	rows = r;
 	cols = c;
-	isSymmetric = sym;
 	matrix = new double *[rows];
 	for(int i = 0; i < rows; i++){
 		matrix[i] = new double[cols];
@@ -16,7 +15,6 @@ Matrix::Matrix(int r, int c, bool sym){
 Matrix::Matrix(const Matrix& A){
 	rows = A.rows;
 	cols = A.cols;
-	isSymmetric = A.isSymmetric;
 	matrix = new double *[rows];
 	for(int i = 0; i < rows; i++){
 		matrix[i] = new double[cols];
@@ -24,6 +22,13 @@ Matrix::Matrix(const Matrix& A){
 			matrix[i][j] = A.matrix[i][j];
 		}
 	}
+}
+
+Matrix::Matrix(Matrix&& A) noexcept : rows(A.rows), cols(A.cols), matrix(A.matrix)
+{
+	A.rows = 0;
+	A.cols = 0;
+	A.matrix = nullptr;
 }
 
 Matrix::Matrix(){
@@ -60,31 +65,14 @@ Matrix Matrix::operator-() const{
 	return mat;
 }
 
-Matrix& Matrix::operator=(const Matrix& A){
-	rows = A.rows;
-	cols = A.cols;
-	isSymmetric = A.isSymmetric;	
-	for(int h = 0; h < rows; h++){
-		delete[] matrix[h];
-	}
-	delete[] matrix;
-	
-	matrix = new double *[rows];
-	for(int i = 0; i < rows; i++){
-		matrix[i] = new double[cols];
-		for(int j = 0; j < cols; j++){
-			matrix[i][j] = A.matrix[i][j];
-		}
-	}
+Matrix& Matrix::operator=(Matrix A){
+	swap(*this, A);
 	return *this;
 }
 
 Matrix Matrix::operator+(const Matrix& A) const{
 	assert((rows==A.rows) && (cols==A.cols));
 	Matrix sum(rows, cols);
-	if(A.isSymmetric){
-		sum.isSymmetric=true;
-	}
 	for(int i = 0; i < rows; i++){
 		for(int j = 0; j < cols; j++){
 			sum.matrix[i][j] = matrix[i][j] + A.matrix[i][j];
@@ -96,9 +84,6 @@ Matrix Matrix::operator+(const Matrix& A) const{
 Matrix Matrix::operator-(const Matrix& A) const{
 	assert((rows==A.rows) && (cols==A.cols));
 	Matrix dif(rows, cols);
-	if(A.isSymmetric){
-		dif.isSymmetric=true;
-	}
 	for(int i = 0; i < rows; i++){
 		for(int j = 0; j < cols; j++){
 			dif.matrix[i][j] = matrix[i][j] - A.matrix[i][j];
@@ -128,6 +113,13 @@ Matrix Matrix::operator*(const Matrix& A) const{
 		}
 	}
 	return product;	
+}
+
+void swap(Matrix& A, Matrix& B) noexcept{
+	using std::swap;
+	swap(A.rows, B.rows);
+	swap(A.cols, B.cols);
+	swap(A.matrix, B.matrix);
 }
 
 Matrix transpose(const Matrix& A){

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/Ne.inp
+infile=inputs/acetaldehyde.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=U_B97M-V
+method=U_PW92
 
 # basis set
 basis=STO-3G
