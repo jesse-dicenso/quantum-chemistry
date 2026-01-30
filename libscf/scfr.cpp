@@ -18,17 +18,16 @@ void R_FPI(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matrix
 		   Matrix* e, Matrix* co, Matrix* c, double* Eo, double* err, int N, int i)
 {
 	// Uses Ediff between iterations for error metric
-	std::vector<Matrix> tec(2);
 	Matrix j = coulomb(*(xc->P), *(xc->eris));
 	call_xc_functional(xc);
 
 	*f = fock(hcore, j, *(xc->FXC));
-	double tEo  = E0(*xc, hcore, j);
+	const double tEo  = E0(*xc, hcore, j);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
 	*fo  = transpose(x) * (*f) * x;
-	tec  = diagonalize(*fo);
+	const std::vector<Matrix> tec  = diagonalize(*fo);
 	*e   = tec[0];
 	*co  = tec[1];
 	*c   = x * (*co);
@@ -47,11 +46,6 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		SPe.push_back((*f) * (*(xc->P)) * s - s * (*(xc->P)) * (*f));
 	}
 	else if(i < sps){
-		std::vector<Matrix> tec(2);
-		std::vector<double> weights(sps+1);
-		double tEo;
-		double terr = 0;
-	
 		Matrix j = coulomb(*(xc->P), *(xc->eris));
 		call_xc_functional(xc);
 		*f = fock(hcore, j, *(xc->FXC));
@@ -59,8 +53,9 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*(xc->P)) * s - s * (*(xc->P)) * (*f));
 
-		int n = SPe.size();
+		const int n = SPe.size();
 
+		double terr = 0;
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
 				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
@@ -82,7 +77,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		}
 		Matrix RHS(n+1, 1);
 		RHS.matrix[n][0] = -1;
-		weights = sym_linear_solve(LHS, RHS, icd);
+		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
@@ -97,7 +92,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		*Eo  = E0(*xc, hcore, j);
 
 		*fo  = transpose(x) * (*f) * x;
-		tec  = diagonalize(*fo);
+		const std::vector<Matrix> tec  = diagonalize(*fo);
 		*e   = tec[0];
 		*co  = tec[1];
 		*c   = x * (*co);
@@ -107,11 +102,6 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		std::cout << std::setw(9) << "diis(" << SPe.size() << ")" << std::endl;
 	}
 	else{
-		std::vector<Matrix> tec(2);
-		std::vector<double> weights(sps+1);
-		double tEo;
-		double terr = 0;
-
 		Matrix j = coulomb(*(xc->P), *(xc->eris));
 		call_xc_functional(xc);
 		*f = fock(hcore, j, *(xc->FXC));
@@ -119,6 +109,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		SPf.push_back(*f);
 		SPe.push_back((*f) * (*(xc->P)) * s - s * (*(xc->P)) * (*f));
 
+		double terr = 0;
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
 				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
@@ -141,7 +132,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		Matrix RHS(sps+1, 1);
 		RHS.matrix[sps][0] = -1;
 
-		weights = sym_linear_solve(LHS, RHS, icd);
+		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
@@ -156,7 +147,7 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		*Eo  = E0(*xc, hcore, j);
 
 		*fo  = transpose(x) * (*f) * x;
-		tec  = diagonalize(*fo);
+		const std::vector<Matrix> tec  = diagonalize(*fo);
 		*e   = tec[0];
 		*co  = tec[1];
 		*c   = x * (*co);

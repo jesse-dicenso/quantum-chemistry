@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/acetaldehyde.inp
+infile=inputs/CH4.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=U_PW92

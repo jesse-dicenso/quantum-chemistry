@@ -17,22 +17,19 @@ Matrix UR_density_matrix(const Matrix& C, int N){
 void UR_FPI(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matrix* fa, Matrix* fb, Matrix* fao, Matrix* fbo, 
 		    Matrix* ea, Matrix* eb, Matrix* cao, Matrix* cbo, Matrix* ca, Matrix* cb, double* Eo, double* err, int Na, int Nb, int i)
 {
-	std::vector<Matrix> tec_a(2);
-	std::vector<Matrix> tec_b(2);
-
 	Matrix j  = coulomb(*(xc->P), *(xc->eris));
 	call_xc_functional(xc);
 	*fa = fock(hcore, j, *(xc->FXC_A));
 	*fb = fock(hcore, j, *(xc->FXC_B));
 	
-	double tEo = E0(*xc, hcore, j);
+	const double tEo = E0(*xc, hcore, j);
 	*err = tEo - *Eo;
 	*Eo = tEo;
 
 	*fao  = transpose(x) * (*fa) * x;
 	*fbo  = transpose(x) * (*fb) * x;
-	tec_a  = diagonalize(*fao);
-	tec_b  = diagonalize(*fbo);
+	const std::vector<Matrix> tec_a  = diagonalize(*fao);
+	const std::vector<Matrix> tec_b  = diagonalize(*fbo);
 	*ea  = tec_a[0];
 	*cao = tec_a[1];
 	*eb  = tec_b[0];
@@ -60,11 +57,6 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
 	}
 	else if(i < sps){
-		std::vector<Matrix> tec_a(2);
-		std::vector<Matrix> tec_b(2);
-		std::vector<double> weights(sps+1);
-		double terr = 0;
-	
 		Matrix j    = coulomb(*(xc->P), *(xc->eris));
 		call_xc_functional(xc);
 		*fa = fock(hcore, j, *(xc->FXC_A));
@@ -75,8 +67,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		SPea.push_back((*fa) * (*(xc->P_A)) * s - s * (*(xc->P_A)) * (*fa));
 		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
 
-		int n = SPea.size();
-	
+		const int n = SPea.size();
+		double terr = 0.0;
 		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
 				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
@@ -102,7 +94,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		Matrix RHS(n+1, 1);
 		RHS.matrix[n][0] = -1;
 
-		weights = sym_linear_solve(LHS, RHS, icd);
+		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
@@ -120,8 +112,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 
 		*fao  = transpose(x) * (*fa) * x;
 		*fbo  = transpose(x) * (*fb) * x;
-		tec_a = diagonalize(*fao);
-		tec_b = diagonalize(*fbo);
+		const std::vector<Matrix> tec_a = diagonalize(*fao);
+		const std::vector<Matrix> tec_b = diagonalize(*fbo);
 		*ea   = tec_a[0];
 		*eb   = tec_b[0];
 		*cao  = tec_a[1];
@@ -136,11 +128,6 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		std::cout << std::setw(9) << "diis(" << SPea.size() << ")" << std::endl;
 	}
 	else{
-		std::vector<Matrix> tec_a(2);
-		std::vector<Matrix> tec_b(2);
-		std::vector<double> weights(sps+1);
-		double terr = 0;
-	
 		Matrix j  = coulomb(*(xc->P), *(xc->eris));
 		call_xc_functional(xc);
 		*fa = fock(hcore, j, *(xc->FXC_A));
@@ -150,7 +137,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		SPfb.push_back(*fb);
 		SPea.push_back((*fa) * (*(xc->P_A)) * s - s * (*(xc->P_A)) * (*fa));
 		SPeb.push_back((*fb) * (*(xc->P_B)) * s - s * (*(xc->P_B)) * (*fb));
-	
+
+		double terr = 0.0;	
 		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
 				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
@@ -176,7 +164,7 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		Matrix RHS(sps+1, 1);
 		RHS.matrix[sps][0] = -1;
 
-		weights = sym_linear_solve(LHS, RHS, icd);
+		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
 			return;
@@ -194,8 +182,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 
 		*fao  = transpose(x) * (*fa) * x;
 		*fbo  = transpose(x) * (*fb) * x;
-		tec_a = diagonalize(*fao);
-		tec_b = diagonalize(*fbo);
+		const std::vector<Matrix> tec_a = diagonalize(*fao);
+		const std::vector<Matrix> tec_b = diagonalize(*fbo);
 		*ea   = tec_a[0];
 		*eb   = tec_b[0];
 		*cao  = tec_a[1];

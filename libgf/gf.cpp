@@ -21,44 +21,48 @@ GF::GF(const std::vector<double>& exponents, const std::vector<double>& coeffs, 
 	int L = l+m+n;
 	
 	// Normalize
-	std::vector<double> nrms(exps.size());
-	for(int i = 0; i < exps.size(); i++){
+	const int size_e = exps.size();
+	std::vector<double> nrms(size_e);
+	for(int i = 0; i < size_e; i++){
 		nrms[i] = pow((2/M_PI),0.75) * intpow(2,L) * pow(exps[i],(2*L+3)/4.0) / sqrt(dfact(2*l-1)*dfact(2*m-1)*dfact(2*n-1));
 	}
 	
 	N = nrms;
 	
 	double cN = 0;
-	for(int i = 0; i < exps.size(); i++){
-		for(int j = 0; j < exps.size(); j++){
+	for(int i = 0; i < size_e; i++){
+		for(int j = 0; j < size_e; j++){
 			cN += N[i]*N[j]*d[i]*d[j] / pow((exps[i] + exps[j]), (1.5 + L));
 		}
 	}
 	
 	cN = 1 / sqrt(pow(M_PI, 1.5) * dfact(2*l-1) * dfact(2*m-1) * dfact(2*n-1) * cN / intpow(2, L));	
 	
-	for(int i = 0; i < exps.size(); i++){
+	for(int i = 0; i < size_e; i++){
 		d[i] *= cN;
 	}
 }
 
 double GF::evaluate(double x, double y, double z) const{
+	const int size_e = exps.size();
+	const double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
 	double sum = 0;
-	double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
-	for(int i = 0; i < exps.size(); i++){
+	for(int i = 0; i < size_e; i++){
 		sum += N[i] * d[i] * exp(-exps[i]*r2);
 	}
 	return sum * intpow(x-xyz[0], shell[0]) * intpow(y-xyz[1], shell[1]) * intpow(z-xyz[2], shell[2]);
 }
 		
 std::vector<double> GF::evaluate_gradient(double x, double y, double z) const{
+	const int size_e = exps.size();
+	const double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
+	const double factor_x = intpow(x-xyz[0], shell[0]);
+	const double factor_y = intpow(y-xyz[1], shell[1]);
+	const double factor_z = intpow(z-xyz[2], shell[2]);
+	
 	std::vector<double> gradient = {0.0, 0.0, 0.0};
 	double sum = 0;
-	double r2 = (x-xyz[0])*(x-xyz[0]) + (y-xyz[1])*(y-xyz[1]) + (z-xyz[2])*(z-xyz[2]);
-	double factor_x = intpow(x-xyz[0], shell[0]);
-	double factor_y = intpow(y-xyz[1], shell[1]);
-	double factor_z = intpow(z-xyz[2], shell[2]);
-	for(int i = 0; i < exps.size(); i++){
+	for(int i = 0; i < size_e; i++){
 		sum -= N[i] * d[i] * exps[i] * exp(-exps[i]*r2);
 	}
 	sum *= 2 * factor_x * factor_y * factor_z;
@@ -71,7 +75,7 @@ std::vector<double> GF::evaluate_gradient(double x, double y, double z) const{
 	bool isn = (shell[2]!=0);
 	if(isl || ism || isn){
 		sum = 0;	
-		for(int i = 0; i < exps.size(); i++){
+		for(int i = 0; i < size_e; i++){
 			sum += N[i] * d[i] * exp(-exps[i]*r2);
 		}
 		if(isl) {gradient[0] += shell[0] * intpow(x-xyz[0], shell[0]-1) * factor_y * factor_z * sum;}
@@ -94,7 +98,7 @@ bool operator== (const GF &g1, const GF &g2){
 
 double E(int i, int j, int t, double a, double b, double QAB){
 	assert((i>=0) && (j>=0));
-	double p = a + b;
+	const double p = a + b;
 	if((t < 0) || (t > (i+j))){
 		return 0;
 	}

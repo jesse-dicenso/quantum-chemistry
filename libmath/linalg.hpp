@@ -15,7 +15,7 @@ extern "C" {
 
 class Matrix{
 	public:
-		Matrix(int r, int c, bool sym=false);
+		Matrix(int r, int c);
 		Matrix(const Matrix& A);
 		Matrix(Matrix&& A) noexcept;
 		Matrix();
@@ -36,8 +36,6 @@ class Matrix{
 		Matrix operator-(const Matrix& A) const;
 		Matrix operator*(double c) const;
 		Matrix operator*(const Matrix& A) const;
-
-		friend void swap(Matrix& A, Matrix& B) noexcept;
 };
 
 Matrix I(int r, int c);

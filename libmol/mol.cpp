@@ -21,10 +21,12 @@ Molecule::Molecule(const std::string& file, const std::string& bfs){
 	inpfile.close();
 
 	basis = bfs;
-	std::vector<GF> temp;	
+	std::vector<GF> temp;
+	int size_temp;
 	for(int j = 0; j < Natoms; j++){
 		temp = AOfunctions(basis, Zvals[j], xyz[j], j);
-		for(int k = 0; k < temp.size(); k++){
+		size_temp = temp.size();
+		for(int k = 0; k < size_temp; k++){
 			AOs.push_back(temp[k]);
 		}
 	}

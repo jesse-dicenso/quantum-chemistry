@@ -8,10 +8,12 @@ double Sp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, d
 		pow((M_PI/(exp1+exp2)),1.5);
 }
 
-double S(GF g1, GF g2){
+double S(const GF& g1, const GF& g2){
+		const int size_1 = g1.exps.size();
+		const int size_2 = g2.exps.size();
         double sum = 0;
-        for(int i = 0; i < g1.exps.size(); i++){
-                for(int j = 0; j < g2.exps.size(); j++){
+        for(int i = 0; i < size_1; i++){
+                for(int j = 0; j < size_2; j++){
 			sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Sp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz);
                 }
         }
@@ -31,10 +33,12 @@ double Tp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, d
 	return (Ix + Iy + Iz);
 }
 
-double T(GF g1, GF g2){
+double T(const GF& g1, const GF& g2){
+		const int size_1 = g1.exps.size();
+		const int size_2 = g2.exps.size();
         double sum = 0;
-        for(int i = 0; i < g1.exps.size(); i++){
-                for(int j = 0; j < g2.exps.size(); j++){
+        for(int i = 0; i < size_1; i++){
+                for(int j = 0; j < size_2; j++){
 			sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Tp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz);
                 }
         }
@@ -99,11 +103,13 @@ double Vp(const std::vector<int>& L1, const std::vector<int>& L2, double exp1, d
 	return (2*M_PI/p)*sum;
 }
 
-double V(GF g1, GF g2, const std::vector<double>& xyzN){
+double V(const GF& g1, const GF& g2, const std::vector<double>& xyzN){
+		const int size_1 = g1.exps.size();
+		const int size_2 = g2.exps.size();
         double sum = 0;
-        for(int i = 0; i < g1.exps.size(); i++){
-                for(int j = 0; j < g2.exps.size(); j++){
-			sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Vp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz, xyzN);
+        for(int i = 0; i < size_1; i++){
+                for(int j = 0; j < size_2; j++){
+					sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Vp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz, xyzN);
                 }
         }
         return sum;

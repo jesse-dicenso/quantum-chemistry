@@ -20,13 +20,14 @@ void LDA(XC* xc, LDA_ret (*func)(XC*)){
 }
 
 void GGA(XC* xc, GGA_ret (*func)(XC*)){
+	const int size_g = xc->g->num_gridpoints;
+	zero_xc_data(xc);
 	std::vector<double> phi_buf(xc->mol->AOs.size());
 	std::vector<double> gpx_buf(xc->mol->AOs.size());
 	std::vector<double> gpy_buf(xc->mol->AOs.size());
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> temp_grad(3);
-	zero_xc_data(xc);
-	for(int gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
+	for(int gpt = 0; gpt < size_g; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
 		GGA_per_gpt(xc, func, phi_buf, gpx_buf, gpy_buf, gpz_buf, gpt);
@@ -34,6 +35,7 @@ void GGA(XC* xc, GGA_ret (*func)(XC*)){
 }
 
 void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
+	const int size_g = xc->g->num_gridpoints;
 	std::vector<double> phi_buf(xc->mol->AOs.size());
 	std::vector<double> gpx_buf(xc->mol->AOs.size());
 	std::vector<double> gpy_buf(xc->mol->AOs.size());
@@ -41,7 +43,7 @@ void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
 	std::vector<double> temp_grad(3);
 	zero_xc_data(xc);
 	int &gpt = xc->main_iter;
-	for(gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
+	for(gpt = 0; gpt < size_g; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_ke_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
 		MGGA_per_gpt(xc, func, phi_buf, gpx_buf, gpy_buf, gpz_buf, gpt);
@@ -65,22 +67,24 @@ void zero_xc_data(XC* xc){
 }
 
 void eval_bfs_per_gpt(XC* xc, std::vector<double>& phi_buf, int gpix){
+	const int size_p = xc->mol->AOs.size();
 	const std::vector<GF>& bfs = xc->mol->AOs;
 	const std::vector<double>& gx = xc->g->x;
 	const std::vector<double>& gy = xc->g->y;
 	const std::vector<double>& gz = xc->g->z;
-	for(int j = 0; j < xc->mol->AOs.size(); j++){
+	for(int j = 0; j < size_p; j++){
 		phi_buf[j] = bfs[j].evaluate(gx[gpix], gy[gpix], gz[gpix]);
 	}	
 }
 
 void eval_bfs_per_gpt(XC* xc, Matrix& phi_buf, int gpix){
 	assert(phi_buf.cols==1);
+	const int size_p = xc->mol->AOs.size();
 	const std::vector<GF>& bfs = xc->mol->AOs;
 	const std::vector<double>& gx = xc->g->x;
 	const std::vector<double>& gy = xc->g->y;
 	const std::vector<double>& gz = xc->g->z;
-	for(int j = 0; j < xc->mol->AOs.size(); j++){
+	for(int j = 0; j < size_p; j++){
 		phi_buf.matrix[j][0] = bfs[j].evaluate(gx[gpix], gy[gpix], gz[gpix]);
 	}	
 }
@@ -88,11 +92,12 @@ void eval_bfs_per_gpt(XC* xc, Matrix& phi_buf, int gpix){
 void eval_bfs_grad_per_gpt(XC* xc, std::vector<double>& phi_buf, std::vector<double>& gpx_buf, std::vector<double>& gpy_buf, 
 	std::vector<double>& gpz_buf, std::vector<double>& temp_grad, int gpix)
 {
+	const int size_p = xc->mol->AOs.size();
 	const std::vector<GF>& bfs = xc->mol->AOs;
 	const std::vector<double>& gx = xc->g->x;
 	const std::vector<double>& gy = xc->g->y;
 	const std::vector<double>& gz = xc->g->z;
-	for(int j = 0; j < bfs.size(); j++){
+	for(int j = 0; j < size_p; j++){
 		phi_buf[j] = bfs[j].evaluate(gx[gpix], gy[gpix], gz[gpix]);
 		temp_grad  = bfs[j].evaluate_gradient(gx[gpix], gy[gpix], gz[gpix]);
 		gpx_buf[j] = temp_grad[0];

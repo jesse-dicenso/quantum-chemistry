@@ -39,8 +39,9 @@ double long dfact(double long n){
 
 double dot(const std::vector<double>& a, const std::vector<double>& b){
 	assert(a.size()==b.size());
+	const int size_a = a.size();
 	double sum = 0;
-	for(int i = 0; i < a.size(); i++){
+	for(int i = 0; i < size_a; i++){
 		sum += a[i]*b[i];
 	}
 	return sum;

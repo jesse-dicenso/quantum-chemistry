@@ -1,11 +1,12 @@
 #include "aux.hpp"
 
 std::vector<double> Lowdin_PA(const Molecule& M, const Matrix& P, const Matrix& S){
+	const int Nphis = M.AOs.size();
 	std::vector<double> LPA(M.Zvals.size());
 	Matrix ShPSh = m_sqrt(S) * P * m_sqrt(S);
-	for(int i = 0; i < M.Zvals.size(); i++){
+	for(int i = 0; i < M.Natoms; i++){
 		double sum = 0;
-		for(int j = 0; j < M.AOs.size(); j++){
+		for(int j = 0; j < Nphis; j++){
 			if(M.AOs[j].atom_index==i){
 				sum += ShPSh.matrix[j][j];
 			}
@@ -16,11 +17,12 @@ std::vector<double> Lowdin_PA(const Molecule& M, const Matrix& P, const Matrix& 
 }
 
 std::vector<double> Mulliken_PA(const Molecule& M, const Matrix& P, const Matrix& S){
+	const int Nphis = M.AOs.size();
 	std::vector<double> MPA(M.Zvals.size());
 	Matrix PS = P * S;
-	for(int i = 0; i < M.Zvals.size(); i++){
+	for(int i = 0; i < M.Natoms; i++){
 		double sum = 0;
-		for(int j = 0; j < M.AOs.size(); j++){
+		for(int j = 0; j < Nphis; j++){
 			if(M.AOs[j].atom_index==i){
 				sum += PS.matrix[j][j];
 			}

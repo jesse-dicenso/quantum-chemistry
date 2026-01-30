@@ -29,8 +29,6 @@ int main(int argc, char* argv[]){
 	double err = eps + 1;
 
 	double Eo;
-	double temp_Eo;
-	double E_tot;
 	int icd = 0;
 
 	//////////////////////////////////////////////////
@@ -102,7 +100,7 @@ int main(int argc, char* argv[]){
 	cout << "--------------------------------------------------------------\n";
 	cout << "Z" << setw(20) << "x (Bohr)" << setw(20) << "y (Bohr)" << setw(20) <<  "z (Bohr)" << '\n';
 	cout << "--------------------------------------------------------------\n";
-	for(int i = 0; i < M.Zvals.size(); i++){
+	for(int i = 0; i < M.Natoms; i++){
 		cout << M.Zvals[i] << setw(20) << M.xyz[i][0] << setw(20) << M.xyz[i][1] << setw(20) << M.xyz[i][2] << '\n';
 	}
 	cout << "--------------------------------------------------------------\n";
@@ -143,27 +141,20 @@ int main(int argc, char* argv[]){
 	
 	// Restricted
 	if(r){
-		vector<Matrix> temp_e_c;
-		
 		Matrix p  (K, K);
 		Matrix fxc(K, K);
 		
 		xc.P   = &p;
 		xc.FXC = &fxc;
 
-		Matrix f (K, K);
-		Matrix fo(K, K);
-		Matrix e (K, K);
-		Matrix co(K, K);
-		Matrix c (K, K);
-		
-		f = hcore;
+		Matrix f = hcore;
 		Eo = E0(xc, hcore, zero(K,K));
-		fo = transpose(x) * f * x;
-		temp_e_c = diagonalize(fo);
-		e = temp_e_c[0];
-		co = temp_e_c[1];
-		c = x * co;
+		Matrix fo = transpose(x) * f * x;
+		const vector<Matrix> temp_e_c = diagonalize(fo);
+		Matrix e = temp_e_c[0];
+		Matrix co = temp_e_c[1];
+		Matrix c = x * co;
+		
 		p = R_density_matrix(c, N);
 
 		if(sps==0){
@@ -183,8 +174,8 @@ int main(int argc, char* argv[]){
 				cycles+=1;
 			}
 			if(icd!=0){
-			int fpi_forced_three;
-				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
+			int fpi_forced_three = 0;
+				while(((abs(err) > eps) && (cycles <= max_cycles)) || (fpi_forced_three < 3)){
 					R_FPI(s, hcore, x, &xc, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
@@ -199,8 +190,6 @@ int main(int argc, char* argv[]){
 		}
 		else{
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
-			E_tot = Eo + nuc;
-
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 			
 			double trps = Tr(p*s);
@@ -211,7 +200,7 @@ int main(int argc, char* argv[]){
 			R_print_orbital_energies(e, N, K);
 			//R_print_orbitals(c, N, K);
 
-			vector<double> popa(M.Zvals.size());
+			vector<double> popa(M.Natoms);
 			if(pop=="lowdin"){
 				popa = Lowdin_PA(M, p, s);
 				cout << "=======================\n";
@@ -228,7 +217,7 @@ int main(int argc, char* argv[]){
 			double sum_chg = 0;
 			cout << fixed;
 			cout << setprecision(10);
-			for(int i = 0; i < M.Zvals.size(); i++){
+			for(int i = 0; i < M.Natoms; i++){
 				cout << setw(3) << i+1 << setw(20) << popa[i] << '\n';
 				sum_chg += popa[i];
 			}
@@ -238,9 +227,6 @@ int main(int argc, char* argv[]){
 	}
 	// Unrestricted
 	else{
-		vector<Matrix> temp_e_c_a;
-		vector<Matrix> temp_e_c_b;
-		
 		Matrix pt  (K, K);
 		Matrix pa  (K, K);
 		Matrix pb  (K, K);
@@ -253,30 +239,20 @@ int main(int argc, char* argv[]){
 		xc.FXC_A = &fxca;	
 		xc.FXC_B = &fxcb;	
 
-		Matrix fa (K, K);
-		Matrix fb (K, K);
-		Matrix fao(K, K);
-		Matrix fbo(K, K);
-		Matrix ea (K, K);
-		Matrix eb (K, K);
-		Matrix cao(K, K);
-		Matrix cbo(K, K);
-		Matrix ca (K, K);
-		Matrix cb (K, K);
-		
-		fa = hcore;
-		fb = hcore;
+		Matrix fa = hcore;
+		Matrix fb = hcore;
 		Eo = E0(xc, hcore, zero(K,K));
-		fao = transpose(x) * fa * x;
-		fbo = transpose(x) * fb * x;
-		temp_e_c_a = diagonalize(fao);
-		temp_e_c_b = diagonalize(fbo);
-		ea = temp_e_c_a[0];
-		cao = temp_e_c_a[1];
-		eb = temp_e_c_b[0];
-		cbo = temp_e_c_b[1];
-		ca = x * cao;
-		cb = x * cbo;
+		Matrix fao = transpose(x) * fa * x;
+		Matrix fbo = transpose(x) * fb * x;
+		const vector<Matrix> temp_e_c_a = diagonalize(fao);
+		const vector<Matrix> temp_e_c_b = diagonalize(fbo);
+		Matrix ea = temp_e_c_a[0];
+		Matrix cao = temp_e_c_a[1];
+		Matrix eb = temp_e_c_b[0];
+		Matrix cbo = temp_e_c_b[1];
+		Matrix ca = x * cao;
+		Matrix cb = x * cbo;
+		
 		pa = UR_density_matrix(ca, Na);
 		pb = UR_density_matrix(cb, Nb);
 		pt = pa + pb;
@@ -301,8 +277,8 @@ int main(int argc, char* argv[]){
 				cycles+=1;
 			}
 			if(icd!=0){
-			int fpi_forced_three;
-				while((abs(err) > eps) && (cycles <= max_cycles) || (fpi_forced_three < 3)){
+			int fpi_forced_three = 0;
+				while(((abs(err) > eps) && (cycles <= max_cycles)) || (fpi_forced_three < 3)){
 					UR_FPI(s, hcore, x, &xc, &fa, &fb, &fao, &fbo, &ea, &eb, &cao, &cbo, &ca, &cb, &Eo, &err, Na, Nb, cycles);
 					fpi_forced_three+=1;
 					cycles+=1;
@@ -318,8 +294,6 @@ int main(int argc, char* argv[]){
 		else{
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
 			
-			E_tot = Eo + nuc;
-
 			double S2_UHF = S2_e + Nb;
 			for(int i = 0; i < Na; i++){
 				for(int j = 0; j < Nb; j++){
@@ -353,7 +327,7 @@ int main(int argc, char* argv[]){
 			UR_print_orbital_energies(ea, eb, Na, Nb, K);
 			//UR_print_orbitals(ca, cb, Na, Nb, K);
 
-			vector<double> popa(M.Zvals.size());
+			vector<double> popa(M.Natoms);
 			if(pop=="lowdin"){
 				popa = Lowdin_PA(M, pt, s);
 				cout << "=======================\n";
@@ -370,7 +344,7 @@ int main(int argc, char* argv[]){
 			double sum_chg = 0;
 			cout << fixed;
 			cout << setprecision(10);
-			for(int i = 0; i < M.Zvals.size(); i++){
+			for(int i = 0; i < M.Natoms; i++){
 				cout << setw(3) << i+1 << setw(20) << popa[i] << '\n';
 				sum_chg += popa[i];
 			}

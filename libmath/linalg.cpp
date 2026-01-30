@@ -1,13 +1,13 @@
 #include "linalg.hpp"
 
-Matrix::Matrix(int r, int c, bool sym){
+Matrix::Matrix(int r, int c){
 	rows = r;
 	cols = c;
 	matrix = new double *[rows];
 	for(int i = 0; i < rows; i++){
 		matrix[i] = new double[cols];
 		for(int j = 0; j < cols; j++){
-			matrix[i][j] = 0;
+			matrix[i][j] = 0.0;
 		}
 	}
 }
@@ -70,9 +70,9 @@ Matrix& Matrix::operator=(const Matrix& A){
 	if(this!=&A){
 		if(matrix){
 			for(int i = 0; i < rows; i++){
-				delete matrix[i];
+				delete[] matrix[i];
 			}
-			delete matrix;
+			delete[] matrix;
 		}
 		rows = A.rows;
 		cols = A.cols;
@@ -91,9 +91,9 @@ Matrix& Matrix::operator=(Matrix&& A) noexcept{
 	if(this!=&A){
 		if(matrix){
 			for(int i = 0; i < rows; i++){
-				delete matrix[i];
+				delete[] matrix[i];
 			}
-			delete matrix;
+			delete[] matrix;
 		}
 		rows = A.rows;
 		cols = A.cols;
@@ -188,11 +188,6 @@ Matrix I(int r, int c){
 
 Matrix zero(int r, int c){
 	Matrix z(r, c);
-	for(int i = 0; i < r; i++){
-		for(int j = 0; j < c; j++){
-			z.matrix[i][i] = 0.0;
-		}
-	}
 	return z;
 }
 

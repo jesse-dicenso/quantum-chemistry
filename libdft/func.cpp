@@ -385,7 +385,6 @@ void PBE_X(XC* xc){
 	};
 	auto func_u = [](XC* inp) {
 		// Slater Exchange
-		const double rho   = 2 * inp->rho;
 		const double rho_a = 2 * inp->rho_a;
 		const double rho_b = 2 * inp->rho_b;
 		const double rho_a_3 = cbrt(rho_a);
@@ -558,7 +557,6 @@ void B97M_V(XC* xc){
 		const double rho_a = inp->rho_a;
 		const double rho_b = inp->rho_b;
 
-		const double rho_div = (rho > DIV_0_GUARD ? rho : DIV_0_GUARD);
 		const double rho_a_div = (rho_a > DIV_0_GUARD ? rho_a : DIV_0_GUARD);
 		const double rho_b_div = (rho_b > DIV_0_GUARD ? rho_b : DIV_0_GUARD);
 
@@ -576,7 +574,6 @@ void B97M_V(XC* xc){
 		const double grho2_a = grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2];
 		const double grho2_b = grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2];
 
-		const double grho2_div   = (grho2 > DIV_0_GUARD ? grho2 : DIV_0_GUARD);
 		const double grho2_a_div = (grho2_a > DIV_0_GUARD ? grho2_a : DIV_0_GUARD);
 		const double grho2_b_div = (grho2_b > DIV_0_GUARD ? grho2_b : DIV_0_GUARD);
 		
@@ -757,7 +754,8 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	std::vector<double> gpy_buf(xc->mol->AOs.size());
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> tmp_grd(3);
-	double rho_gpt, rho_gpt_div, grho2_gpt, grho2_gpt_div, R2;
+	double rho_gpt, grho2_gpt, R2; 
+	double rho_gpt_div = 0.0; 
 
 	const double ref_omega_p2 = 4.0 * M_PI * ref_rho;
 	const double ref_omega_g2 = C * ref_grho2 * ref_grho2 / (ref_rho_div * ref_rho_div * ref_rho_div * ref_rho_div);
@@ -781,7 +779,6 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 			tmp_grd[2] * tmp_grd[2]
 		);	
 		rho_gpt_div = (rho_gpt > DIV_0_GUARD ? rho_gpt : DIV_0_GUARD);
-		grho2_gpt_div = (grho2_gpt > DIV_0_GUARD ? grho2_gpt : DIV_0_GUARD);
 
 		R2 = intpow(gx[ref_gpt] - gx[gpt], 2) + intpow(gy[ref_gpt] - gy[gpt], 2) + intpow(gz[ref_gpt] - gz[gpt], 2);
 

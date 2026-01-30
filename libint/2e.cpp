@@ -27,13 +27,13 @@ bool ERI::isEqual(ERI e2){
 }
 
 double Gp(const std::vector<int>& L1, const std::vector<int>& L2, const std::vector<int>& L3, const std::vector<int>& L4, double exp1, double exp2, double exp3, double exp4, const std::vector<double>& xyz1, const std::vector<double>& xyz2, const std::vector<double>& xyz3, const std::vector<double>& xyz4){
-	double p = exp1 + exp2;
-	double q = exp3 + exp4;
-	double a = p*q/(p+q);
-	std::vector<double> P12 = P(exp1, exp2, xyz1, xyz2);
-	std::vector<double> Q34 = P(exp3, exp4, xyz3, xyz4);
-	std::vector<double> PQ({P12[0]-Q34[0],P12[1]-Q34[1],P12[2]-Q34[2]});
-	double RPQ = sqrt(PQ[0]*PQ[0]+PQ[1]*PQ[1]+PQ[2]*PQ[2]);
+	const double p = exp1 + exp2;
+	const double q = exp3 + exp4;
+	const double a = p*q/(p+q);
+	const std::vector<double> P12 = P(exp1, exp2, xyz1, xyz2);
+	const std::vector<double> Q34 = P(exp3, exp4, xyz3, xyz4);
+	const std::vector<double> PQ  = {P12[0]-Q34[0],P12[1]-Q34[1],P12[2]-Q34[2]};
+	const double RPQ = sqrt(PQ[0]*PQ[0]+PQ[1]*PQ[1]+PQ[2]*PQ[2]);
 	
 	double sum = 0;
 	double Et, Eu, Ev, Etau, Enu;
@@ -62,11 +62,15 @@ double Gp(const std::vector<int>& L1, const std::vector<int>& L2, const std::vec
 }
 
 double G(const GF& g1, const GF& g2, const GF& g3, const GF& g4){
+		const int size_1 = g1.exps.size();
+		const int size_2 = g2.exps.size();
+		const int size_3 = g1.exps.size();
+		const int size_4 = g2.exps.size();
         double sum = 0;
-        for(int i = 0; i < g1.exps.size(); i++){
-            for(int j = 0; j < g2.exps.size(); j++){
-				for(int k = 0; k < g3.exps.size(); k++){
-					for(int l = 0; l < g4.exps.size(); l++){
+        for(int i = 0; i < size_1; i++){
+            for(int j = 0; j < size_2; j++){
+				for(int k = 0; k < size_3; k++){
+					for(int l = 0; l < size_4; l++){
 						sum +=  g1.N[i] * g2.N[j] * g3.N[k] * g4.N[l] * 
 								g1.d[i] * g2.d[j] * g3.d[k] * g4.d[l] *
 								Gp(g1.shell, g2.shell, g3.shell, g4.shell,
@@ -80,19 +84,20 @@ double G(const GF& g1, const GF& g2, const GF& g3, const GF& g4){
 }
 
 std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vector<GF>& phis){
-	int size = phis.size();
+	const int size_p = phis.size();
 	std::vector<ERI> eris;
-	std::vector<std::vector<std::vector<std::vector<double>>>> result(size);
-	for(int i = 0; i < size; i++){
-		result[i].resize(size);
-		for(int j = 0; j < size; j++){
-			result[i][j].resize(size);
-			for(int k = 0; k < size; k++){
-				result[i][j][k].resize(size);
-				for(int l = 0; l < size; l++){
+	std::vector<std::vector<std::vector<std::vector<double>>>> result(size_p);
+	for(int i = 0; i < size_p; i++){
+		result[i].resize(size_p);
+		for(int j = 0; j < size_p; j++){
+			result[i][j].resize(size_p);
+			for(int k = 0; k < size_p; k++){
+				result[i][j][k].resize(size_p);
+				for(int l = 0; l < size_p; l++){
 					ERI eijkl(i, j, k, l);
 					bool eql = false;
-					for(int m = 0; m < eris.size(); m++){
+					const int size_e = eris.size();
+					for(int m = 0; m < size_e; m++){
 						if(eijkl.isEqual(eris[m])){
 							eql = true;
 							eijkl.eri = eris[m].eri;

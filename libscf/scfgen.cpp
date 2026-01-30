@@ -1,9 +1,10 @@
 #include "scfgen.hpp"
 
 Matrix overlap(const std::vector<GF>& phis){
-	Matrix M(phis.size(),phis.size());
-	for(int i = 0; i < phis.size(); i++){
-		for(int j = 0; j < phis.size(); j++){
+	const int size_p = phis.size();
+	Matrix M(size_p, size_p);
+	for(int i = 0; i < size_p; i++){
+		for(int j = 0; j < size_p; j++){
 			M.matrix[i][j] = S(phis[i],phis[j]);
 		}
 	}
@@ -11,9 +12,10 @@ Matrix overlap(const std::vector<GF>& phis){
 }
 
 Matrix kinetic(const std::vector<GF>& phis){
-	Matrix M(phis.size(),phis.size());
-	for(int i = 0; i < phis.size(); i++){
-		for(int j = 0; j < phis.size(); j++){
+	const int size_p = phis.size();
+	Matrix M(size_p, size_p);
+	for(int i = 0; i < size_p; i++){
+		for(int j = 0; j < size_p; j++){
 			M.matrix[i][j] = T(phis[i],phis[j]);
 		}
 	}
@@ -21,10 +23,12 @@ Matrix kinetic(const std::vector<GF>& phis){
 }
 
 Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const std::vector<std::vector<double>>& xyzN){
-	Matrix M(phis.size(),phis.size());
-	for(int i = 0; i < phis.size(); i++){
-		for(int j = 0; j < phis.size(); j++){
-			for(int k = 0; k < Zvals.size(); k++){
+	const int size_p = phis.size();
+	const int size_z = Zvals.size();
+	Matrix M(size_p, size_p);
+	for(int i = 0; i < size_p; i++){
+		for(int j = 0; j < size_p; j++){
+			for(int k = 0; k < size_z; k++){
 				M.matrix[i][j] += -Zvals[k]*V(phis[i],phis[j],xyzN[k]);
 			}
 		}
@@ -54,12 +58,13 @@ Matrix fock(const Matrix& Hcore, const Matrix& J, const Matrix& K){
 }
 
 double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>& xyzN){
+	const int size_z = Z.size();
 	double sum = 0;
 	double Rij;
 	std::vector<double> Ri;
 	std::vector<double> Rj;
-	for(int i = 0; i < Z.size(); i++){
-		for(int j = (i+1); j < Z.size(); j++){
+	for(int i = 0; i < size_z; i++){
+		for(int j = (i+1); j < size_z; j++){
 			Ri = xyzN[i];
 			Rj = xyzN[j];
 			Rij = sqrt((Ri[0]-Rj[0])*(Ri[0]-Rj[0]) + 
