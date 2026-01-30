@@ -742,7 +742,6 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
 	
 	const int ref_gpt = xc->main_gpt;
-	std::cout << ref_gpt << std::endl; //
 	const double beta = sqrt(sqrt(27.0) / b) / 32.0 / b;
 
 	// Integrated Quantities	
@@ -761,19 +760,19 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	const double ref_omega_p2 = 4.0 * M_PI * ref_rho;
 	const double ref_omega_g2 = C * ref_grho2 * ref_grho2 / (ref_rho_div * ref_rho_div * ref_rho_div * ref_rho_div);
 	const double ref_omega_0 = sqrt(ref_omega_g2 + ref_omega_p2 / 3.0);
-	const double ref_kappa = b * (3.0 * M_PI / 2.0) * cbrt(cbrt(ref_rho / (9.0 * M_PI)));
+	const double ref_kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(ref_rho / (9.0 * M_PI)));
 	double omega_p2, omega_g2, omega_0, kappa, ref_g, g_prime, PHI;
 
-	Matrix* p = xc->P;
+	Matrix p =*(xc->P_A) + *(xc->P_B);
 	const std::vector<double>& gx = xc->g->x;
 	const std::vector<double>& gy = xc->g->y;
 	const std::vector<double>& gz = xc->g->z;
 	const std::vector<double>& gw = xc->g->w;
 	for(int gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, tmp_grd, gpt);
-		rho_gpt = density(phi_buf, *p);
+		rho_gpt = density(phi_buf, p);
 		if(rho_gpt < 1e-20){continue;}
-		tmp_grd = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, *p);
+		tmp_grd = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, p);
 		grho2_gpt = (
 			tmp_grd[0] * tmp_grd[0] +
 			tmp_grd[1] * tmp_grd[1] +
@@ -786,7 +785,7 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 		omega_p2 = 4.0 * M_PI * rho_gpt;
 		omega_g2 = C * grho2_gpt * grho2_gpt / (rho_gpt_div * rho_gpt_div * rho_gpt_div * rho_gpt_div);
 		omega_0 = sqrt(omega_g2 + omega_p2 / 3.0);
-		kappa = b * (3.0 * M_PI / 2.0) * cbrt(cbrt(rho_gpt / (9.0 * M_PI)));
+		kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(rho_gpt / (9.0 * M_PI)));
 
 		ref_g   = ref_omega_0 * R2 + ref_kappa;
 		g_prime = omega_0 * R2 + kappa;
