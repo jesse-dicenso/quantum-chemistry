@@ -42,7 +42,7 @@ void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
 	std::vector<double> gpz_buf(xc->mol->AOs.size());
 	std::vector<double> temp_grad(3);
 	zero_xc_data(xc);
-	int &gpt = xc->main_iter;
+	int &gpt = xc->main_gpt;
 	for(gpt = 0; gpt < size_g; gpt++){
 		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
 		eval_density_grad_ke_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
@@ -53,7 +53,7 @@ void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
 // Helpers //////////////////////////////////////////////////////
 
 void zero_xc_data(XC* xc){
-	xc->main_iter = 0;
+	xc->main_gpt = 0;
 	xc->E_XC = 0.0;
 	if(xc->restricted){
 		assert(xc->FXC!=nullptr);

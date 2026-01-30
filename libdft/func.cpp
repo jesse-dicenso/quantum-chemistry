@@ -741,7 +741,8 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	const double ref_rho_div   = (ref_rho   > DIV_0_GUARD ? ref_rho   : DIV_0_GUARD);
 	const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
 	
-	const int ref_gpt = xc->main_iter;
+	const int ref_gpt = xc->main_gpt;
+	std::cout << ref_gpt << std::endl; //
 	const double beta = sqrt(sqrt(27.0) / b) / 32.0 / b;
 
 	// Integrated Quantities	

@@ -27,7 +27,7 @@ class XC{
 		const Molecule* mol = nullptr;
 		const grid* g = nullptr;
 
-		int main_iter = 0;
+		int main_gpt = 0;	// for use in nonlocal functionals which need info from this gpt
 
 		double E_XC = 0.0;
 		

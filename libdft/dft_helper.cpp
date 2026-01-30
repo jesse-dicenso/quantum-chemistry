@@ -78,12 +78,12 @@ double VWN_dalpha_drho(double x, double n){
 // PW92 spin stiffness
 double PW92_alpha(double rs){
 	// const double A  = 0.016887;
-	const double A  = 1 / (6 * M_PI * M_PI);
-	const double a1 = 0.11125;
-	const double b1 = 10.357;
-	const double b2 = 3.6231;
-	const double b3 = 0.88026;
-	const double b4 = 0.49671;
+	constexpr double A  = 1 / (6 * M_PI * M_PI);
+	constexpr double a1 = 0.11125;
+	constexpr double b1 = 10.357;
+	constexpr double b2 = 3.6231;
+	constexpr double b3 = 0.88026;
+	constexpr double b4 = 0.49671;
 
 	return 2 * A * (1 + a1 * rs) * log(1 + 1 / (2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs)));
 }
@@ -92,11 +92,11 @@ double PW92_alpha(double rs){
 double PW92_dalpha_drs(double rs){
 	// const double A  = 0.016887;
 	const double A  = 1 / (6 * M_PI * M_PI);
-	const double a1 = 0.11125;
-	const double b1 = 10.357;
-	const double b2 = 3.6231;
-	const double b3 = 0.88026;
-	const double b4 = 0.49671;
+	constexpr double a1 = 0.11125;
+	constexpr double b1 = 10.357;
+	constexpr double b2 = 3.6231;
+	constexpr double b3 = 0.88026;
+	constexpr double b4 = 0.49671;
 
 	const double Q0  = -2 * A * (1 + a1 * rs);
 	const double Q1  =  2 * A * (b1 * sqrt(rs) + b2 * rs + b3 * sqrt(intpow(rs, 3)) + b4 * rs * rs);
@@ -108,18 +108,18 @@ double PW92_dalpha_drs(double rs){
 double eps_c_pw92(double rho_a, double rho_b){
 	// zeta = 0
 	const double A_0  = (1 - log(2)) / (M_PI * M_PI);
-	const double a1_0 = 0.21370;
-	const double b1_0 = 7.5957;
-	const double b2_0 = 3.5876;
-	const double b3_0 = 1.6382;
-	const double b4_0 = 0.49294;
+	constexpr double a1_0 = 0.21370;
+	constexpr double b1_0 = 7.5957;
+	constexpr double b2_0 = 3.5876;
+	constexpr double b3_0 = 1.6382;
+	constexpr double b4_0 = 0.49294;
 	// zeta = 1
 	const double A_1  = A_0 / 2;
-	const double a1_1 = 0.20548;
-	const double b1_1 = 14.1189;
-	const double b2_1 = 6.1977;
-	const double b3_1 = 3.3662;
-	const double b4_1 = 0.62517;
+	constexpr double a1_1 = 0.20548;
+	constexpr double b1_1 = 14.1189;
+	constexpr double b2_1 = 6.1977;
+	constexpr double b3_1 = 3.3662;
+	constexpr double b4_1 = 0.62517;
 
 	const double rho = rho_a + rho_b;
 	if (rho < 1e-20) {return 0.0;}
@@ -189,7 +189,7 @@ double deps_c_dns_pw92(double rho_a, double rho_b, int spin){
 	const double deps_dr = deps_0 * (1 - f * zeta4) + deps_1 * f * zeta4 + dalpha_drs * (f / ddf0) * (1 - zeta4);
 	const double deps_dz = 4 * zeta3 * f * (eps_1 - eps_0 - alpha / ddf0) + df * (zeta4 * (eps_1 - eps_0) + (1 - zeta4) * alpha / ddf0);
 
-	return -((rs / 3) * deps_dr - (zeta - sgn_spin) * deps_dz) / rho;
+	return -((rs / 3) * deps_dr + (zeta - sgn_spin) * deps_dz) / rho;
 }
 
 // Old density function

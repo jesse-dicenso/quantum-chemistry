@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/CH4.inp
+infile=inputs/He.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=U_PW92
+method=U_B97M-V
 
 # basis set
 basis=STO-3G
