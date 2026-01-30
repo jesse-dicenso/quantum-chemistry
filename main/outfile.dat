@@ -9,7 +9,7 @@ SUMMER 2024 - (probably May 2030?)
 
 Reading input...
 
-	infile      inputs/He.inp
+	infile      inputs/C.inp
 	method      U_B97M-V
 	basis       STO-3G
 	sps         5 (DIIS)
@@ -20,9 +20,9 @@ Reading input...
 --------------------------------------------------------------
 Z            x (Bohr)            y (Bohr)            z (Bohr)
 --------------------------------------------------------------
-2    0.0000000000e+00    0.0000000000e+00    0.0000000000e+00
+6    0.0000000000e+00    0.0000000000e+00    0.0000000000e+00
 --------------------------------------------------------------
-Success! There are 2 electrons (1 alpha and 1 beta) and 1 basis functions.
+Success! There are 6 electrons (4 alpha and 2 beta) and 5 basis functions.
 Nuclear Repulsion Energy = 0.0000000000e+00 Ha
 
 Computing ERIs...
@@ -38,31 +38,41 @@ Using core Hamiltonian as initial guess to alpha/beta Fock matrices.
 ----------------------------------------------------
   N                   E                 err     step
 ----------------------------------------------------
-  1   -2.8632201808e+00   -2.8632201808e+00        fp
-  2   -2.8632201808e+00    0.0000000000e+00        fp
+  1   -3.7354651476e+01   -3.7354651476e+01        fp
+  2   -3.7354651476e+01   -7.1054273576e-15        fp
 ----------------------------------------------------
 Convergence criterion met; exiting SCF loop.
 
-Total E     = -2.8632201808e+00 Ha
-Exact <S^2> = 0.0000000000e+00
-Calc. <S^2> = -4.4408920985e-16
+Total E     = -3.7354651476e+01 Ha
+Exact <S^2> = 2.0000000000e+00
+Calc. <S^2> = 2.0000000000e+00
 
-Trace    of Pa*S  = 1.0000000000e+00
-Integral of rho_a = 1.0000000000e+00
-Trace    of Pb*S  = 1.0000000000e+00
-Integral of rho_b = 1.0000000000e+00
-Trace    of Pt*S  = 2.0000000000e+00
-Integral of rho_t = 2.0000000000e+00
+Trace    of Pa*S  = 4.0000000000e+00
+Integral of rho_a = 4.0000000000e+00
+Trace    of Pb*S  = 2.0000000000e+00
+Integral of rho_b = 2.0000000000e+00
+Trace    of Pt*S  = 6.0000000000e+00
+Integral of rho_t = 6.0000000000e+00
 
 ***************
 * MO Energies *
 ***************
 
 Occupied (alpha):
-   E1   -5.7635781215e-01
+   E1   -9.8924872316e+00
+   E2   -4.3796306167e-01
+   E3   -8.3483047835e-02
+   E4   -8.3483047835e-02
+Virtual (alpha):
+   E5   -4.1029573982e-02
 
 Occupied (beta):
-   E1   -5.7635781215e-01
+   E1   -9.8596073828e+00
+   E2   -3.2674185302e-01
+Virtual (beta):
+   E3    5.1910765282e-02
+   E4    1.0377223495e-01
+   E5    1.0377223495e-01
 
 =======================
 Löwdin Pop. Analysis

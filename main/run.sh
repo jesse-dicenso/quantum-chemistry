@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/He.inp
+infile=inputs/C.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=U_B97M-V

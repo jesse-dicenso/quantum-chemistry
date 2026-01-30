@@ -7,7 +7,12 @@ Most of the implementation is entirely from scratch. The only external code is f
 
 -Methods: RHF, UHF, DFT (RKS, UKS).
 
--Functionals: HF exchange, Slater exchange, VWN5, PW92 (more to come...); evaluated on Gauss-Chebyshev-Lebedev grids (100 radial points, 230 angular points).
+-LDA : Slater exchange, VWN5, PW92.
+-GGA : PBE exchange, PBE (restricted only).
+-MGGA: B97M-V 
+-Nonlocal: VV10
+
+-Grid: Gauss-Chebyshev-Lebedev (100 radial points, 230 angular points).
 
 -Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 
@@ -20,13 +25,11 @@ This program depends on LAPACK for some linear algebra routines (diagonalization
 ```bash
 sudo apt-get install libblas-dev liblapack-dev
 ```
-
-With LAPACK and BLAS installed, simply download all of the program directories/files, navigate to the main/ directory, and run the following command:
+DFT is also parallelized with OpenMP, which must also be installed. To build the main executable, navigate to the main/ directory, and run the following command:
 ```bash
 make
 ```
-
-The Makefile will automatically compile the program and will clean up all object files. You may need to set the compiler/flags yourself. It is important that your compiler knows where the LAPACK/BLAS libraries are located. The executable QC-EXEC should appear in the main/ directory, and it is ready to use.
+The Makefile will automatically compile the program and will clean up all object files. You may need to set the compiler/flags yourself. It is important that your compiler knows where the LAPACK/BLAS/OpenMP libraries are located. The executable QC-EXEC should appear in the main/ directory, and it is ready to use.
 
 ## How to use:
 The program requires a specific input file format. Sample inputs may be found in main/inputs. The input file must be located in the same directory as the executable.
