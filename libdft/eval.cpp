@@ -6,7 +6,6 @@
 void LDA(XC* xc, LDA_ret (*func)(XC*)){
 	const int size_g = xc->g->num_gridpoints;
 	const int size_phi = xc->mol->AOs.size();
-	const std::vector<double> density_per_gpt = 
 	zero_xc_data(xc);
 	#pragma omp parallel
 	{

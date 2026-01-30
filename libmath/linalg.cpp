@@ -12,9 +12,8 @@ Matrix::Matrix(int r, int c, bool sym){
 	}
 }
 
-Matrix::Matrix(const Matrix& A){
-	rows = A.rows;
-	cols = A.cols;
+Matrix::Matrix(const Matrix& A) : rows(A.rows), cols(A.cols)
+{
 	matrix = new double *[rows];
 	for(int i = 0; i < rows; i++){
 		matrix[i] = new double[cols];
@@ -36,9 +35,11 @@ Matrix::Matrix(){
 	cols = 1;
 	matrix = new double *[rows];
 	matrix[0] = new double[cols];
+	matrix[0][0] = 0.0;
 }
 
 Matrix::~Matrix(){
+	if(!matrix) return;
 	for(int i = 0; i < rows; i++){
 		delete[] matrix[i];
 	}
@@ -65,8 +66,43 @@ Matrix Matrix::operator-() const{
 	return mat;
 }
 
-Matrix& Matrix::operator=(Matrix A){
-	swap(*this, A);
+Matrix& Matrix::operator=(const Matrix& A){
+	if(this!=&A){
+		if(matrix){
+			for(int i = 0; i < rows; i++){
+				delete matrix[i];
+			}
+			delete matrix;
+		}
+		rows = A.rows;
+		cols = A.cols;
+		matrix = new double*[rows];
+		for(int i = 0; i < rows; i++){
+			matrix[i] = new double[cols];
+			for(int j = 0; j < cols; j++){
+				matrix[i][j] = A.matrix[i][j];
+			}
+		}
+	}
+	return *this;
+}
+
+Matrix& Matrix::operator=(Matrix&& A) noexcept{
+	if(this!=&A){
+		if(matrix){
+			for(int i = 0; i < rows; i++){
+				delete matrix[i];
+			}
+			delete matrix;
+		}
+		rows = A.rows;
+		cols = A.cols;
+		matrix = A.matrix;
+
+		A.rows = 0;
+		A.cols = 0;
+		A.matrix = nullptr;
+	}
 	return *this;
 }
 
@@ -113,13 +149,6 @@ Matrix Matrix::operator*(const Matrix& A) const{
 		}
 	}
 	return product;	
-}
-
-void swap(Matrix& A, Matrix& B) noexcept{
-	using std::swap;
-	swap(A.rows, B.rows);
-	swap(A.cols, B.cols);
-	swap(A.matrix, B.matrix);
 }
 
 Matrix transpose(const Matrix& A){

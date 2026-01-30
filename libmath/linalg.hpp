@@ -30,7 +30,8 @@ class Matrix{
 		Matrix getcol(int i);
 
 		Matrix operator-() const;
-		Matrix& operator=(Matrix A);
+		Matrix& operator=(const Matrix& A);
+		Matrix& operator=(Matrix&& A) noexcept;
 		Matrix operator+(const Matrix& A) const;
 		Matrix operator-(const Matrix& A) const;
 		Matrix operator*(double c) const;
