@@ -5,67 +5,88 @@ XC::XC(const std::string& method){
 	if		(method.substr(0,2)=="R_"){restricted=true;}
 	else if (method.substr(0,2)=="U_"){restricted=false;}
 	else{throw std::invalid_argument("ERR: method must be restricted 'R_' or unrestricted 'U_'");}
-	xc_functional = xc_register[method];
+    const unsigned int func = xc_register[method.substr(2)];
+    switch(func){
+        case 00 : 
+            xc_functional = nullptr;
+            isHF = true;
+            break;
+        case 01 : 
+            xc_functional = nullptr;
+            isHFSN = true;
+            break;
+        case 10 : 
+            xc_functional = Slater;
+            isLDA = true;
+            break;
+        case 11 : 
+            xc_functional = VWN5;
+            isLDA = true;
+            break;
+        case 12 : 
+            xc_functional = PW92;
+            isLDA = true;
+            break;
+        case 20 : 
+            xc_functional = PBE_X;
+            isGGA = true;
+            break;
+        case 21 : 
+            xc_functional = PBE;
+            isGGA = true;
+            break;/*
+        case 30 : 
+            xc_functional = B97M_V;
+            isMGGA = true;
+            break;*/
+        default :
+            throw std::invalid_argument("ERR: method unknown");
+            break;
+    }
 }
 
-void call_xc_functional(XC* xc){
-	xc->xc_functional(xc);
-}
-
-std::unordered_map<std::string, void (*)(XC*)> xc_register = 
+std::unordered_map<std::string, unsigned int> xc_register = 
 {
-	{ "R_HF"     , R_HF_X  },
-	{ "U_HF"     , U_HF_X  },
-	{ "R_HF_SNX" , R_HF_SNX},
-	{ "R_Slater" , Slater  },
-	{ "U_Slater" , Slater  },
-	{ "R_VWN5"   , VWN5    },
-	{ "U_VWN5"   , VWN5    },
-	{ "R_PW92"   , PW92    },
-	{ "U_PW92"   , PW92    },
-	{ "R_PBE_X"  , PBE_X   },
-	{ "U_PBE_X"  , PBE_X   },
-	{ "R_PBE"    , PBE     },
-	{ "U_B97M-V" , B97M_V  }
+	{ "HF"     , 00},
+	{ "HF_SNX" , 01},
+	{ "Slater" , 10},
+	{ "VWN5"   , 11},
+	{ "PW92"   , 12},
+	{ "PBE_X"  , 20},
+	{ "PBE"    , 21},
+	{ "B97M-V" , 30}
 };
 
-// HF //
-void R_HF_X(XC* xc){
-	assert((xc->P!=nullptr) && (xc->eris!=nullptr) && (xc->FXC!=nullptr));
-	double fxc = 0;
-	xc->E_XC = 0;
-	for(int mu = 0; mu < xc->FXC->rows; mu++){
-		for(int nu = 0; nu < xc->FXC->cols; nu++){
-			fxc = 0;
-			for(int ld = 0; ld < xc->FXC->rows; ld++){
-				for(int sg = 0; sg < xc->FXC->cols; sg++){
-					fxc -= xc->P->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
-				}
-			}
-			xc->FXC->matrix[mu][nu] = 0.5 * fxc;
-			xc->E_XC += xc->FXC->matrix[mu][nu] * xc->P->matrix[mu][nu];
-		}
-	}
-	xc->E_XC *= 0.5;
-}
+///////////////////////////////////////////////////////////////////
+// HF /////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
-void U_HF_X(XC* xc){
-	assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr) && (xc->eris!=nullptr) && (xc->FXC_A!=nullptr) && (xc->FXC_B!=nullptr));
-	double fxc_a, fxc_b;
-	xc->E_XC = 0;
-	for(int mu = 0; mu < xc->FXC_A->rows; mu++){
-		for(int nu = 0; nu < xc->FXC_A->cols; nu++){
-			fxc_a = 0;
-			fxc_b = 0;
-			for(int ld = 0; ld < xc->FXC_A->rows; ld++){
-				for(int sg = 0; sg < xc->FXC_A->cols; sg++){
-					fxc_a -= xc->P_A->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
-					fxc_b -= xc->P_B->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
+void HFX(XC* xc){
+	assert(xc->eris!=nullptr);
+    const int spins = (xc->restricted ? 1 : 2);
+    for(int s = 0; s < spins; s++){
+        assert((xc->P[s]!=nullptr) && (xc->F_XC[s]!=nullptr));
+    }
+    const int dim = xc->F_XC[0]->rows;
+    const double spin_factor = (xc->restricted ? 0.5 : 1.0);
+    std::vector<double> fxc(spins, 0.0);
+	xc->E_XC = 0.0;
+	for(int mu = 0; mu < dim; mu++){
+		for(int nu = 0; nu < dim; nu++){
+            for(int s = 0; s < spins; s++){
+                fxc[s] = 0.0;
+            }
+			for(int ld = 0; ld < dim; ld++){
+				for(int sg = 0; sg < dim; sg++){
+                    for(int s = 0; s < spins; s++){
+					    fxc[s] -= xc->P[s]->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
+                    }
 				}
 			}
-			xc->FXC_A->matrix[mu][nu] = fxc_a;
-			xc->FXC_B->matrix[mu][nu] = fxc_b;
-			xc->E_XC += xc->P_A->matrix[mu][nu] * xc->FXC_A->matrix[mu][nu] + xc->P_B->matrix[mu][nu] * xc->FXC_B->matrix[mu][nu];
+            for(int s = 0; s < spins; s++){
+			    xc->F_XC[s]->matrix[mu][nu] = spin_factor * fxc[s]; 
+			    xc->E_XC += xc->F_XC[s]->matrix[mu][nu] * xc->P[s]->matrix[mu][nu];
+            }
 		}
 	}
 	xc->E_XC *= 0.5;
@@ -82,70 +103,77 @@ void SNX_A(XC* xc, Matrix& A, int gpix){
 	}
 }
 
-void R_HF_SNX(XC* xc){
-	assert((xc->P!=nullptr) && (xc->g!=nullptr) && (xc->mol!=nullptr) && (xc->FXC!=nullptr));
+void HFSNX(XC* xc){
+	assert((xc->g!=nullptr) && (xc->mol!=nullptr));
+    const int spins = (xc->restricted ? 1 : 2);
+    for(int s = 0; s < spins; s++){
+        assert((xc->P[s]!=nullptr) && (xc->F_XC[s]!=nullptr));
+    }
 	const int K = xc->mol->AOs.size();
-	const int gpts = xc->g->num_gridpoints;
+    const double spin_factor = (xc->restricted ? 0.5 : 1.0);
 	const std::vector<double>& w = xc->g->w;
-	const Matrix* p = xc->P;
-	Matrix *fxc = xc->FXC;
+	std::vector<Matrix*>& p = xc->P;
+    std::vector<Matrix*>& fxc = xc->F_XC;
 	Matrix X(K, 1);
 	Matrix A(K, K);
-	Matrix G(K, 1);
-	zero_xc_data(xc);
-	for(int g = 0; g < gpts; g++){
-		eval_bfs_per_gpt(xc, X, g);
+    std::vector<Matrix> G(spins);
+    mat_alloc(G, spins, K, 1);
+	zero_xc_data(xc, spins);
+	for(int g = 0; g < xc->g->num_gridpoints; g++){
+		eval_bfs_per_gpt(*xc, X, g);
 		SNX_A(xc, A, g);
-		G = (A * (*p * X)) * w[g];
+        for(int s = 0; s < spins; s++){
+		    G[s] = (A * (*p[s] * X)) * w[g];
+        }
 		for(int mu = 0; mu < K; mu++){
 			for(int nu = 0; nu < K; nu++){
-				fxc->matrix[mu][nu] -= 0.5 * X.matrix[mu][0] * G.matrix[nu][0];
-				xc->E_XC += (g==(gpts-1) ? fxc->matrix[mu][nu] * p->matrix[mu][nu] : 0.0);
+                for(int s = 0; s < spins; s++){
+				    fxc[s]->matrix[mu][nu] -= spin_factor * X.matrix[mu][0] * G[s].matrix[nu][0];
+                }
 			}
 		}
 	}
+    for(int mu = 0; mu < K; mu++){
+        for(int nu = 0; nu < K; nu++){
+            for(int s = 0; s < spins; s++){
+                xc->E_XC += fxc[s]->matrix[mu][nu] * p[s]->matrix[mu][nu];
+            }
+        }
+    }
 	xc->E_XC *= 0.5;
 }
 
-///////////////////////////////////////////////////////////////
-// !!!													 !!! //
-// !!!   Lambdas below give PER GRID-POINT F_XC / E_XC   !!! //
-// !!!													 !!! //
-///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// !!!	 												     !!! //
+// !!!    Functions below give PER GRID-POINT F_XC / E_XC    !!! //
+// !!!	 												     !!! //
+///////////////////////////////////////////////////////////////////
 
-// LDA ////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// LDA ////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
 namespace _SLATER{
 	inline const double RX = -cbrt(3.0 / M_PI);
 	inline const double UX = -cbrt(6.0 / M_PI);
 }
 
-void Slater(XC* xc){
+void Slater(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
-	if(xc->restricted){assert(xc->P!=nullptr);}
-	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
-
-	auto func_r = [](XC* inp) {
-		const double rho   = inp->rho;
+    if(xc.restricted){
+		const double rho   = inp.rho;
 		const double rho_3 = cbrt(rho);
-		LDA_ret ret;
 		ret.e_XC = RX * (3.0 / 4.0) * rho * rho_3;
-		ret.v_XC = {RX * rho_3};
-		return ret;
-	};
-	auto func_u = [](XC* inp) {
-		const double rho_a   = inp->rho_a;
-		const double rho_b   = inp->rho_b;
+		ret.drho_XC = {RX * rho_3};
+	}
+    else{
+		const double rho_a   = inp.rho_a;
+		const double rho_b   = inp.rho_b;
 		const double rho_a_3 = cbrt(rho_a);
 		const double rho_b_3 = cbrt(rho_b);	
-		LDA_ret ret;
 		ret.e_XC = UX * (3.0 / 4.0) * (rho_a * rho_a_3 + rho_b * rho_b_3);
-		ret.v_XC = { UX * rho_a_3, UX * rho_b_3 };
-		return ret;
-	};
-	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
-	LDA(xc, func);
+		ret.drho_XC = { UX * rho_a_3, UX * rho_b_3 };
+	}
 }
 
 namespace _VWN5{
@@ -166,15 +194,12 @@ namespace _VWN5{
 	inline const     double ddf0 = 4.0 / (9.0 * (cbrt(2) - 1));
 }
 
-void VWN5(XC* xc){
+void VWN5(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
 	using namespace _VWN5;
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
-	if(xc->restricted){assert(xc->P!=nullptr);}
-	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
 	
-	auto func_r = [](XC* inp) {
-		const double rho = inp->rho;
+	if(xc.restricted){
+		const double rho = inp.rho;
 		const double rho_3 = cbrt(rho);
 		const double e_X   = RX * (3.0 / 4.0) * rho * rho_3;
 		const double v_X   = RX * rho_3;
@@ -188,14 +213,12 @@ void VWN5(XC* xc){
 		);
 		const double v_c = eps_c - A_P * (x / (3 * X)) * (c_P / x - b_P * x0_P / (x - x0_P));
 
-		LDA_ret ret;
 		ret.e_XC = e_X + rho * eps_c;
-		ret.v_XC = { v_X + v_c };
-		return ret;
-	};
-	auto func_u = [](XC* inp) {
-		const double rho_a   = inp->rho_a;
-		const double rho_b   = inp->rho_b;
+		ret.drho_XC = { v_X + v_c };
+	}
+	else{
+		const double rho_a   = inp.rho_a;
+		const double rho_b   = inp.rho_b;
 		const double rho     = rho_a + rho_b;
 		const double rho_a_3 = cbrt(rho_a);
 		const double rho_b_3 = cbrt(rho_b);
@@ -232,13 +255,9 @@ void VWN5(XC* xc){
 					(v_c_F - v_c_P) * f * zeta3 * zeta + 
 					rho * (eps_c_F - eps_c_P) * (df * zeta3 * zeta + 4 * zeta3 * f) * dzeta_drho[s];	
 		}
-		LDA_ret ret;
 		ret.e_XC = e_X + e_c;
-		ret.v_XC = v;
-		return ret;
-	};
-	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
-	LDA(xc, func);
+		ret.drho_XC = v;
+	}
 }
 
 namespace _PW92 {
@@ -258,15 +277,12 @@ namespace _PW92 {
 	inline constexpr double b4_F = 0.62517;
 }
 
-void PW92(XC* xc){
+void PW92(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
 	using namespace _PW92;
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
-	if(xc->restricted){assert(xc->P!=nullptr);}
-	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
 
-	auto func_r = [](XC* inp) {
-		const double rho = inp->rho;
+	if(xc.restricted){
+		const double rho = inp.rho;
 		const double rho_3 = cbrt(rho);
 		const double e_X   = RX * (3.0 / 4.0) * rho * rho_3;
 		const double v_X   = RX * rho_3;
@@ -280,14 +296,12 @@ void PW92(XC* xc){
 			1 / (2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
 		const double v_c = eps_c - (rs / 3) * (-2 * A_P * a1_P * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1));
 		
-		LDA_ret ret;
 		ret.e_XC = e_X + rho * eps_c;
-		ret.v_XC = { v_X + v_c };
-		return ret;
-	};
-	auto func_u = [](XC* inp) {
-		const double rho_a   = inp->rho_a;
-		const double rho_b   = inp->rho_b;
+		ret.drho_XC = { v_X + v_c };
+	}
+    else{
+		const double rho_a   = inp.rho_a;
+		const double rho_b   = inp.rho_b;
 		const double rho     = rho_a + rho_b;
 		const double rho_a_3 = cbrt(rho_a);
 		const double rho_b_3 = cbrt(rho_b);
@@ -326,16 +340,14 @@ void PW92(XC* xc){
 		v[0] += eps - (rs / 3) * deps_dr - (zeta - 1) * deps_dz;
 		v[1] += eps - (rs / 3) * deps_dr - (zeta + 1) * deps_dz;
 
-		LDA_ret ret;
 		ret.e_XC = e_X + rho * eps;
-		ret.v_XC = v;
-		return ret;
-	};
-	LDA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
-	LDA(xc, func);
+		ret.drho_XC = v;
+	}
 }
 
-// GGA ////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// GGA ////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
 namespace _PBE{
 	inline constexpr double beta = 0.066725;
@@ -344,25 +356,22 @@ namespace _PBE{
 	inline const     double gamma = (1 - log(2)) / (M_PI * M_PI);
 }
 
-void PBE_X(XC* xc){
+void PBE_X(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
 	using namespace _PBE;
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr));
-	if(xc->restricted){assert(xc->P!=nullptr);}
-	else{assert((xc->P_A!=nullptr) && (xc->P_B!=nullptr));}
 	
-	auto func_r = [](XC* inp) {
+	if(xc.restricted){
 		// Slater Exchange
-		const double rho = inp->rho;
+		const double rho = inp.rho;
 		const double rho_3 = cbrt(rho);
 		const double e_LDA = RX * (3.0 / 4.0) * rho * rho_3;
 		const double v_LDA = RX * rho_3;
 
 		// Enhancement Factor
 		const double grho2 = (
-			inp->gradient_rho[0] * inp->gradient_rho[0] + 
-			inp->gradient_rho[1] * inp->gradient_rho[1] + 
-			inp->gradient_rho[2] * inp->gradient_rho[2] 
+			inp.gradient_rho[0] * inp.gradient_rho[0] + 
+			inp.gradient_rho[1] * inp.gradient_rho[1] + 
+			inp.gradient_rho[2] * inp.gradient_rho[2] 
 		);
 		const double kF = cbrt(3 * M_PI * M_PI * rho);
 		const double s2 = grho2 / (4 * kF * kF * rho * rho);
@@ -377,16 +386,14 @@ void PBE_X(XC* xc){
 		const double de_drho = v_LDA * FX + e_LDA * dFX_drho;
 		const double de_dgrho2 = e_LDA * dFX_dgrho2;
 
-		GGA_ret ret;
 		ret.e_XC = e_LDA * FX;
 		ret.drho_XC = {de_drho};
 		ret.dgamma_XC = {de_dgrho2};
-		return ret;
-	};
-	auto func_u = [](XC* inp) {
+	}
+    else{
 		// Slater Exchange
-		const double rho_a = 2 * inp->rho_a;
-		const double rho_b = 2 * inp->rho_b;
+		const double rho_a = 2 * inp.rho_a;
+		const double rho_b = 2 * inp.rho_b;
 		const double rho_a_3 = cbrt(rho_a);
 		const double rho_b_3 = cbrt(rho_b);
 		const double e_LDA_a = (3.0 / 4.0) * RX * rho_a * rho_a_3;
@@ -396,14 +403,14 @@ void PBE_X(XC* xc){
 		
 		// Enhancement Factor
 		const double grho2_a = 4 * (
-			inp->gradient_rho_a[0] * inp->gradient_rho_a[0] + 
-			inp->gradient_rho_a[1] * inp->gradient_rho_a[1] + 
-			inp->gradient_rho_a[2] * inp->gradient_rho_a[2]
+			inp.gradient_rho_a[0] * inp.gradient_rho_a[0] + 
+			inp.gradient_rho_a[1] * inp.gradient_rho_a[1] + 
+			inp.gradient_rho_a[2] * inp.gradient_rho_a[2]
 		); 
 		const double grho2_b = 4 * (
-			inp->gradient_rho_b[0] * inp->gradient_rho_b[0] + 
-			inp->gradient_rho_b[1] * inp->gradient_rho_b[1] + 
-			inp->gradient_rho_b[2] * inp->gradient_rho_b[2]
+			inp.gradient_rho_b[0] * inp.gradient_rho_b[0] + 
+			inp.gradient_rho_b[1] * inp.gradient_rho_b[1] + 
+			inp.gradient_rho_b[2] * inp.gradient_rho_b[2]
 		); 
 		const double kF_a = cbrt(3 * M_PI * M_PI * rho_a);
 		const double kF_b = cbrt(3 * M_PI * M_PI * rho_b);
@@ -429,89 +436,82 @@ void PBE_X(XC* xc){
 		const double de_dgrho2_a = 2 * e_LDA_a * dFX_dgrho2_a;			// for spin scaling
 		const double de_dgrho2_b = 2 * e_LDA_b * dFX_dgrho2_b;			// of e_X and v_X
 
-		GGA_ret ret;
 		ret.e_XC = 0.5 * (e_LDA_a * FX_a + e_LDA_b * FX_b);
 		ret.drho_XC = {de_drho_a, de_drho_b};
 		ret.dgamma_XC = {de_dgrho2_a, de_dgrho2_b};
-		return ret;
-	};
-	GGA_ret (*func)(XC*) = (xc->restricted ? func_r : func_u);
-	GGA(xc, func);
+	}
 }
 
-void PBE(XC* xc){
+void PBE(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
 	using namespace _PW92;
 	using namespace _PBE;
-	assert(xc->restricted); // only restricted PBE for now!
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P!=nullptr));	
-	auto func = [](XC* inp) {
-		// Slater Exchange
-		const double rho = inp->rho;
-		const double rho_3 = cbrt(rho);
-		const double e_LDA_X = RX * (3.0 / 4.0) * rho * rho_3;
-		const double v_LDA_X = RX * rho_3;
+	assert(xc.restricted); // only restricted PBE for now!
+	
+    // Slater Exchange
+    const double rho = inp.rho;
+    const double rho_3 = cbrt(rho);
+    const double e_LDA_X = RX * (3.0 / 4.0) * rho * rho_3;
+    const double v_LDA_X = RX * rho_3;
 
-		// Enhancement Factor
-		const double grho2 = (
-			inp->gradient_rho[0] * inp->gradient_rho[0] + 
-			inp->gradient_rho[1] * inp->gradient_rho[1] + 
-			inp->gradient_rho[2] * inp->gradient_rho[2] 
-		);
-		const double kF = cbrt(3 * M_PI * M_PI * rho);
-		const double s2 = grho2 / (4 * kF * kF * rho * rho);
-		const double ds2_drho = -8.0 * s2 / (3.0 * rho);
-		const double ds2_dgrho2 = s2 / grho2;	
-		const double FX_d = 1 + mu * s2 / kappa;	
-		const double FX = 1 + kappa - kappa / FX_d;
-		const double dFX_ds2 = mu / (FX_d * FX_d);
-		const double dFX_drho = dFX_ds2 * ds2_drho; 
-		const double dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
- 
-		const double de_X_drho = v_LDA_X * FX + e_LDA_X * dFX_drho;
-		const double de_X_dgrho2 = e_LDA_X * dFX_dgrho2;
+    // Enhancement Factor
+    const double grho2 = (
+        inp.gradient_rho[0] * inp.gradient_rho[0] + 
+        inp.gradient_rho[1] * inp.gradient_rho[1] + 
+        inp.gradient_rho[2] * inp.gradient_rho[2] 
+    );
+    const double kF = cbrt(3 * M_PI * M_PI * rho);
+    const double s2 = grho2 / (4 * kF * kF * rho * rho);
+    const double ds2_drho = -8.0 * s2 / (3.0 * rho);
+    const double ds2_dgrho2 = s2 / grho2;	
+    const double FX_d = 1 + mu * s2 / kappa;	
+    const double FX = 1 + kappa - kappa / FX_d;
+    const double dFX_ds2 = mu / (FX_d * FX_d);
+    const double dFX_drho = dFX_ds2 * ds2_drho; 
+    const double dFX_dgrho2 = dFX_ds2 * ds2_dgrho2;
 
-		GGA_ret ret;
-		ret.e_XC = e_LDA_X * FX;
-		ret.drho_XC = {de_X_drho};
-		ret.dgamma_XC = {de_X_dgrho2};
+    const double de_X_drho = v_LDA_X * FX + e_LDA_X * dFX_drho;
+    const double de_X_dgrho2 = e_LDA_X * dFX_dgrho2;
 
-		// PW92 correlation
-		const double rs = cbrt(3 / (4 * M_PI * rho));
-		const double Q0  = -2 * A_P * (1 + a1_P * rs);
-		const double Q1  =  2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs);
-		const double Q1p =      A_P * (b1_P / sqrt(rs) + 2 * b2_P + 3 * b3_P * sqrt(rs) + 4 * b4_P * rs);
-		
-		const double eps_c_LDA = -2 * A_P * (1 + a1_P * rs) * log(1 + 
-			1 / (2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
-		const double deps_c_LDA_dn = -(rs / 3) * (-2 * A_P * a1_P * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1)) / rho;
-		const double v_c_LDA = eps_c_LDA + rho * deps_c_LDA_dn;
+    ret.e_XC = e_LDA_X * FX;
+    ret.drho_XC = {de_X_drho};
+    ret.dgamma_XC = {de_X_dgrho2};
 
-		// PBE correlation correction
-		const double ks = sqrt(4 * kF / M_PI);
-		const double t2 = grho2 / (4 * ks * ks * rho * rho);
-		double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
-		A_PBE = (A_PBE > 1e10 ? 1e10 : A_PBE);
-		const double dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
-		const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
-		const double H = gamma * log(Q);
+    // PW92 correlation
+    const double rs = cbrt(3 / (4 * M_PI * rho));
+    const double Q0  = -2 * A_P * (1 + a1_P * rs);
+    const double Q1  =  2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs);
+    const double Q1p =      A_P * (b1_P / sqrt(rs) + 2 * b2_P + 3 * b3_P * sqrt(rs) + 4 * b4_P * rs);
+    
+    const double eps_c_LDA = -2 * A_P * (1 + a1_P * rs) * log(1 + 
+        1 / (2 * A_P * (b1_P * sqrt(rs) + b2_P * rs + b3_P * sqrt(intpow(rs, 3)) + b4_P * rs * rs)));
+    const double deps_c_LDA_dn = -(rs / 3) * (-2 * A_P * a1_P * log(1 + 1 / Q1) - Q0 * Q1p / (Q1 * Q1 + Q1)) / rho;
+    const double v_c_LDA = eps_c_LDA + rho * deps_c_LDA_dn;
 
-		const double dH_dt2 = (beta / Q) * (1 + 2 * A_PBE * t2) / (dnm * dnm);
-		const double dt2_dn = -(7.0 / 3.0) * t2 / rho;
-		const double dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
-		const double dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
-		const double dt2_dgrho2 = t2 / grho2;
+    // PBE correlation correction
+    const double ks = sqrt(4 * kF / M_PI);
+    const double t2 = grho2 / (4 * ks * ks * rho * rho);
+    double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
+    A_PBE = (A_PBE > 1e10 ? 1e10 : A_PBE);
+    const double dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
+    const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
+    const double H = gamma * log(Q);
 
-		ret.e_XC += rho * (eps_c_LDA + H);
-		ret.drho_XC[0] += v_c_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_c_LDA_dn);
-		ret.dgamma_XC[0] += rho * dH_dt2 * dt2_dgrho2;
-		return ret;
-	};
-	GGA(xc, func);
+    const double dH_dt2 = (beta / Q) * (1 + 2 * A_PBE * t2) / (dnm * dnm);
+    const double dt2_dn = -(7.0 / 3.0) * t2 / rho;
+    const double dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
+    const double dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
+    const double dt2_dgrho2 = t2 / grho2;
+
+    ret.e_XC += rho * (eps_c_LDA + H);
+    ret.drho_XC[0] += v_c_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_c_LDA_dn);
+    ret.dgamma_XC[0] += rho * dH_dt2 * dt2_dgrho2;
 }
 
-// MGGA ///////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////
+// MGGA ///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+/*
 namespace _B97M_V{
 	inline const double c_tau_ueg = 3.0 * cbrt(36 * M_PI) * M_PI / 5.0;
 
@@ -541,199 +541,192 @@ namespace _B97M_V{
 	inline constexpr double C_VV10 = 0.01;
 }
 
-void B97M_V(XC* xc){
+void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _SLATER;
 	using namespace _B97M_V;
 	assert(!xc->restricted);
-	assert((xc->mol!=nullptr) && (xc->g!=nullptr) && (xc->P_A!=nullptr) && (xc->P_B!=nullptr));	
-	/* Separation of same/opp spin correlation 
-	   requires unrestricted calculation!
-	   E = e_X + e_css + e_cos + e_VV10 */
-	auto func = [](XC* inp)
-	{
-		constexpr double DIV_0_GUARD = 1e-20;
+	// Separation of same/opp spin correlation 
+	// requires unrestricted calculation!
+    // E = e_X + e_css + e_cos + e_VV10
+    constexpr double DIV_0_GUARD = 1e-20;
 
-		const double rho   = inp->rho;
-		const double rho_a = inp->rho_a;
-		const double rho_b = inp->rho_b;
+    const double rho   = inp.rho;
+    const double rho_a = inp.rho_a;
+    const double rho_b = inp.rho_b;
 
-		const double rho_a_div = (rho_a > DIV_0_GUARD ? rho_a : DIV_0_GUARD);
-		const double rho_b_div = (rho_b > DIV_0_GUARD ? rho_b : DIV_0_GUARD);
+    const double rho_a_div = (rho_a > DIV_0_GUARD ? rho_a : DIV_0_GUARD);
+    const double rho_b_div = (rho_b > DIV_0_GUARD ? rho_b : DIV_0_GUARD);
 
-		const std::vector<double>& grho   = inp->gradient_rho;
-		const std::vector<double>& grho_a = inp->gradient_rho_a;
-		const std::vector<double>& grho_b = inp->gradient_rho_b;
+    const std::vector<double>& grho   = inp.gradient_rho;
+    const std::vector<double>& grho_a = inp.gradient_rho_a;
+    const std::vector<double>& grho_b = inp.gradient_rho_b;
 
-		const double tau_a = inp->ke_density_a;
-		const double tau_b = inp->ke_density_b;
+    const double tau_a = inp->ke_density_a;
+    const double tau_b = inp->ke_density_b;
 
-		const double tau_a_div = (tau_a > DIV_0_GUARD ? tau_a : DIV_0_GUARD);
-		const double tau_b_div = (tau_b > DIV_0_GUARD ? tau_b : DIV_0_GUARD);
-		
-		const double grho2   = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
-		const double grho2_a = grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2];
-		const double grho2_b = grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2];
+    const double tau_a_div = (tau_a > DIV_0_GUARD ? tau_a : DIV_0_GUARD);
+    const double tau_b_div = (tau_b > DIV_0_GUARD ? tau_b : DIV_0_GUARD);
+    
+    const double grho2   = grho[0] * grho[0] + grho[1] * grho[1] + grho[2] * grho[2];
+    const double grho2_a = grho_a[0] * grho_a[0] + grho_a[1] * grho_a[1] + grho_a[2] * grho_a[2];
+    const double grho2_b = grho_b[0] * grho_b[0] + grho_b[1] * grho_b[1] + grho_b[2] * grho_b[2];
 
-		const double grho2_a_div = (grho2_a > DIV_0_GUARD ? grho2_a : DIV_0_GUARD);
-		const double grho2_b_div = (grho2_b > DIV_0_GUARD ? grho2_b : DIV_0_GUARD);
-		
-		const double tau_ueg_a = c_tau_ueg * rho_a * cbrt(rho_a * rho_a);
-		const double tau_ueg_b = c_tau_ueg * rho_b * cbrt(rho_b * rho_b);
+    const double grho2_a_div = (grho2_a > DIV_0_GUARD ? grho2_a : DIV_0_GUARD);
+    const double grho2_b_div = (grho2_b > DIV_0_GUARD ? grho2_b : DIV_0_GUARD);
+    
+    const double tau_ueg_a = c_tau_ueg * rho_a * cbrt(rho_a * rho_a);
+    const double tau_ueg_b = c_tau_ueg * rho_b * cbrt(rho_b * rho_b);
 
-		const double t_a = tau_ueg_a / tau_a_div;
-		const double t_b = tau_ueg_b / tau_b_div;
+    const double t_a = tau_ueg_a / tau_a_div;
+    const double t_b = tau_ueg_b / tau_b_div;
 
-		const double dt_a_drho_a = (5.0 / 3.0) * t_a / rho_a_div;
-		const double dt_b_drho_b = (5.0 / 3.0) * t_b / rho_b_div;
-		const double dt_a_dtau_a = -t_a / tau_a_div;
-		const double dt_b_dtau_b = -t_b / tau_b_div;
+    const double dt_a_drho_a = (5.0 / 3.0) * t_a / rho_a_div;
+    const double dt_b_drho_b = (5.0 / 3.0) * t_b / rho_b_div;
+    const double dt_a_dtau_a = -t_a / tau_a_div;
+    const double dt_b_dtau_b = -t_b / tau_b_div;
 
-		// e_X
-		const double e_X_ueg_a = UX * (3.0 / 4.0) * (rho_a * cbrt(rho_a));
-		const double e_X_ueg_b = UX * (3.0 / 4.0) * (rho_b * cbrt(rho_b));
-		const double s2_a = grho2_a / (rho_a_div * rho_a_div * cbrt(rho_a_div * rho_a_div));
-		const double s2_b = grho2_b / (rho_b_div * rho_b_div * cbrt(rho_b_div * rho_b_div));
-		const double wx_a = (t_a - 1) / (t_a + 1);
-		const double wx_b = (t_b - 1) / (t_b + 1);
-		const double ux_a = gamma_x * s2_a / (1 + gamma_x * s2_a);
-		const double ux_b = gamma_x * s2_b / (1 + gamma_x * s2_b);
+    // e_X
+    const double e_X_ueg_a = UX * (3.0 / 4.0) * (rho_a * cbrt(rho_a));
+    const double e_X_ueg_b = UX * (3.0 / 4.0) * (rho_b * cbrt(rho_b));
+    const double s2_a = grho2_a / (rho_a_div * rho_a_div * cbrt(rho_a_div * rho_a_div));
+    const double s2_b = grho2_b / (rho_b_div * rho_b_div * cbrt(rho_b_div * rho_b_div));
+    const double wx_a = (t_a - 1) / (t_a + 1);
+    const double wx_b = (t_b - 1) / (t_b + 1);
+    const double ux_a = gamma_x * s2_a / (1 + gamma_x * s2_a);
+    const double ux_b = gamma_x * s2_b / (1 + gamma_x * s2_b);
 
-		const double gx_a = c_x00 + (c_x10 * wx_a) + (c_x01 * ux_a) + (c_x11 * wx_a * ux_a) + (c_x02 * ux_a * ux_a);
-		const double gx_b = c_x00 + (c_x10 * wx_b) + (c_x01 * ux_b) + (c_x11 * wx_b * ux_b) + (c_x02 * ux_b * ux_b);
+    const double gx_a = c_x00 + (c_x10 * wx_a) + (c_x01 * ux_a) + (c_x11 * wx_a * ux_a) + (c_x02 * ux_a * ux_a);
+    const double gx_b = c_x00 + (c_x10 * wx_b) + (c_x01 * ux_b) + (c_x11 * wx_b * ux_b) + (c_x02 * ux_b * ux_b);
 
-		const double e_X = e_X_ueg_a * gx_a + e_X_ueg_b * gx_b;
+    const double e_X = e_X_ueg_a * gx_a + e_X_ueg_b * gx_b;
 
-		// e_X derivatives
-		const double de_X_ueg_a_drho_a = UX * cbrt(rho_a);
-		const double de_X_ueg_b_drho_b = UX * cbrt(rho_b);
-		const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a_div;
-		const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b_div;
-		const double ds2_a_dgrho2_a = s2_a / grho2_a_div;
-		const double ds2_b_dgrho2_b = s2_b / grho2_b_div;
-		const double dwx_a_dt_a = 2.0 / ((t_a + 1) * (t_a + 1));
-		const double dwx_b_dt_b = 2.0 / ((t_b + 1) * (t_b + 1));
-		const double dux_a_ds2_a = gamma_x / ((1 + gamma_x * s2_a) * (1 + gamma_x * s2_a));
-		const double dux_b_ds2_b = gamma_x / ((1 + gamma_x * s2_b) * (1 + gamma_x * s2_b));
-		const double dgx_a_dwx_a = c_x10 + (c_x11 * ux_a);	
-		const double dgx_b_dwx_b = c_x10 + (c_x11 * ux_b);
-		const double dgx_a_dux_a = c_x01 + (c_x11 * wx_a) + (2 * c_x02 * ux_a);
-		const double dgx_b_dux_b = c_x01 + (c_x11 * wx_b) + (2 * c_x02 * ux_b);
-	
-		const double de_X_drho_a = de_X_ueg_a_drho_a * gx_a + 
-			e_X_ueg_a * (dgx_a_dwx_a * dwx_a_dt_a * dt_a_drho_a + dgx_a_dux_a * dux_a_ds2_a * ds2_a_drho_a);
-		const double de_X_drho_b = de_X_ueg_b_drho_b * gx_b + 
-			e_X_ueg_b * (dgx_b_dwx_b * dwx_b_dt_b * dt_b_drho_b + dgx_b_dux_b * dux_b_ds2_b * ds2_b_drho_b);
+    // e_X derivatives
+    const double de_X_ueg_a_drho_a = UX * cbrt(rho_a);
+    const double de_X_ueg_b_drho_b = UX * cbrt(rho_b);
+    const double ds2_a_drho_a = -(8.0 / 3.0) * s2_a / rho_a_div;
+    const double ds2_b_drho_b = -(8.0 / 3.0) * s2_b / rho_b_div;
+    const double ds2_a_dgrho2_a = s2_a / grho2_a_div;
+    const double ds2_b_dgrho2_b = s2_b / grho2_b_div;
+    const double dwx_a_dt_a = 2.0 / ((t_a + 1) * (t_a + 1));
+    const double dwx_b_dt_b = 2.0 / ((t_b + 1) * (t_b + 1));
+    const double dux_a_ds2_a = gamma_x / ((1 + gamma_x * s2_a) * (1 + gamma_x * s2_a));
+    const double dux_b_ds2_b = gamma_x / ((1 + gamma_x * s2_b) * (1 + gamma_x * s2_b));
+    const double dgx_a_dwx_a = c_x10 + (c_x11 * ux_a);	
+    const double dgx_b_dwx_b = c_x10 + (c_x11 * ux_b);
+    const double dgx_a_dux_a = c_x01 + (c_x11 * wx_a) + (2 * c_x02 * ux_a);
+    const double dgx_b_dux_b = c_x01 + (c_x11 * wx_b) + (2 * c_x02 * ux_b);
 
-		const double de_X_dgrho2_a = e_X_ueg_a * dgx_a_dux_a * dux_a_ds2_a * ds2_a_dgrho2_a;
-		const double de_X_dgrho2_b = e_X_ueg_b * dgx_b_dux_b * dux_b_ds2_b * ds2_b_dgrho2_b;
+    const double de_X_drho_a = de_X_ueg_a_drho_a * gx_a + 
+        e_X_ueg_a * (dgx_a_dwx_a * dwx_a_dt_a * dt_a_drho_a + dgx_a_dux_a * dux_a_ds2_a * ds2_a_drho_a);
+    const double de_X_drho_b = de_X_ueg_b_drho_b * gx_b + 
+        e_X_ueg_b * (dgx_b_dwx_b * dwx_b_dt_b * dt_b_drho_b + dgx_b_dux_b * dux_b_ds2_b * ds2_b_drho_b);
 
-		const double de_X_dtau_a = e_X_ueg_a * dgx_a_dwx_a * dwx_a_dt_a * dt_a_dtau_a;
-		const double de_X_dtau_b = e_X_ueg_b * dgx_b_dwx_b * dwx_b_dt_b * dt_b_dtau_b;
-	
-		// e_css
-		const double eps_pw92_aa = eps_c_pw92(rho_a, 0.0);
-		const double eps_pw92_bb = eps_c_pw92(0.0, rho_b);
-		const double wc_aa = wx_a;
-		const double wc_bb = wx_b;
-		const double uc_aa = gamma_css * s2_a / (1 + gamma_css * s2_a);
-		const double uc_bb = gamma_css * s2_b / (1 + gamma_css * s2_b);
+    const double de_X_dgrho2_a = e_X_ueg_a * dgx_a_dux_a * dux_a_ds2_a * ds2_a_dgrho2_a;
+    const double de_X_dgrho2_b = e_X_ueg_b * dgx_b_dux_b * dux_b_ds2_b * ds2_b_dgrho2_b;
 
-		const double gcss_aa = c_css00 + (c_css10 * wc_aa) + (c_css02 * uc_aa * uc_aa) + (c_css32 * intpow(wc_aa, 3) * uc_aa * uc_aa) + 
-			(c_css42 * intpow(wc_aa, 4) * uc_aa * uc_aa);
-		const double gcss_bb = c_css00 + (c_css10 * wc_bb) + (c_css02 * uc_bb * uc_bb) + (c_css32 * intpow(wc_bb, 3) * uc_bb * uc_bb) + 
-			(c_css42 * intpow(wc_bb, 4) * uc_bb * uc_bb);
+    const double de_X_dtau_a = e_X_ueg_a * dgx_a_dwx_a * dwx_a_dt_a * dt_a_dtau_a;
+    const double de_X_dtau_b = e_X_ueg_b * dgx_b_dwx_b * dwx_b_dt_b * dt_b_dtau_b;
 
-		const double e_css = (rho_a * eps_pw92_aa * gcss_aa) + (rho_b * eps_pw92_bb * gcss_bb);
+    // e_css
+    const double eps_pw92_aa = eps_c_pw92(rho_a, 0.0);
+    const double eps_pw92_bb = eps_c_pw92(0.0, rho_b);
+    const double wc_aa = wx_a;
+    const double wc_bb = wx_b;
+    const double uc_aa = gamma_css * s2_a / (1 + gamma_css * s2_a);
+    const double uc_bb = gamma_css * s2_b / (1 + gamma_css * s2_b);
 
-		// e_css_derivatives
-		const double deps_pw92_aa_drho_a = deps_c_dns_pw92(rho_a, 0.0, 0);
-		const double deps_pw92_bb_drho_b = deps_c_dns_pw92(0.0, rho_b, 1);
-		const double dwc_aa_dt_a = dwx_a_dt_a;
-		const double dwc_bb_dt_b = dwx_b_dt_b;
-		const double duc_aa_ds2_a = gamma_css / ((1 + gamma_css * s2_a) * (1 + gamma_css * s2_a));
-		const double duc_bb_ds2_b = gamma_css / ((1 + gamma_css * s2_b) * (1 + gamma_css * s2_b));
-		
-		const double dgcss_aa_dwc_aa = c_css10 + (3 * c_css32 * wc_aa * wc_aa * uc_aa * uc_aa) + 
-			(4 * c_css42 * intpow(wc_aa, 3) * uc_aa * uc_aa);
-		const double dgcss_bb_dwc_bb = c_css10 + (3 * c_css32 * wc_bb * wc_bb * uc_bb * uc_bb) + 
-			(4 * c_css42 * intpow(wc_bb, 3) * uc_bb * uc_bb);
+    const double gcss_aa = c_css00 + (c_css10 * wc_aa) + (c_css02 * uc_aa * uc_aa) + (c_css32 * intpow(wc_aa, 3) * uc_aa * uc_aa) + 
+        (c_css42 * intpow(wc_aa, 4) * uc_aa * uc_aa);
+    const double gcss_bb = c_css00 + (c_css10 * wc_bb) + (c_css02 * uc_bb * uc_bb) + (c_css32 * intpow(wc_bb, 3) * uc_bb * uc_bb) + 
+        (c_css42 * intpow(wc_bb, 4) * uc_bb * uc_bb);
 
-		const double dgcss_aa_duc_aa = (2 * c_css02 * uc_aa) + (2 * c_css32 * intpow(wc_aa, 3) * uc_aa) + 
-			(2 * c_css42 * intpow(wc_aa, 4) * uc_aa); 
-		const double dgcss_bb_duc_bb = (2 * c_css02 * uc_bb) + (2 * c_css32 * intpow(wc_bb, 3) * uc_bb) + 
-			(2 * c_css42 * intpow(wc_bb, 4) * uc_bb);
+    const double e_css = (rho_a * eps_pw92_aa * gcss_aa) + (rho_b * eps_pw92_bb * gcss_bb);
 
-		const double de_css_drho_a = (eps_pw92_aa + rho_a * deps_pw92_aa_drho_a) * gcss_aa + 
-			rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_drho_a + dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_drho_a);
-		const double de_css_drho_b = (eps_pw92_bb + rho_b * deps_pw92_bb_drho_b) * gcss_bb + 
-			rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_drho_b + dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_drho_b);
-	
-		const double de_css_dgrho2_a = rho_a * eps_pw92_aa * (dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_dgrho2_a);
-		const double de_css_dgrho2_b = rho_b * eps_pw92_bb * (dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_dgrho2_b);
+    // e_css_derivatives
+    const double deps_pw92_aa_drho_a = deps_c_dns_pw92(rho_a, 0.0, 0);
+    const double deps_pw92_bb_drho_b = deps_c_dns_pw92(0.0, rho_b, 1);
+    const double dwc_aa_dt_a = dwx_a_dt_a;
+    const double dwc_bb_dt_b = dwx_b_dt_b;
+    const double duc_aa_ds2_a = gamma_css / ((1 + gamma_css * s2_a) * (1 + gamma_css * s2_a));
+    const double duc_bb_ds2_b = gamma_css / ((1 + gamma_css * s2_b) * (1 + gamma_css * s2_b));
+    
+    const double dgcss_aa_dwc_aa = c_css10 + (3 * c_css32 * wc_aa * wc_aa * uc_aa * uc_aa) + 
+        (4 * c_css42 * intpow(wc_aa, 3) * uc_aa * uc_aa);
+    const double dgcss_bb_dwc_bb = c_css10 + (3 * c_css32 * wc_bb * wc_bb * uc_bb * uc_bb) + 
+        (4 * c_css42 * intpow(wc_bb, 3) * uc_bb * uc_bb);
 
-		const double de_css_dtau_a = rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_dtau_a);
-		const double de_css_dtau_b = rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_dtau_b);
-	
-		// e_cos
-		const double t_ab = 0.5 * (t_a + t_b);
-		const double s2ab = 0.5 * (s2_a + s2_b);
-		const double e_pw92_ab = rho * eps_c_pw92(rho_a, rho_b) - rho_a * eps_pw92_aa - rho_b * eps_pw92_bb;
-		const double wc_ab = (t_ab - 1) / (t_ab + 1);
-		const double uc_ab = gamma_cos * s2ab / (1 + gamma_cos * s2ab);
+    const double dgcss_aa_duc_aa = (2 * c_css02 * uc_aa) + (2 * c_css32 * intpow(wc_aa, 3) * uc_aa) + 
+        (2 * c_css42 * intpow(wc_aa, 4) * uc_aa); 
+    const double dgcss_bb_duc_bb = (2 * c_css02 * uc_bb) + (2 * c_css32 * intpow(wc_bb, 3) * uc_bb) + 
+        (2 * c_css42 * intpow(wc_bb, 4) * uc_bb);
 
-		const double gcos = c_cos00 + (c_cos10 * wc_ab) + (c_cos01 * uc_ab) + (c_cos32 * intpow(wc_ab, 3) * uc_ab * uc_ab) + 
-			(c_cos03 * intpow(uc_ab, 3));
+    const double de_css_drho_a = (eps_pw92_aa + rho_a * deps_pw92_aa_drho_a) * gcss_aa + 
+        rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_drho_a + dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_drho_a);
+    const double de_css_drho_b = (eps_pw92_bb + rho_b * deps_pw92_bb_drho_b) * gcss_bb + 
+        rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_drho_b + dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_drho_b);
 
-		const double e_cos = e_pw92_ab * gcos;
+    const double de_css_dgrho2_a = rho_a * eps_pw92_aa * (dgcss_aa_duc_aa * duc_aa_ds2_a * ds2_a_dgrho2_a);
+    const double de_css_dgrho2_b = rho_b * eps_pw92_bb * (dgcss_bb_duc_bb * duc_bb_ds2_b * ds2_b_dgrho2_b);
 
-		// e_cos derivatives
-		const double de_pw92_ab_drho_a = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 0)) - 
-			(eps_pw92_aa + rho_a * deps_pw92_aa_drho_a);
-		const double de_pw92_ab_drho_b = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 1)) - 
-			(eps_pw92_bb + rho_b * deps_pw92_bb_drho_b);
-		const double dwc_ab_dt_ab = 2.0 / ((t_ab + 1) * (t_ab + 1));
-		const double duc_ab_ds2_ab = gamma_cos / ((1 + gamma_cos * s2ab) * (1 + gamma_cos * s2ab));
-		
-		const double dgcos_dwc_ab = c_cos10 + (3 * c_cos32 * wc_ab * wc_ab * uc_ab * uc_ab);
-		const double dgcos_duc_ab = c_cos01 + (2 * c_cos32 * wc_ab * wc_ab * wc_ab * uc_ab) + (3 * c_cos03 * uc_ab * uc_ab);
+    const double de_css_dtau_a = rho_a * eps_pw92_aa * (dgcss_aa_dwc_aa * dwc_aa_dt_a * dt_a_dtau_a);
+    const double de_css_dtau_b = rho_b * eps_pw92_bb * (dgcss_bb_dwc_bb * dwc_bb_dt_b * dt_b_dtau_b);
 
-		const double de_cos_drho_a = de_pw92_ab_drho_a * gcos + e_pw92_ab * 
-			(dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_drho_a + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_drho_a);
-		const double de_cos_drho_b = de_pw92_ab_drho_b * gcos + e_pw92_ab * 
-			(dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_drho_b + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_drho_b);
+    // e_cos
+    const double t_ab = 0.5 * (t_a + t_b);
+    const double s2ab = 0.5 * (s2_a + s2_b);
+    const double e_pw92_ab = rho * eps_c_pw92(rho_a, rho_b) - rho_a * eps_pw92_aa - rho_b * eps_pw92_bb;
+    const double wc_ab = (t_ab - 1) / (t_ab + 1);
+    const double uc_ab = gamma_cos * s2ab / (1 + gamma_cos * s2ab);
 
-		const double de_cos_dgrho2_a = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_dgrho2_a);
-		const double de_cos_dgrho2_b = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_dgrho2_b);
+    const double gcos = c_cos00 + (c_cos10 * wc_ab) + (c_cos01 * uc_ab) + (c_cos32 * intpow(wc_ab, 3) * uc_ab * uc_ab) + 
+        (c_cos03 * intpow(uc_ab, 3));
 
-		const double de_cos_dtau_a = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_dtau_a);
-		const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
+    const double e_cos = e_pw92_ab * gcos;
 
-		// VV10
-		GGA_ret VV10_ret = VV10_per_gpt(inp, rho, grho2, b_VV10, C_VV10);
-		const double e_VV10 = VV10_ret.e_XC;
-		const double de_VV10_drho = VV10_ret.drho_XC[0];
-		const double de_VV10_dgrho2 = VV10_ret.dgamma_XC[0];
+    // e_cos derivatives
+    const double de_pw92_ab_drho_a = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 0)) - 
+        (eps_pw92_aa + rho_a * deps_pw92_aa_drho_a);
+    const double de_pw92_ab_drho_b = (eps_c_pw92(rho_a, rho_b) + rho * deps_c_dns_pw92(rho_a, rho_b, 1)) - 
+        (eps_pw92_bb + rho_b * deps_pw92_bb_drho_b);
+    const double dwc_ab_dt_ab = 2.0 / ((t_ab + 1) * (t_ab + 1));
+    const double duc_ab_ds2_ab = gamma_cos / ((1 + gamma_cos * s2ab) * (1 + gamma_cos * s2ab));
+    
+    const double dgcos_dwc_ab = c_cos10 + (3 * c_cos32 * wc_ab * wc_ab * uc_ab * uc_ab);
+    const double dgcos_duc_ab = c_cos01 + (2 * c_cos32 * wc_ab * wc_ab * wc_ab * uc_ab) + (3 * c_cos03 * uc_ab * uc_ab);
 
-		MGGA_ret ret;
-		ret.e_XC = e_X + e_css + e_cos + e_VV10;
-		ret.drho_XC = {
-			(de_X_drho_a + de_css_drho_a + de_cos_drho_a + de_VV10_drho),
-			(de_X_drho_b + de_css_drho_b + de_cos_drho_b + de_VV10_drho)
-		};
-		ret.dgamma_XC = {
-			(de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a + de_VV10_dgrho2), 
-			(de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b + de_VV10_dgrho2)
-		};
-		ret.dtau_XC = {
-			(de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a), 
-			(de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b)
-		};
-		return ret;
-	};
-	MGGA(xc, func);
+    const double de_cos_drho_a = de_pw92_ab_drho_a * gcos + e_pw92_ab * 
+        (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_drho_a + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_drho_a);
+    const double de_cos_drho_b = de_pw92_ab_drho_b * gcos + e_pw92_ab * 
+        (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_drho_b + dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_drho_b);
+
+    const double de_cos_dgrho2_a = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_a_dgrho2_a);
+    const double de_cos_dgrho2_b = e_pw92_ab * (dgcos_duc_ab * duc_ab_ds2_ab * 0.5 * ds2_b_dgrho2_b);
+
+    const double de_cos_dtau_a = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_dtau_a);
+    const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
+
+    // VV10
+    XC_ret VV10_ret = VV10_per_gpt(inp, rho, grho2, b_VV10, C_VV10);
+    const double e_VV10 = VV10_ret.e_XC;
+    const double de_VV10_drho = VV10_ret.drho_XC[0];
+    const double de_VV10_dgrho2 = VV10_ret.dgamma_XC[0];
+
+    ret.e_XC = e_X + e_css + e_cos + e_VV10;
+    ret.drho_XC = {
+        (de_X_drho_a + de_css_drho_a + de_cos_drho_a + de_VV10_drho),
+        (de_X_drho_b + de_css_drho_b + de_cos_drho_b + de_VV10_drho)
+    };
+    ret.dgamma_XC = {
+        (de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a + de_VV10_dgrho2), 
+        (de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b + de_VV10_dgrho2)
+    };
+    ret.dtau_XC = {
+        (de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a), 
+        (de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b)
+    };
 }
 
-GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C){
+XC_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C){
 	using namespace _B97M_V;
 	
 	constexpr double DIV_0_GUARD = 1e-20;
@@ -763,7 +756,7 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	const double ref_kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(ref_rho / (9.0 * M_PI)));
 	double omega_p2, omega_g2, omega_0, kappa, ref_g, g_prime, PHI;
 
-	Matrix p =*(xc->P_A) + *(xc->P_B);
+	Matrix p = *(xc->P[0]) + *(xc->P[1]);
 	const std::vector<double>& gx = xc->g->x;
 	const std::vector<double>& gy = xc->g->y;
 	const std::vector<double>& gz = xc->g->z;
@@ -804,10 +797,10 @@ GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, c
 	const double F_rho   = beta + n_PHI + ref_rho * (ref_dkappa_drho * U + ref_domega_0_drho * W);
 	const double F_gamma = ref_rho * ref_domega_0_dgamma * W;
 
-	GGA_ret ret;
+	XC_ret ret;
 	ret.e_XC = e_VV10;
 	ret.drho_XC = {F_rho};
 	ret.dgamma_XC = {F_gamma};
 	return ret;
 }
-
+*/

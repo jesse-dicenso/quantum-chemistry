@@ -41,6 +41,9 @@ class Matrix{
 Matrix I(int r, int c);
 Matrix zero(int r, int c);
 
+// Allocate vector of matrices of size N
+void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols);
+
 Matrix transpose(const Matrix& A);
 
 double Tr(const Matrix& A);

@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/C.inp
+infile=inputs/acetaldehyde.inp
 
 # XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=U_B97M-V
+method=R_PBE
 
 # basis set
 basis=STO-3G
@@ -16,9 +16,10 @@ sps=5
 eps=1e-8
 
 # maximum number of scf iterations
-max_cycles=30
+max_cycles=50
 
 # population analysis: lowdin, mulliken
 pop=lowdin
 
+export OMP_NUM_THREADS=$(nproc);
 time { echo $infile; echo $method; echo $basis; echo $sps; echo $eps; echo $max_cycles; echo $pop; } | ./QC-EXEC | tee outfile.dat

@@ -8,87 +8,72 @@
 #include <string>
 #include <unordered_map>
 
+// XC_* contains per-grid point quantities
+struct XC_inp{
+    double rho   = 0.0;
+    double rho_a = 0.0;
+    double rho_b = 0.0;
+
+    std::vector<double> gradient_rho   = {0.0, 0.0, 0.0};
+    std::vector<double> gradient_rho_a = {0.0, 0.0, 0.0};
+    std::vector<double> gradient_rho_b = {0.0, 0.0, 0.0};
+
+    double ke_density   = 0.0;
+    double ke_density_a = 0.0;
+    double ke_density_b = 0.0;
+};
+
+struct XC_ret{
+	double e_XC;                    // energy density
+	std::vector<double> drho_XC;    // \frac{de_{XC}}{d\rho_{\sigma}}
+	std::vector<double> dgamma_XC;  // \frac{de_{XC}}{d\gamma_{\sigma\sigma'}}
+	std::vector<double> dtau_XC;    // \frac{de_{XC}}{d\tau_{\sigma}}
+    // restricted   : arr[0] only
+    // unrestricted : arr[0] -> aa, arr[1] -> bb, arr[2] -> ab if mixed terms required
+    std::vector<Matrix> F_XC;       // {fxc} if restricted, {a, b} if unrestricted
+};
+
 class XC{
 	public:
 		XC(const std::string& method);
 		
-		void (*xc_functional)(XC*);
+		void (*xc_functional)(const XC& xc, const XC_inp&, XC_ret& ret);
 		bool restricted;
+        bool isHF   = false;
+        bool isHFSN = false;
+        bool isLDA  = false;
+        bool isGGA  = false;
+        bool isMGGA = false;
 
-		Matrix* P   = nullptr;
-		Matrix* FXC = nullptr;		// restricted
-
-		Matrix* P_A   = nullptr;	// unrestricted
-		Matrix* P_B   = nullptr;	//
-		Matrix* FXC_A = nullptr;	//
-		Matrix* FXC_B = nullptr;	//
+        std::vector<Matrix*> P;
+        std::vector<Matrix*> F_XC;
 
 		const std::vector<std::vector<std::vector<std::vector<double>>>>* eris = nullptr;
 		const Molecule* mol = nullptr;
 		const grid* g = nullptr;
 
-		int main_gpt = 0;	// for use in nonlocal functionals which need info from this gpt
-
-		double E_XC = 0.0;
-		
-		double rho   = 0.0;
-		double rho_a = 0.0;
-		double rho_b = 0.0;
-
-		std::vector<double> gradient_rho   = {0.0, 0.0, 0.0};
-		std::vector<double> gradient_rho_a = {0.0, 0.0, 0.0};
-		std::vector<double> gradient_rho_b = {0.0, 0.0, 0.0};
-
-		double ke_density   = 0.0;
-		double ke_density_a = 0.0;
-		double ke_density_b = 0.0;
+        double E_XC = 0.0;
 };
 
-// *_ret objects are per-grid point properties
-
-struct LDA_ret{
-	double e_XC;				// energy density
-	std::vector<double> v_XC;	// potential(s, a/b)
-};
-
-struct GGA_ret{
-	double e_XC;									// 	energy density
-	std::vector<double> drho_XC;					// 	\frac{de_{XC}^{GGA}}{d\rho_{\sigma}}
-	std::vector<double> dgamma_XC; 					/*	\frac{de_{XC}^{GGA}}{d\gamma_{\sigma\sigma'}}
-
-	gamma_{\sigma\sigma'} = \nabla \rho_{\sigma} \cdot \nabla \rho_{\sigma'}
-	if restricted: dgamma_XC[0] is derivative w.r.t. gamma = |\nabla \rho|^2
-	else: dgamma_XC is derivative w.r.t. {\gamma_{aa}, \gamma_{bb}, \gamma_{ab}} */
-};
-
-struct MGGA_ret{
-	double e_XC;
-	std::vector<double> drho_XC;
-	std::vector<double> dgamma_XC;
-	std::vector<double> dtau_XC;
-};
-
-extern std::unordered_map<std::string, void (*)(XC*)> xc_register;
-void call_xc_functional(XC* xc);
+extern std::unordered_map<std::string, unsigned int> xc_register; 
 
 // HF //
-void R_HF_X(XC* xc);
-void U_HF_X(XC* xc);
-void R_HF_SNX(XC* xc);	// Seminumerical Exchange
+void HFX  (XC* xc);
+void HFSNX(XC* xc);	// Seminumerical Exchange
 
 // LDA //
-void Slater(XC* xc);
-void VWN5(XC* xc);
-void PW92(XC* xc);
+void Slater(const XC& xc, const XC_inp& inp, XC_ret& ret);
+void VWN5  (const XC& xc, const XC_inp& inp, XC_ret& ret);
+void PW92  (const XC& xc, const XC_inp& inp, XC_ret& ret);
 
 // GGA //
-void PBE_X(XC* xc);
-void PBE(XC* xc);
+void PBE_X(const XC& xc, const XC_inp& inp, XC_ret& ret);
+void PBE  (const XC& xc, const XC_inp& inp, XC_ret& ret);
 
 // Meta GGA //
-void B97M_V(XC* xc);
+//void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret);
 
 // NLC (per grid point) //
-GGA_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C);
+//XC_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C);
 
 #endif

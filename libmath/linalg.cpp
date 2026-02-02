@@ -177,6 +177,12 @@ Matrix Matrix::getcol(int i){
 	return M;
 }
 
+void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols){
+    for(int i = 0; i < size; i++){
+        AM.emplace_back(rows, cols);
+    }
+}
+
 Matrix I(int r, int c){
 	assert(r==c);
 	Matrix identity(r, c);

@@ -3,6 +3,7 @@
 
 #include "scfgen.hpp"
 #include "../libdft/func.hpp"
+#include "../libdft/eval.hpp"
 
 Matrix UR_density_matrix(const Matrix& C, int N);
 

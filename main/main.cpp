@@ -144,8 +144,8 @@ int main(int argc, char* argv[]){
 		Matrix p  (K, K);
 		Matrix fxc(K, K);
 		
-		xc.P   = &p;
-		xc.FXC = &fxc;
+		xc.P    = {&p};
+		xc.F_XC = {&fxc};
 
 		Matrix f = hcore;
 		Eo = E0(xc, hcore, zero(K,K));
@@ -233,11 +233,8 @@ int main(int argc, char* argv[]){
 		Matrix fxca(K, K);
 		Matrix fxcb(K, K);
 		
-		xc.P     = &pt;
-		xc.P_A   = &pa;
-		xc.P_B   = &pb;
-		xc.FXC_A = &fxca;	
-		xc.FXC_B = &fxcb;	
+		xc.P    = {&pa, &pb, &pt};
+		xc.F_XC = {&fxca, &fxcb};	
 
 		Matrix fa = hcore;
 		Matrix fb = hcore;

@@ -77,10 +77,11 @@ double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>
 }
 
 double E0(const XC& xc, const Matrix& Hcore, const Matrix& J){
+    const int s = (xc.restricted ? 0 : 2);
 	double sum = 0;
-	for(int i = 0; i < xc.P->rows; i++){
-		for(int j = 0; j < xc.P->cols; j++){
-			sum += xc.P->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
+	for(int i = 0; i < xc.P[s]->rows; i++){
+		for(int j = 0; j < xc.P[s]->cols; j++){
+			sum += xc.P[s]->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
 		}
 	}
 	return sum + xc.E_XC;
