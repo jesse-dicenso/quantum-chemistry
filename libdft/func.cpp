@@ -740,6 +740,7 @@ void VV10(XC* xc){
     const Matrix& p = *(xc->P[spinidx]);
     
     double E_XC  = 0.0;
+
     #pragma omp parallel
     {
         std::vector<double> ref_phi_buf(size_p);
@@ -837,77 +838,4 @@ void VV10(XC* xc){
     E_XC += beta * xc->mol->Nelec;
     xc->E_XC += E_XC;
 }
-    /*
-    // OLD BELOW
-    const double ref_rho_div   = (ref_rho   > DIV_0_GUARD ? ref_rho   : DIV_0_GUARD);
-    const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
-    const int ref_gpt = xc->main_gpt;
-    const double beta = sqrt(sqrt(27.0) / b) / 32.0 / b;
 
-    // Integrated Quantities	
-    double n_PHI  = 0.0;
-    double U      = 0.0;
-    double W      = 0.0;
-
-    double rho_gpt, grho2_gpt, R2; 
-    double rho_gpt_div = 0.0; 
-
-    const double ref_omega_p2 = 4.0 * M_PI * ref_rho;
-    const double ref_omega_g2 = C * ref_grho2 * ref_grho2 / (ref_rho_div * ref_rho_div * ref_rho_div * ref_rho_div);
-    const double ref_omega_0 = sqrt(ref_omega_g2 + ref_omega_p2 / 3.0);
-    const double ref_kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(ref_rho / (9.0 * M_PI)));
-    double omega_p2, omega_g2, omega_0, kappa, ref_g, g_prime, PHI;
-
-    Matrix p = *(xc->P[0]) + *(xc->P[1]);
-    const std::vector<double>& gx = xc->g->x;
-    const std::vector<double>& gy = xc->g->y;
-    const std::vector<double>& gz = xc->g->z;
-    const std::vector<double>& gw = xc->g->w;
-    std::vector<double> phi_buf(size_p);
-    std::vector<double> gpx_buf(size_p);
-    std::vector<double> gpy_buf(size_p);
-    std::vector<double> gpz_buf(size_p);
-    std::vector<double> tmp_grd(3);
-    for(int gpt = 0; gpt < size_g; gpt++){
-        eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, tmp_grd, gpt);
-        rho_gpt = density(phi_buf, p);
-        if(rho_gpt < 1e-20){continue;}
-        tmp_grd = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, p);
-        grho2_gpt = (
-            tmp_grd[0] * tmp_grd[0] +
-            tmp_grd[1] * tmp_grd[1] +
-            tmp_grd[2] * tmp_grd[2]
-        );	
-        rho_gpt_div = (rho_gpt > DIV_0_GUARD ? rho_gpt : DIV_0_GUARD);
-
-        R2 = intpow(gx[ref_gpt] - gx[gpt], 2) + intpow(gy[ref_gpt] - gy[gpt], 2) + intpow(gz[ref_gpt] - gz[gpt], 2);
-
-        omega_p2 = 4.0 * M_PI * rho_gpt;
-        omega_g2 = C * grho2_gpt * grho2_gpt / (rho_gpt_div * rho_gpt_div * rho_gpt_div * rho_gpt_div);
-        omega_0 = sqrt(omega_g2 + omega_p2 / 3.0);
-        kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(rho_gpt / (9.0 * M_PI)));
-
-        ref_g   = ref_omega_0 * R2 + ref_kappa;
-        g_prime = omega_0 * R2 + kappa;
-
-        PHI = -3.0 / (2.0 * ref_g * g_prime * (ref_g + g_prime));
-        
-        n_PHI += gw[gpt] * rho_gpt * PHI;
-        U -= gw[gpt] * rho_gpt * PHI * (1 / ref_g + 1 / (ref_g + g_prime));
-        W -= gw[gpt] * rho_gpt * PHI * (1 / ref_g + 1 / (ref_g + g_prime)) * R2;
-
-    }
-    const double e_VV10  = ref_rho * (beta + 0.5 * n_PHI);
-    
-    const double ref_dkappa_drho = ref_kappa / (6.0 * ref_rho_div);
-    const double ref_domega_0_drho = (2.0 / ref_omega_0) * (M_PI / 3.0 - ref_omega_g2 / ref_rho_div);
-    const double ref_domega_0_dgamma = ref_omega_g2 / (ref_grho2_div * ref_omega_0);
-    const double F_rho   = beta + n_PHI + ref_rho * (ref_dkappa_drho * U + ref_domega_0_drho * W);
-    const double F_gamma = ref_rho * ref_domega_0_dgamma * W;
-
-    XC_ret ret;
-    ret.e_XC = e_VV10;
-    ret.drho_XC = {F_rho};
-    ret.dgamma_XC = {F_gamma};
-    return ret;
-*/

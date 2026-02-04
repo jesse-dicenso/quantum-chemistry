@@ -46,8 +46,16 @@ void GGA_MGGA(XC* xc){
 
     double (*dft_per_gpt)(const XC&, const XC_inp&, XC_ret&, const std::vector<double>&, const std::vector<double>&, 
         const std::vector<double>&, const std::vector<double>&, int, int);
-    if(xc->isGGA){dft_per_gpt = GGA_per_gpt;}
-    else if(xc->isMGGA){dft_per_gpt = MGGA_per_gpt;}
+    void (*eval_properties)(const XC&, XC_inp&, const std::vector<double>&, const std::vector<double>&, 
+            const std::vector<double>&, const std::vector<double>&);
+    if(xc->isGGA){
+        dft_per_gpt = GGA_per_gpt;
+        eval_properties = eval_density_grad_per_gpt;
+    }
+    else if(xc->isMGGA){
+        dft_per_gpt = MGGA_per_gpt;
+        eval_properties = eval_density_grad_ke_per_gpt;
+    }
     else{assert((xc->isGGA) || (xc->isMGGA));}
 	#pragma omp parallel
 	{
@@ -62,7 +70,7 @@ void GGA_MGGA(XC* xc){
 		#pragma omp for reduction(+:E_XC)
 		for(int g = 0; g < xc->g->num_gridpoints; g++){
 		    eval_bfs_grad_per_gpt(*xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, g);
-		    eval_density_grad_per_gpt(*xc, inp, phi_buf, gpx_buf, gpy_buf, gpz_buf);
+		    eval_properties(*xc, inp, phi_buf, gpx_buf, gpy_buf, gpz_buf);
 			E_XC += dft_per_gpt(*xc, inp, ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, spins, g);
 		}
         #pragma omp critical

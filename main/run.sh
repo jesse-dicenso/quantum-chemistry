@@ -13,7 +13,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-8
+eps=1e-6
 
 # maximum number of scf iterations
 max_cycles=50
@@ -21,6 +21,5 @@ max_cycles=50
 # population analysis: lowdin, mulliken
 pop=lowdin
 
-export OMP_NUM_THREADS=$(nproc);
-#export OMP_NUM_THREADS=1;
-time ./QC-EXEC $infile $method $basis $sps $eps $max_cycles $pop #> outfile.dat
+export OMP_NUM_THREADS=8;
+time ./QC-EXEC $infile $method $basis $sps $eps $max_cycles $pop | tee outfile.dat
