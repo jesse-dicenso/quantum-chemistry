@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/C.inp
+infile=inputs/acetaldehyde.inp
 
-# XC functional (R_, U_: HF, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=U_B97M-V
+# XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
+method=R_HFSNX
 
 # basis set
 basis=STO-3G
@@ -15,11 +15,14 @@ sps=5
 # convergence criterion (energy)
 eps=1e-6
 
+# screening threshold for ERIs
+int_thresh=1e-14
+
 # maximum number of scf iterations
 max_cycles=50
 
-# population analysis: lowdin, mulliken
+# population analysis: mulliken, lowdin
 pop=lowdin
 
-export OMP_NUM_THREADS=8;
-time ./QC-EXEC $infile $method $basis $sps $eps $max_cycles $pop | tee outfile.dat
+export OMP_NUM_THREADS=$(nproc);
+{ time ./QC-EXEC $infile $method $basis $sps $eps $int_thresh $max_cycles $pop; } 2>&1 | tee outfile.dat

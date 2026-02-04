@@ -14,8 +14,9 @@ int main(int argc, char* argv[]){
 	const string basis_set = argv[3];
 	const int sps = stoi(argv[4]);
 	const double eps = stod(argv[5]);
-	const int max_cycles = stoi(argv[6]);
-	const string pop = argv[7];
+    const double int_thresh = stod(argv[6]);
+	const int max_cycles = stoi(argv[7]);
+	const string pop = argv[8];
 
 	int cycles = 1;
 	double err = eps + 1;
@@ -102,7 +103,7 @@ int main(int argc, char* argv[]){
     cout.flush();
 	
 	cout << "Computing ERIs..." << endl;
-	const vector<vector<vector<vector<double>>>> eris = ERIs(M.AOs);
+	const vector<vector<vector<vector<double>>>> eris = ERIs(M.AOs, int_thresh);
 	cout << "ERIs computed.\n" << endl;
 
 	const grid mol_grid(M);

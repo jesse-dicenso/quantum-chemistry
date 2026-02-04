@@ -1,7 +1,7 @@
 CXX := g++
-CXXFLAGS := -O2 -Wall -fopenmp
+CXXFLAGS := -O3 -Wall -fopenmp
 
-SRC_DIRS := . ../libaux ../libdft ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
+SRC_DIRS := . ../libaux ../libfunc ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
 SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))
 OBJ := $(SRC:.cpp=.o)
 TARGET := QC-EXEC

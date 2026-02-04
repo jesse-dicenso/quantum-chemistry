@@ -5,6 +5,5 @@
 #include "../libscf/scfgen.hpp"
 #include "../libscf/scfr.hpp"
 #include "../libscf/scfu.hpp"
-#include "../libdft/func.hpp"
 
 #endif

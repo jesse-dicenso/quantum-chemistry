@@ -3,6 +3,8 @@
 
 #include "1e.hpp"
 
+#include <omp.h>
+
 class ERI{
 	public:
 		ERI(int p, int q, int r, int s);
@@ -22,6 +24,6 @@ double Gp(const std::vector<int>& L1, const std::vector<int>& L2, const std::vec
 		  const std::vector<double>& xyz1, const std::vector<double>& xyz2, const std::vector<double>& xyz3, const std::vector<double>& xyz4);
 double G(const GF& g1, const GF& g2, const GF& g3, const GF& g4);
 
-std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vector<GF>& phis);
+std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vector<GF>& phis, const double int_thresh);
 
 #endif

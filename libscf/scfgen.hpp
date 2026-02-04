@@ -4,7 +4,7 @@
 #include "../libint/2e.hpp"
 #include "../libmath/linalg.hpp"
 #include "../libmol/mol.hpp"
-#include "../libdft/func.hpp"
+#include "../libfunc/func.hpp"
 
 Matrix overlap(const std::vector<GF>& phis);
 Matrix kinetic(const std::vector<GF>& phis);

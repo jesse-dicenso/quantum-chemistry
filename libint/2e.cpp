@@ -62,28 +62,88 @@ double Gp(const std::vector<int>& L1, const std::vector<int>& L2, const std::vec
 }
 
 double G(const GF& g1, const GF& g2, const GF& g3, const GF& g4){
-		const int size_1 = g1.exps.size();
-		const int size_2 = g2.exps.size();
-		const int size_3 = g1.exps.size();
-		const int size_4 = g2.exps.size();
-        double sum = 0;
-        for(int i = 0; i < size_1; i++){
-            for(int j = 0; j < size_2; j++){
-				for(int k = 0; k < size_3; k++){
-					for(int l = 0; l < size_4; l++){
-						sum +=  g1.N[i] * g2.N[j] * g3.N[k] * g4.N[l] * 
-								g1.d[i] * g2.d[j] * g3.d[k] * g4.d[l] *
-								Gp(g1.shell, g2.shell, g3.shell, g4.shell,
-						   		g1.exps[i], g2.exps[j], g3.exps[k], g4.exps[l],
-						   		g1.xyz, g2.xyz, g3.xyz, g4.xyz);
-				}
-			}
-                }
-        }
-        return sum;
+	const int size_1 = g1.exps.size();
+	const int size_2 = g2.exps.size();
+	const int size_3 = g1.exps.size();
+	const int size_4 = g2.exps.size();
+    const int size_a = size_1 * size_2 * size_3 * size_4;
+    double sum = 0; 
+    #pragma omp parallel for reduction(+:sum)
+    for(int idx = 0; idx < size_a; idx++){
+        const int i = idx / size_4 / size_3 / size_2;
+        const int j = idx / size_4 / size_3 % size_2;
+        const int k = idx / size_4 % size_3;
+        const int l = idx % size_4;
+        sum +=  g1.N[i] * g2.N[j] * g3.N[k] * g4.N[l] * 
+                g1.d[i] * g2.d[j] * g3.d[k] * g4.d[l] *
+                Gp(g1.shell, g2.shell, g3.shell, g4.shell,
+                g1.exps[i], g2.exps[j], g3.exps[k], g4.exps[l],
+                g1.xyz, g2.xyz, g3.xyz, g4.xyz);
+    }
+    return sum;
 }
 
-std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vector<GF>& phis){
+std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vector<GF>& phis, const double int_thresh){
+	const int size_p = phis.size();
+    std::vector<std::vector<std::vector<std::vector<double>>>> result(size_p);
+	for(int i = 0; i < size_p; i++){
+		result[i].resize(size_p);
+		for(int j = 0; j < size_p; j++){
+			result[i][j].resize(size_p);
+			for(int k = 0; k < size_p; k++){
+				result[i][j][k].resize(size_p);
+			}
+		}
+	}
+
+	std::vector<ERI> eris;
+    // Compute all diagonal ERIs
+    for(int mu = 0; mu < size_p; mu++){    
+        for(int nu = 0; nu < size_p; nu++){
+            ERI e_mnmn(mu, nu, mu, nu);
+            const int size_e = eris.size();
+            bool eql = false;
+            for(int i = 0; i < size_e; i++){
+                if(e_mnmn.isEqual(eris[i])){
+                    e_mnmn.eri = eris[i].eri;
+                    eql = true;
+                }
+            }
+            if(!eql){
+                e_mnmn.eri = G(phis[mu], phis[nu], phis[mu], phis[nu]);
+            }
+            result[mu][nu][mu][nu] = e_mnmn.eri;
+            eris.push_back(e_mnmn);
+        }
+    }
+    // Compute all nondiagonal ERIs with Cauchy-Schwarz screening
+    for(int mu = 0; mu < size_p; mu++){    
+        for(int nu = 0; nu < size_p; nu++){
+            for(int ld = 0; ld < size_p; ld++){
+                for(int sg = 0; sg < size_p; sg++){
+                    if((mu==ld) && (nu==sg)){continue;}
+                    ERI e_mnld(mu, nu, ld, sg);
+                    const int size_e = eris.size();
+                    bool eql = false;
+                    for(int i = 0; i < size_e; i++){
+                        if(e_mnld.isEqual(eris[i])){
+                            e_mnld.eri = eris[i].eri;
+                            eql = true;
+                        }
+                    }
+                    if(!eql){
+                        const double Q_mnld = sqrt(result[mu][nu][mu][nu] * result[ld][sg][ld][sg]);
+                        e_mnld.eri = (Q_mnld < int_thresh ? 0.0 : G(phis[mu], phis[nu], phis[ld], phis[sg]));
+                    }
+                    result[mu][nu][ld][sg] = e_mnld.eri;
+                    eris.push_back(e_mnld);
+                }
+            }
+        }
+    }
+    return result;
+}
+    /* OLD ERI CODE *//*
 	const int size_p = phis.size();
 	std::vector<ERI> eris;
 	std::vector<std::vector<std::vector<std::vector<double>>>> result(size_p);
@@ -113,4 +173,4 @@ std::vector<std::vector<std::vector<std::vector<double>>>> ERIs(const std::vecto
 		}
 	}
 	return result;
-}
+}*/

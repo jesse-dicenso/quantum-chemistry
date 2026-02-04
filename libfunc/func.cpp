@@ -107,37 +107,49 @@ void SNX_A(XC* xc, Matrix& A, int gpix){
 void HFSNX(XC* xc){
 	assert((xc->g!=nullptr) && (xc->mol!=nullptr));
     const int spins = (xc->restricted ? 1 : 2);
+    const double spin_factor = (xc->restricted ? 0.5 : 1.0);
     for(int s = 0; s < spins; s++){
         assert((xc->P[s]!=nullptr) && (xc->F_XC[s]!=nullptr));
     }
-	const int K = xc->mol->AOs.size();
-    const double spin_factor = (xc->restricted ? 0.5 : 1.0);
+	const std::vector<Matrix*>& p = xc->P;
+	const int size_p = xc->mol->AOs.size();
+    const int size_g = xc->g->num_gridpoints;
 	const std::vector<double>& w = xc->g->w;
-	std::vector<Matrix*>& p = xc->P;
-    std::vector<Matrix*>& fxc = xc->F_XC;
-	Matrix X(K, 1);
-	Matrix A(K, K);
-    std::vector<Matrix> G(spins);
-    mat_alloc(G, spins, K, 1);
-	zero_xc_data(xc, spins);
-	for(int g = 0; g < xc->g->num_gridpoints; g++){
-		eval_bfs_per_gpt(*xc, X, g);
-		SNX_A(xc, A, g);
-        for(int s = 0; s < spins; s++){
-		    G[s] = (A * (*p[s] * X)) * w[g];
-        }
-		for(int mu = 0; mu < K; mu++){
-			for(int nu = 0; nu < K; nu++){
-                for(int s = 0; s < spins; s++){
-				    fxc[s]->matrix[mu][nu] -= spin_factor * X.matrix[mu][0] * G[s].matrix[nu][0];
-                }
-			}
-		}
-	}
-    for(int mu = 0; mu < K; mu++){
-        for(int nu = 0; nu < K; nu++){
+	
+    zero_xc_data(xc, spins);
+    #pragma omp parallel
+    {
+        std::vector<Matrix> fxc;
+        mat_alloc(fxc, spins, size_p, size_p);
+
+	    Matrix X(size_p, 1);
+	    Matrix A(size_p, size_p);
+        std::vector<Matrix> G;
+        mat_alloc(G, spins, size_p, 1);
+        #pragma omp for
+        for(int g = 0; g < size_g; g++){
+            eval_bfs_per_gpt(*xc, X, g);
+            SNX_A(xc, A, g);
             for(int s = 0; s < spins; s++){
-                xc->E_XC += fxc[s]->matrix[mu][nu] * p[s]->matrix[mu][nu];
+                G[s] = (A * (*p[s] * X)) * w[g];
+                for(int mu = 0; mu < size_p; mu++){
+                    for(int nu = 0; nu < size_p; nu++){
+                        fxc[s].matrix[mu][nu] -= spin_factor * X.matrix[mu][0] * G[s].matrix[nu][0];
+                    }
+                }
+            }
+        }
+        #pragma omp critical
+        {
+            for(int s = 0; s < spins; s++){
+                *(xc->F_XC[s]) = *(xc->F_XC[s]) + fxc[s];
+            }
+        }
+    }
+    for(int mu = 0; mu < size_p; mu++){
+        for(int nu = 0; nu < size_p; nu++){
+            for(int s = 0; s < spins; s++){
+                xc->E_XC += xc->F_XC[s]->matrix[mu][nu] * p[s]->matrix[mu][nu];
             }
         }
     }
