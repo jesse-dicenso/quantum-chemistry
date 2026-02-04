@@ -8,6 +8,7 @@ void scf_xc_call(XC* xc){
     else if(xc->isHFSN){HFSNX(xc);}
     else if(xc->isLDA){LDA(xc);}
     else if((xc->isGGA) || (xc->isMGGA)){GGA_MGGA(xc);}
+    if(xc->isNLC){xc->nlc_functional(xc);}
 }
 
 void LDA(XC* xc){
@@ -36,39 +37,7 @@ void LDA(XC* xc){
 	}
     xc->E_XC = E_XC;
 }
-/*
-void GGA(XC* xc){
-	const int spins = (xc->restricted ? 1 : 2);
-    const int mat_dim = xc->F_XC[0]->rows;
-    double E_XC = 0.0;
-	zero_xc_data(xc, spins);
-	#pragma omp parallel
-	{
-        XC_inp inp;
-        XC_ret ret;
-        mat_alloc(ret.F_XC, spins, mat_dim, mat_dim);
-		std::vector<double> phi_buf(xc->mol->AOs.size());
-        std::vector<double> phi_buf(xc->mol->AOs.size());
-        std::vector<double> gpx_buf(xc->mol->AOs.size());
-        std::vector<double> gpy_buf(xc->mol->AOs.size());
-        std::vector<double> gpz_buf(xc->mol->AOs.size());
-        std::vector<double> temp_grad(3);
-		#pragma omp for reduction(+:E_XC)
-		for(int g = 0; g < xc->g->num_gridpoints; g++){
-		    eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, g);
-		    eval_density_grad_per_gpt(xc, inp, phi_buf, gpx_buf, gpy_buf, gpz_buf);
-			E_XC += GGA_per_gpt(xc, inp, ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, spins, g);
-		}
-        #pragma omp critical
-        { 
-            for(int s = 0; s < spins; s++){
-                *(xc->F_XC[s]) = *(xc->F_XC[s]) + ret.F_XC[s];
-            }
-        }
-	}
-    xc->E_XC = E_XC;
-}
-*/
+
 void GGA_MGGA(XC* xc){
 	const int spins = (xc->restricted ? 1 : 2);
     const int mat_dim = xc->F_XC[0]->rows;
@@ -105,38 +74,7 @@ void GGA_MGGA(XC* xc){
 	}
     xc->E_XC = E_XC;
 }
-/*
-void GGA(XC* xc, GGA_ret (*func)(XC*)){
-	const int size_g = xc->g->num_gridpoints;
-	zero_xc_data(xc);
-	std::vector<double> phi_buf(xc->mol->AOs.size());
-	std::vector<double> gpx_buf(xc->mol->AOs.size());
-	std::vector<double> gpy_buf(xc->mol->AOs.size());
-	std::vector<double> gpz_buf(xc->mol->AOs.size());
-	std::vector<double> temp_grad(3);
-	for(int gpt = 0; gpt < xc->g->num_gridpoints; gpt++){
-		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
-		eval_density_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
-		GGA_per_gpt(xc, func, phi_buf, gpx_buf, gpy_buf, gpz_buf, gpt);
-	}
-}
 
-void MGGA(XC* xc, MGGA_ret (*func)(XC*)){
-	const int size_g = xc->g->num_gridpoints;
-	std::vector<double> phi_buf(xc->mol->AOs.size());
-	std::vector<double> gpx_buf(xc->mol->AOs.size());
-	std::vector<double> gpy_buf(xc->mol->AOs.size());
-	std::vector<double> gpz_buf(xc->mol->AOs.size());
-	std::vector<double> temp_grad(3);
-	zero_xc_data(xc);
-	int &gpt = xc->main_gpt;
-	for(gpt = 0; gpt < size_g; gpt++){
-		eval_bfs_grad_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, temp_grad, gpt);
-		eval_density_grad_ke_per_gpt(xc, phi_buf, gpx_buf, gpy_buf, gpz_buf);
-		MGGA_per_gpt(xc, func, phi_buf, gpx_buf, gpy_buf, gpz_buf, gpt);
-	}
-}
-*/
 // Helpers //////////////////////////////////////////////////////
 
 void zero_xc_data(XC* xc, int spins){

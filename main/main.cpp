@@ -9,21 +9,13 @@ int main(int argc, char* argv[]){
 	//ofstream out("outfile.dat");
 	//auto coutbuf = cout.rdbuf(out.rdbuf());
 
-	string infile;
-	string method;
-	string basis_set;
-	int sps;
-	double eps;
-	int max_cycles;
-	string pop;
-
-	cin >> infile;
-	cin >> method;
-	cin >> basis_set;
-	cin >> sps;
-	cin >> eps;
-	cin >> max_cycles;
-	cin >> pop;
+	const string infile = argv[1];
+	const string method = argv[2];
+	const string basis_set = argv[3];
+	const int sps = stoi(argv[4]);
+	const double eps = stod(argv[5]);
+	const int max_cycles = stoi(argv[6]);
+	const string pop = argv[7];
 
 	int cycles = 1;
 	double err = eps + 1;
@@ -136,6 +128,7 @@ int main(int argc, char* argv[]){
 	cout.flush();	
 
 	const Matrix s = overlap(M.AOs);
+    if(xc.isNLC){xc.overlap = &s;}
 	const Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
 	const Matrix x = m_inv_sqrt(s);
 	

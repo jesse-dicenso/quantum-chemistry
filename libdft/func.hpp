@@ -37,13 +37,15 @@ class XC{
 	public:
 		XC(const std::string& method);
 		
-		void (*xc_functional)(const XC& xc, const XC_inp&, XC_ret& ret);
+		void (*xc_functional)(const XC& xc, const XC_inp&, XC_ret& ret) = nullptr;
+        void (*nlc_functional)(XC* xc) = nullptr;
 		bool restricted;
         bool isHF   = false;
         bool isHFSN = false;
         bool isLDA  = false;
         bool isGGA  = false;
         bool isMGGA = false;
+        bool isNLC  = false;
 
         std::vector<Matrix*> P;
         std::vector<Matrix*> F_XC;
@@ -53,6 +55,10 @@ class XC{
 		const grid* g = nullptr;
 
         double E_XC = 0.0;
+
+        // For VV10
+        const Matrix* overlap = nullptr;
+        std::vector<double> nlc_params;
 };
 
 extern std::unordered_map<std::string, unsigned int> xc_register; 
@@ -71,9 +77,10 @@ void PBE_X(const XC& xc, const XC_inp& inp, XC_ret& ret);
 void PBE  (const XC& xc, const XC_inp& inp, XC_ret& ret);
 
 // Meta GGA //
-//void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret);
+void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret);
 
-// NLC (per grid point) //
+// NLC //
+void VV10(XC* xc);
 //XC_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C);
 
 #endif
