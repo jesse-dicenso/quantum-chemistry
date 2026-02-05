@@ -32,6 +32,9 @@ class Matrix{
 		Matrix operator-(const Matrix& A) const;
 		Matrix operator*(double c) const;
 		Matrix operator*(const Matrix& A) const;
+
+        std::vector<double> getRow(int r) const;
+        std::vector<double> getCol(int c) const;
 };
 
 Matrix I(int r, int c);

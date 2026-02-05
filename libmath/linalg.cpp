@@ -1,13 +1,21 @@
 #include "linalg.hpp"
 
 double& Matrix::operator()(int i, int j){
-    assert((i <= rows) && (j <= cols) && (i >= 0) && (j >= 0));
-    return data[rows * i + j];
+    if(!((i < rows) && (j < cols) && (i >= 0) && (j >= 0))){
+        std::cout << "bad row: " << i << std::endl;
+        std::cout << "bad col: " << j << std::endl;
+        assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
+    }
+    return data[cols * i + j];
 }
 
 const double& Matrix::operator()(int i, int j) const{
-    assert((i <= rows) && (j <= cols) && (i >= 0) && (j >= 0));
-    return data[rows * i + j];
+    if(!((i < rows) && (j < cols) && (i >= 0) && (j >= 0))){
+        std::cout << "bad row: " << i << std::endl;
+        std::cout << "bad col: " << j << std::endl;
+        assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
+    }
+    return data[cols * i + j];
 }
 
 Matrix Matrix::operator-() const{
@@ -28,7 +36,7 @@ Matrix& Matrix::operator=(const Matrix& A){
 Matrix& Matrix::operator=(Matrix&& A){
 	rows = A.rows;
     cols = A.cols;
-    data = A.data;
+    data = std::move(A.data);
 	return *this;
 }
 
@@ -64,11 +72,29 @@ Matrix Matrix::operator*(const Matrix& A) const{
 	for(int i = 0; i < product.rows; i++){
 		for(int j = 0; j < product.cols; j++){
 			for(int k = 0; k < cols; k++){
-				product(i, j) += data[rows * i + k] * A(k, j);
+				product(i, j) += data[cols * i + k] * A(k, j);
 			}
 		}
 	}
 	return product;	
+}
+
+std::vector<double> Matrix::getRow(int r) const{
+    assert((r < rows) && (r >= 0));
+    std::vector<double> row(cols);
+    for(int i = 0; i < cols; i++){
+        row[i] = (*this)(r, i);
+    }
+    return row;
+}
+
+std::vector<double> Matrix::getCol(int c) const{
+    assert((c < cols) && (c >= 0));
+    std::vector<double> col(rows);
+    for(int i = 0; i < rows; i++){
+        col[i] = (*this)(i, c);
+    }
+    return col;
 }
 
 Matrix transpose(const Matrix& A){

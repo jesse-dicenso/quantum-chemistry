@@ -142,12 +142,6 @@ void eval_density_per_gpt(const XC& xc, XC_inp& inp, const std::vector<double>& 
 	}
 }
 
-void eval_density_all_gpt(const XC& xc, std::vector<double>& density, int spinflag){
-    for(int g = 0; g < xc.g->num_gridpoints; g++){
-        //
-    }
-}
-
 void eval_density_grad_per_gpt(const XC& xc, XC_inp& inp, const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
 	const std::vector<double>& gpy_buf, const std::vector<double>& gpz_buf)
 {

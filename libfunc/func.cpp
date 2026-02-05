@@ -733,6 +733,47 @@ void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret){
     };
 }
 
+void eval_VV10_properties(const XC& xc, Matrix& phi_buf, Matrix& gpx_buf, Matrix& gpy_buf, Matrix& gpz_buf, 
+    std::vector<double>& rhos, std::vector<std::vector<double>>& grds)
+{
+    const int size_p = xc.mol->AOs.size();
+    const int size_g = xc.g->num_gridpoints;
+    const int size_r = rhos.size();
+    const int size_d = grds.size();
+
+    assert((phi_buf.rows==size_g) && (phi_buf.cols==size_p));
+    assert((gpx_buf.rows==size_g) && (gpx_buf.cols==size_p));
+    assert((gpy_buf.rows==size_g) && (gpy_buf.cols==size_p));
+    assert((gpz_buf.rows==size_g) && (gpz_buf.cols==size_p));
+    assert((size_r==size_g) && (size_d==size_g));
+
+    const std::vector<GF> bfs = xc.mol->AOs;
+    const std::vector<double>& gx = xc.g->x;
+    const std::vector<double>& gy = xc.g->y;
+    const std::vector<double>& gz = xc.g->z;
+
+    const int spinidx = (xc.restricted ? 0 : 2);
+    const Matrix& p = *(xc.P[spinidx]);
+    
+    #pragma omp parallel
+    {
+        std::vector<double> tmp_grd(3);
+        #pragma omp for
+        for(int g = 0; g < size_g; g++){
+            for(int j = 0; j < size_p; j++){
+                phi_buf(g, j) = bfs[j].evaluate(gx[g], gy[g], gz[g]);
+
+                tmp_grd = bfs[j].evaluate_gradient(gx[g], gy[g], gz[g]);
+                gpx_buf(g, j) = tmp_grd[0];
+                gpy_buf(g, j) = tmp_grd[1];
+                gpz_buf(g, j) = tmp_grd[2];
+            }
+            rhos[g] = density(phi_buf.getRow(g), p);
+            grds[g] = density_gradient(phi_buf.getRow(g), gpx_buf.getRow(g), gpy_buf.getRow(g), gpz_buf.getRow(g), p);
+        }
+    }
+}
+
 void VV10(XC* xc){
 	constexpr double DIV_0_GUARD = 1e-20;
     const double b = xc->nlc_params[0];
@@ -742,19 +783,27 @@ void VV10(XC* xc){
     const int size_p = xc->mol->AOs.size();
     const int size_g = xc->g->num_gridpoints;
 
+    Matrix phi_buf(size_g, size_p);
+    Matrix gpx_buf(size_g, size_p);
+    Matrix gpy_buf(size_g, size_p);
+    Matrix gpz_buf(size_g, size_p);
+    std::vector<double> rho(size_g);
+    std::vector<std::vector<double>> grd(size_g);
+
+    eval_VV10_properties(*xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, rho, grd);
+
     const std::vector<double>& gx = xc->g->x;
     const std::vector<double>& gy = xc->g->y;
     const std::vector<double>& gz = xc->g->z;
     const std::vector<double>& gw = xc->g->w;
    
     const int spins = (xc->restricted ? 1 : 2); 
-    const int spinidx = (xc->restricted ? 0 : 2);
-    const Matrix& p = *(xc->P[spinidx]);
-    
+    //const int spinidx = (xc->restricted ? 0 : 2);
+    //const Matrix& p = *(xc->P[spinidx]);
     double E_XC  = 0.0;
-
     #pragma omp parallel
     {
+        /*
         std::vector<double> ref_phi_buf(size_p);
         std::vector<double> ref_gpx_buf(size_p);
         std::vector<double> ref_gpy_buf(size_p);
@@ -766,30 +815,32 @@ void VV10(XC* xc){
         std::vector<double> gpy_buf(size_p);
         std::vector<double> gpz_buf(size_p);
         std::vector<double> grd_gpt(3);
-       
+        */
+        std::vector<double> ref_grd(3);
+        std::vector<double> grd_gpt(3);
         Matrix F_XC(size_p, size_p);
         #pragma omp for reduction(+:E_XC)
         for(int g = 0; g < size_g * size_g; g++){
-            const int ref_gpt = g / size_g;
-            const int gpt = g % size_g;
+            const int rg = g / size_g;
+            const int sg = g % size_g;
 
-            eval_bfs_grad_per_gpt(*xc, ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, ref_grd, ref_gpt);
-            eval_bfs_grad_per_gpt(*xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, grd_gpt, gpt);
+            //eval_bfs_grad_per_gpt(*xc, ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, ref_grd, ref_gpt);
+            //eval_bfs_grad_per_gpt(*xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, grd_gpt, gpt);
             
-            const double ref_rho = density(ref_phi_buf, p);
+            const double ref_rho = rho[rg]; //density(ref_phi_buf, p);
             const double ref_rho_div = (ref_rho > DIV_0_GUARD ? ref_rho : DIV_0_GUARD);
-            const double rho_gpt = density(phi_buf, p);
+            const double rho_gpt = rho[sg]; //density(phi_buf, p);
             const double rho_gpt_div = (rho_gpt > DIV_0_GUARD ? rho_gpt : DIV_0_GUARD);
             if((ref_rho < 1e-20) || (rho_gpt < 1e-20)){continue;}
 
-            ref_grd = density_gradient(ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, p);
+            ref_grd = grd[rg]; //density_gradient(ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, p);
             const double ref_grho2 = (
                 ref_grd[0] * ref_grd[0] +
                 ref_grd[1] * ref_grd[1] +
                 ref_grd[2] * ref_grd[2]
             );
             const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
-            grd_gpt = density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, p);
+            grd_gpt = grd[sg]; //density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, p);
             const double grho2_gpt = (
                 grd_gpt[0] * grd_gpt[0] +
                 grd_gpt[1] * grd_gpt[1] +
@@ -805,37 +856,43 @@ void VV10(XC* xc){
             const double omega_0 = sqrt(omega_g2 + omega_p2 / 3.0);
             const double kappa = b * (3.0 * M_PI / 2.0) * sqrt(cbrt(rho_gpt / (9.0 * M_PI)));
 
-            const double R2 = intpow(gx[ref_gpt] - gx[gpt], 2) + intpow(gy[ref_gpt] - gy[gpt], 2) + intpow(gz[ref_gpt] - gz[gpt], 2);
+            const double R2 = intpow(gx[rg] - gx[sg], 2) + intpow(gy[rg] - gy[sg], 2) + intpow(gz[rg] - gz[sg], 2);
             const double ref_g   = ref_omega_0 * R2 + ref_kappa;
             const double g_prime = omega_0 * R2 + kappa;
 
             const double PHI = -3.0 / (2.0 * ref_g * g_prime * (ref_g + g_prime));
-            E_XC += gw[ref_gpt] * gw[gpt] * 0.5 * ref_rho * rho_gpt * PHI;
+            E_XC += gw[rg] * gw[sg] * 0.5 * ref_rho * rho_gpt * PHI;
             
             const double ref_dkappa_drho = ref_kappa / (6.0 * ref_rho_div);
             const double ref_domega_0_drho = (2.0 / ref_omega_0) * (M_PI / 3.0 - ref_omega_g2 / ref_rho_div);
             const double g_gprime_term = 1.0 / ref_g + 1.0 / (ref_g + g_prime);
-            const double FXC_LDA_term = gw[ref_gpt] * gw[gpt] * rho_gpt * PHI * (
+            const double FXC_LDA_term = gw[rg] * gw[sg] * rho_gpt * PHI * (
                     1.0 - ref_rho * g_gprime_term * (ref_dkappa_drho + R2 * ref_domega_0_drho)
                 ); 
             const double ref_domega_0_dgamma = ref_omega_g2 / (ref_grho2_div * ref_omega_0);
-            const double FXC_GGA_term = -gw[ref_gpt] * gw[gpt] * ref_rho * rho_gpt * ref_domega_0_dgamma * R2 * PHI * g_gprime_term;
-            
+            const double FXC_GGA_term = -gw[rg] * gw[sg] * ref_rho * rho_gpt * ref_domega_0_dgamma * R2 * PHI * g_gprime_term;
+
+            //std::cout << "-prefock " << rg << " " << sg << " -" << std::endl; 
             for(int mu = 0; mu < size_p; mu++){
-                F_XC(mu, mu) += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[mu] + 
+                F_XC(mu, mu) += /*ref_*/phi_buf(rg, mu) * FXC_LDA_term * /*ref_*/phi_buf(rg, mu) + 
                     2 * FXC_GGA_term * (
-		                ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
-		                ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu])
+		                phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu)) + 
+		                phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu))
+		                //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
+		                //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu])
                     );
                 for(int nu = 0; nu < mu; nu++){
-                    F_XC(mu, nu) += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[nu] + 
+                    F_XC(mu, nu) += /*ref_*/phi_buf(rg, mu) * FXC_LDA_term * /*ref_*/phi_buf(rg, nu) + 
                         2 * FXC_GGA_term * (
-		                    ref_phi_buf[nu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
-		                    ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[nu] + ref_grd[1] * ref_gpy_buf[nu] + ref_grd[2] * ref_gpz_buf[nu])
+		                    phi_buf(rg, nu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu)) + 
+		                    phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, nu) + ref_grd[1] * gpy_buf(rg, nu) + ref_grd[2] * gpz_buf(rg, nu))
+		                    //ref_phi_buf[nu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
+		                    //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[nu] + ref_grd[1] * ref_gpy_buf[nu] + ref_grd[2] * ref_gpz_buf[nu])
                         );
                     F_XC(nu, mu) = F_XC(mu, nu);
                 }
             }
+            //std::cout << "-postfock " << rg << " " << sg << " -" << std::endl; 
         }
         #pragma omp critical
         {
