@@ -6,9 +6,9 @@ Matrix R_density_matrix(const Matrix& C, int N){
 		for(int j = 0; j < C.cols; j++){
 			double sum = 0;
 			for(int a = 0; a < N/2; a++){
-				sum += C.matrix[i][a]*C.matrix[j][a];
+				sum += C(i, a) * C(j, a);
 			} 
-			P.matrix[i][j] = 2*sum;
+			P(i, j) = 2 * sum;
 		}
 	}
 	return P;
@@ -58,25 +58,25 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		double terr = 0;
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
-				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
+				terr += SPe.back()(j, k) * SPe.back()(j, k);
 			}
 		}
 		*err = sqrt(terr);
 
 		// Set up linear system and solve for weights
 		Matrix LHS(n+1, n+1);
-		LHS.matrix[n][n] = 0;
+		LHS(n, n) = 0;
 		for(int j = 0; j < n; j++){
-			LHS.matrix[n][j] = -1;
-			LHS.matrix[j][n] = -1;
+			LHS(n, j) = -1;
+			LHS(j, n) = -1;
 		}
 		for(int j = 0; j < n; j++){
 			for(int k = 0; k < n; k++){
-				LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
+				LHS(j, k) = Tr(SPe[j]*SPe[k]);
 			}
 		}
 		Matrix RHS(n+1, 1);
-		RHS.matrix[n][0] = -1;
+		RHS(n, 0) = -1;
 		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
 			std::cout << "*** WARNING: DIIS SYSTEM ILL-CONDITIONED, SWITCHING TO FPI (min 3 iter) ***" << std::endl;
@@ -112,25 +112,25 @@ void R_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matri
 		double terr = 0;
 		for(int j = 0; j < SPe.back().rows; j++){
 			for(int k = 0; k < SPe.back().cols; k++){
-				terr += SPe.back().matrix[j][k] * SPe.back().matrix[j][k];
+				terr += SPe.back()(j, k) * SPe.back()(j, k);
 			}
 		}
 		*err = sqrt(terr);
 
 		// Set up linear system and solve for weights
 		Matrix LHS(sps+1, sps+1);
-		LHS.matrix[sps][sps] = 0;
+		LHS(sps, sps) = 0;
 		for(int j = 0; j < sps; j++){
-			LHS.matrix[sps][j] = -1;
-			LHS.matrix[j][sps] = -1;
+			LHS(sps, j) = -1;
+			LHS(j, sps) = -1;
 		}
 		for(int j = 0; j < sps; j++){
 			for(int k = 0; k < sps; k++){
-				LHS.matrix[j][k] = Tr(SPe[j]*SPe[k]);
+				LHS(j, k) = Tr(SPe[j]*SPe[k]);
 			}
 		}
 		Matrix RHS(sps+1, 1);
-		RHS.matrix[sps][0] = -1;
+		RHS(sps, 0) = -1;
 
 		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){

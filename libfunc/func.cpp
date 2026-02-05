@@ -80,13 +80,13 @@ void HFX(XC* xc){
 			for(int ld = 0; ld < dim; ld++){
 				for(int sg = 0; sg < dim; sg++){
                     for(int s = 0; s < spins; s++){
-					    fxc[s] -= xc->P[s]->matrix[ld][sg] * (*xc->eris)[mu][ld][sg][nu];
+					    fxc[s] -= (*xc->P[s])(ld, sg) * (*xc->eris)[mu][ld][sg][nu];
                     }
 				}
 			}
             for(int s = 0; s < spins; s++){
-			    xc->F_XC[s]->matrix[mu][nu] = spin_factor * fxc[s]; 
-			    xc->E_XC += xc->F_XC[s]->matrix[mu][nu] * xc->P[s]->matrix[mu][nu];
+			    (*xc->F_XC[s])(mu, nu) = spin_factor * fxc[s]; 
+			    xc->E_XC += (*xc->F_XC[s])(mu, nu) * (*xc->P[s])(mu, nu);
             }
 		}
 	}
@@ -99,7 +99,7 @@ void SNX_A(XC* xc, Matrix& A, int gpix){
 	const std::vector<double> xyzg = {xc->g->x[gpix], xc->g->y[gpix], xc->g->z[gpix]};
 	for(int sg = 0; sg < A.rows; sg++){
 		for(int nu = 0; nu < A.cols; nu++){
-			A.matrix[sg][nu] = V(bfs[sg], bfs[nu], xyzg);
+			A(sg, nu) = V(bfs[sg], bfs[nu], xyzg);
 		}
 	}
 }
@@ -134,7 +134,7 @@ void HFSNX(XC* xc){
                 G[s] = (A * (*p[s] * X)) * w[g];
                 for(int mu = 0; mu < size_p; mu++){
                     for(int nu = 0; nu < size_p; nu++){
-                        fxc[s].matrix[mu][nu] -= spin_factor * X.matrix[mu][0] * G[s].matrix[nu][0];
+                        fxc[s](mu, nu) -= spin_factor * X(mu, 0) * G[s](nu, 0);
                     }
                 }
             }
@@ -149,7 +149,7 @@ void HFSNX(XC* xc){
     for(int mu = 0; mu < size_p; mu++){
         for(int nu = 0; nu < size_p; nu++){
             for(int s = 0; s < spins; s++){
-                xc->E_XC += xc->F_XC[s]->matrix[mu][nu] * p[s]->matrix[mu][nu];
+                xc->E_XC += (*xc->F_XC[s])(mu, nu) * (*p[s])(mu, nu);
             }
         }
     }
@@ -822,18 +822,18 @@ void VV10(XC* xc){
             const double FXC_GGA_term = -gw[ref_gpt] * gw[gpt] * ref_rho * rho_gpt * ref_domega_0_dgamma * R2 * PHI * g_gprime_term;
             
             for(int mu = 0; mu < size_p; mu++){
-                F_XC.matrix[mu][mu] += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[mu] + 
+                F_XC(mu, mu) += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[mu] + 
                     2 * FXC_GGA_term * (
 		                ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
 		                ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu])
                     );
                 for(int nu = 0; nu < mu; nu++){
-                    F_XC.matrix[mu][nu] += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[nu] + 
+                    F_XC(mu, nu) += ref_phi_buf[mu] * FXC_LDA_term * ref_phi_buf[nu] + 
                         2 * FXC_GGA_term * (
 		                    ref_phi_buf[nu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
 		                    ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[nu] + ref_grd[1] * ref_gpy_buf[nu] + ref_grd[2] * ref_gpz_buf[nu])
                         );
-                    F_XC.matrix[nu][mu] = F_XC.matrix[mu][nu];
+                    F_XC(nu, mu) = F_XC(mu, nu);
                 }
             }
         }

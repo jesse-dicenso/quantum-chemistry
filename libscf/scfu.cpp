@@ -6,9 +6,9 @@ Matrix UR_density_matrix(const Matrix& C, int N){
 		for(int j = 0; j < C.cols; j++){
 			double sum = 0;
 			for(int a = 0; a < N; a++){
-				sum += C.matrix[i][a]*C.matrix[j][a];
+				sum += C(i, a) * C(j, a);
 			} 
-			P.matrix[i][j] = sum;
+			P(i, j) = sum;
 		}
 	}
 	return P;
@@ -71,8 +71,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		double terr = 0.0;
 		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
-				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
-						SPeb.back().matrix[j][k] * SPeb.back().matrix[j][k];
+				terr += SPea.back()(j, k) * SPea.back()(j, k) + 
+						SPeb.back()(j, k) * SPeb.back()(j, k);
 			}
 		}
 
@@ -80,19 +80,19 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 	
 		// Set up linear system and solve for weights
 		Matrix LHS(n+1, n+1);
-		LHS.matrix[n][n] = 0;
+		LHS(n, n) = 0;
 		for(int j = 0; j < n; j++){
-			LHS.matrix[n][j] = -1;
-			LHS.matrix[j][n] = -1;
+			LHS(n, j) = -1;
+			LHS(j, n) = -1;
 		}
 		for(int j = 0; j < n; j++){
 			for(int k = 0; k < n; k++){
-				LHS.matrix[j][k] = Tr(SPea[j] * SPea[k] + SPeb[j] * SPeb[k]);
+				LHS(j, k) = Tr(SPea[j] * SPea[k] + SPeb[j] * SPeb[k]);
 			}
 		}
 
 		Matrix RHS(n+1, 1);
-		RHS.matrix[n][0] = -1;
+		RHS(n, 0) = -1;
 
 		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){
@@ -141,8 +141,8 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 		double terr = 0.0;	
 		for(int j = 0; j < SPea.back().rows; j++){
 			for(int k = 0; k < SPea.back().cols; k++){
-				terr += SPea.back().matrix[j][k] * SPea.back().matrix[j][k] + 
-						SPeb.back().matrix[j][k] * SPeb.back().matrix[j][k];
+				terr += SPea.back()(j, k) * SPea.back()(j, k) + 
+						SPeb.back()(j, k) * SPeb.back()(j, k);
 			}
 		}
 
@@ -150,19 +150,19 @@ void UR_DIIS(const Matrix& s, const Matrix& hcore, const Matrix& x, XC* xc, Matr
 	
 		// Set up linear system and solve for weights
 		Matrix LHS(sps+1, sps+1);
-		LHS.matrix[sps][sps] = 0;
+		LHS(sps, sps) = 0;
 		for(int j = 0; j < sps; j++){
-			LHS.matrix[sps][j] = -1;
-			LHS.matrix[j][sps] = -1;
+			LHS(sps, j) = -1;
+			LHS(j, sps) = -1;
 		}
 		for(int j = 0; j < sps; j++){
 			for(int k = 0; k < sps; k++){
-				LHS.matrix[j][k] = Tr(SPea[j] * SPea[k] + SPeb[j] * SPeb[k]);
+				LHS(j, k) = Tr(SPea[j] * SPea[k] + SPeb[j] * SPeb[k]);
 			}
 		}
 
 		Matrix RHS(sps+1, 1);
-		RHS.matrix[sps][0] = -1;
+		RHS(sps, 0) = -1;
 
 		const std::vector<double> weights = sym_linear_solve(LHS, RHS, icd);
 		if(*icd!=0){

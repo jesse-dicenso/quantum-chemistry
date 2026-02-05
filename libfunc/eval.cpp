@@ -112,7 +112,7 @@ void eval_bfs_per_gpt(const XC& xc, Matrix& phi_buf, int gpix){
 	const std::vector<double>& gy = xc.g->y;
 	const std::vector<double>& gz = xc.g->z;
 	for(int j = 0; j < size_p; j++){
-		phi_buf.matrix[j][0] = bfs[j].evaluate(gx[gpix], gy[gpix], gz[gpix]);
+		phi_buf(j, 0) = bfs[j].evaluate(gx[gpix], gy[gpix], gz[gpix]);
 	}	
 }
 
@@ -140,6 +140,12 @@ void eval_density_per_gpt(const XC& xc, XC_inp& inp, const std::vector<double>& 
 		inp.rho_b = density(phi_buf, *(xc.P[1]));
 		inp.rho = inp.rho_a + inp.rho_b;
 	}
+}
+
+void eval_density_all_gpt(const XC& xc, std::vector<double>& density, int spinflag){
+    for(int g = 0; g < xc.g->num_gridpoints; g++){
+        //
+    }
 }
 
 void eval_density_grad_per_gpt(const XC& xc, XC_inp& inp, const std::vector<double>& phi_buf, const std::vector<double>& gpx_buf, 
@@ -194,10 +200,10 @@ double LDA_per_gpt(const XC& xc, const XC_inp& inp, XC_ret& ret, const std::vect
 	xc.xc_functional(xc, inp, ret);
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
-			F_XC[s].matrix[mu][mu] += w * phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu];
+			F_XC[s](mu, mu) += w * phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu];
 			for(int nu = 0; nu < mu; nu++){
-				F_XC[s].matrix[mu][nu] += w * phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu];
-				F_XC[s].matrix[nu][mu] = F_XC[s].matrix[mu][nu];
+				F_XC[s](mu, nu) += w * phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu];
+				F_XC[s](nu, mu) = F_XC[s](mu, nu);
 			}
 		}
 	}
@@ -218,16 +224,16 @@ double GGA_per_gpt(const XC& xc, const XC_inp& inp, XC_ret& ret, const std::vect
 	xc.xc_functional(xc, inp, ret);
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
-			F_XC[s].matrix[mu][mu] += w * (
+			F_XC[s](mu, mu) += w * (
 				phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu] + 
 				GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, mu, s)
 			);
 			for(int nu = 0; nu < mu; nu++){
-				F_XC[s].matrix[mu][nu] += w * (
+				F_XC[s](mu, nu) += w * (
 					phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu] + 
 					GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, nu, s)
 				);
-				F_XC[s].matrix[nu][mu] = F_XC[s].matrix[mu][nu];
+				F_XC[s](nu, mu) = F_XC[s](mu, nu);
 			}
 		}
 	}
@@ -248,18 +254,18 @@ double MGGA_per_gpt(const XC& xc, const XC_inp& inp, XC_ret& ret, const std::vec
 	xc.xc_functional(xc, inp, ret);
 	for(int s = 0; s < spins; s++){
 		for(int mu = 0; mu < dim; mu++){
-			F_XC[s].matrix[mu][mu] += w * (
+			F_XC[s](mu, mu) += w * (
 				phi_buf[mu] * ret.drho_XC[s] * phi_buf[mu] + 
 				GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, mu, s) +
 				MGGA_F_third_term(ret, gpx_buf, gpy_buf, gpz_buf, mu, mu, s)
 			);
 			for(int nu = 0; nu < mu; nu++){
-				F_XC[s].matrix[mu][nu] += w * (
+				F_XC[s](mu, nu) += w * (
 					phi_buf[mu] * ret.drho_XC[s] * phi_buf[nu] + 
 					GGA_F_second_term(ret, phi_buf, gpx_buf, gpy_buf, gpz_buf, grho, mu, nu, s) +
 				    MGGA_F_third_term(ret, gpx_buf, gpy_buf, gpz_buf, mu, nu, s)
 				);
-				F_XC[s].matrix[nu][mu] = F_XC[s].matrix[mu][nu];
+				F_XC[s](nu, mu) = F_XC[s](mu, nu);
 			}
 		}
 	}

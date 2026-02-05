@@ -15,23 +15,19 @@ extern "C" {
 
 class Matrix{
 	public:
-		Matrix(int r, int c);
-		Matrix(const Matrix& A);
-		Matrix(Matrix&& A) noexcept;
-		Matrix();
-		~Matrix();
+		Matrix(int rows_, int cols_) : rows(rows_), cols(cols_), data(rows_ * cols_) {}
+		Matrix(const Matrix& A) : rows(A.rows), cols(A.cols), data(A.data) {}
+		Matrix() : rows(0), cols(0) {}
 
 		int rows;
 		int cols;
-		double **matrix;
+        std::vector<double> data;
 		
-		void printMatrix(int w=20);
-		Matrix getrow(int i);
-		Matrix getcol(int i);
-
+        double& operator()(int i, int j);
+        const double& operator()(int i, int j) const;
 		Matrix operator-() const;
 		Matrix& operator=(const Matrix& A);
-		Matrix& operator=(Matrix&& A) noexcept;
+		Matrix& operator=(Matrix&& A);
 		Matrix operator+(const Matrix& A) const;
 		Matrix operator-(const Matrix& A) const;
 		Matrix operator*(double c) const;
@@ -41,7 +37,7 @@ class Matrix{
 Matrix I(int r, int c);
 Matrix zero(int r, int c);
 
-// Allocate vector of matrices of size N
+// Allocate vector of matrices of size size
 void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols);
 
 Matrix transpose(const Matrix& A);

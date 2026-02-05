@@ -1,118 +1,42 @@
 #include "linalg.hpp"
 
-Matrix::Matrix(int r, int c){
-	rows = r;
-	cols = c;
-	matrix = new double *[rows];
-	for(int i = 0; i < rows; i++){
-		matrix[i] = new double[cols];
-		for(int j = 0; j < cols; j++){
-			matrix[i][j] = 0.0;
-		}
-	}
+double& Matrix::operator()(int i, int j){
+    assert((i <= rows) && (j <= cols) && (i >= 0) && (j >= 0));
+    return data[rows * i + j];
 }
 
-Matrix::Matrix(const Matrix& A) : rows(A.rows), cols(A.cols)
-{
-	matrix = new double *[rows];
-	for(int i = 0; i < rows; i++){
-		matrix[i] = new double[cols];
-		for(int j = 0; j < cols; j++){
-			matrix[i][j] = A.matrix[i][j];
-		}
-	}
-}
-
-Matrix::Matrix(Matrix&& A) noexcept : rows(A.rows), cols(A.cols), matrix(A.matrix)
-{
-	A.rows = 0;
-	A.cols = 0;
-	A.matrix = nullptr;
-}
-
-Matrix::Matrix(){
-	rows = 1;
-	cols = 1;
-	matrix = new double *[rows];
-	matrix[0] = new double[cols];
-	matrix[0][0] = 0.0;
-}
-
-Matrix::~Matrix(){
-	if(!matrix) return;
-	for(int i = 0; i < rows; i++){
-		delete[] matrix[i];
-	}
-	delete[] matrix;
-}
-
-void Matrix::printMatrix(int w){
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			std::cout << std::setw(w) << matrix[i][j] << std::setw(w);
-		}
-		std::cout << '\n';
-	}
-	std::cout << '\n';
+const double& Matrix::operator()(int i, int j) const{
+    assert((i <= rows) && (j <= cols) && (i >= 0) && (j >= 0));
+    return data[rows * i + j];
 }
 
 Matrix Matrix::operator-() const{
 	Matrix mat(rows, cols);
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			mat.matrix[i][j] = -matrix[i][j];
-		}
+	for(int i = 0; i < rows * cols; i++){
+		mat.data[i] = -data[i];
 	}
 	return mat;
 }
 
 Matrix& Matrix::operator=(const Matrix& A){
-	if(this!=&A){
-		if(matrix){
-			for(int i = 0; i < rows; i++){
-				delete[] matrix[i];
-			}
-			delete[] matrix;
-		}
-		rows = A.rows;
-		cols = A.cols;
-		matrix = new double*[rows];
-		for(int i = 0; i < rows; i++){
-			matrix[i] = new double[cols];
-			for(int j = 0; j < cols; j++){
-				matrix[i][j] = A.matrix[i][j];
-			}
-		}
-	}
+	rows = A.rows;
+    cols = A.cols;
+    data = A.data;
 	return *this;
 }
 
-Matrix& Matrix::operator=(Matrix&& A) noexcept{
-	if(this!=&A){
-		if(matrix){
-			for(int i = 0; i < rows; i++){
-				delete[] matrix[i];
-			}
-			delete[] matrix;
-		}
-		rows = A.rows;
-		cols = A.cols;
-		matrix = A.matrix;
-
-		A.rows = 0;
-		A.cols = 0;
-		A.matrix = nullptr;
-	}
+Matrix& Matrix::operator=(Matrix&& A){
+	rows = A.rows;
+    cols = A.cols;
+    data = A.data;
 	return *this;
 }
 
 Matrix Matrix::operator+(const Matrix& A) const{
 	assert((rows==A.rows) && (cols==A.cols));
 	Matrix sum(rows, cols);
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			sum.matrix[i][j] = matrix[i][j] + A.matrix[i][j];
-		}
+	for(int i = 0; i < rows * cols; i++){
+		sum.data[i] = data[i] + A.data[i];
 	}
 	return sum;
 }
@@ -120,20 +44,16 @@ Matrix Matrix::operator+(const Matrix& A) const{
 Matrix Matrix::operator-(const Matrix& A) const{
 	assert((rows==A.rows) && (cols==A.cols));
 	Matrix dif(rows, cols);
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			dif.matrix[i][j] = matrix[i][j] - A.matrix[i][j];
-		}
+	for(int i = 0; i < rows * cols; i++){
+		dif.data[i] = data[i] - A.data[i];
 	}
 	return dif;
 }
 
 Matrix Matrix::operator*(double c) const{
 	Matrix mat(rows, cols);
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			mat.matrix[i][j] = matrix[i][j] * c;
-		}	
+	for(int i = 0; i < rows * cols; i++){
+		mat.data[i] = data[i] * c;	
 	}
 	return mat;
 }
@@ -144,7 +64,7 @@ Matrix Matrix::operator*(const Matrix& A) const{
 	for(int i = 0; i < product.rows; i++){
 		for(int j = 0; j < product.cols; j++){
 			for(int k = 0; k < cols; k++){
-				product.matrix[i][j] += matrix[i][k] * A.matrix[k][j];
+				product(i, j) += data[rows * i + k] * A(k, j);
 			}
 		}
 	}
@@ -155,26 +75,10 @@ Matrix transpose(const Matrix& A){
 	Matrix tp(A.cols, A.rows);
 	for(int i = 0; i < A.rows; i++){
 		for(int j = 0; j < A.cols; j++){
-			tp.matrix[j][i] = A.matrix[i][j];
+			tp(j, i) = A(i, j);
 		}
 	}
 	return tp;
-}
-
-Matrix Matrix::getrow(int i){
-	Matrix M(1, cols);
-	for(int j = 0; j < cols; j++){
-		M.matrix[0][j] = matrix[i][j];
-	}
-	return M;
-}
-
-Matrix Matrix::getcol(int i){
-	Matrix M(rows, 1);
-	for(int j = 0; j < rows; j++){
-		M.matrix[j][0] = matrix[j][i];
-	}
-	return M;
 }
 
 void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols){
@@ -183,11 +87,10 @@ void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols){
     }
 }
 
-Matrix I(int r, int c){
-	assert(r==c);
-	Matrix identity(r, c);
-	for(int i = 0; i < r; i++){
-		identity.matrix[i][i] = 1.0;
+Matrix I(int dim){
+	Matrix identity(dim, dim);
+	for(int i = 0; i < dim; i++){
+		identity(i, i) = 1.0;
 	}
 	return identity;
 }
@@ -201,7 +104,7 @@ double Tr(const Matrix& A){
 	assert(A.rows==A.cols);
 	double sum = 0;
 	for(int i = 0; i < A.rows; i++){
-		sum += A.matrix[i][i];
+		sum += A(i, i);
 	}
 	return sum;
 }
@@ -215,7 +118,7 @@ std::vector<Matrix> diagonalize(const Matrix& A){
 	std::vector<double> a(n*n);	// matrix, column-major
 	for(int i = 0; i < n; i++){
 		for(int j = 0; j < n; j++){
-			a[i+n*j] = A.matrix[i][j];
+			a[i+n*j] = A(i, j);
 		}
 	}
 	int lda = n;			// leading dimension
@@ -250,14 +153,14 @@ std::vector<Matrix> diagonalize(const Matrix& A){
 
 	// Return output as Matrix types
 	Matrix diag(n, n);
-	for(int i = 0; i < diag.rows; i++){
-		diag.matrix[i][i] = w[i];
+	for(int i = 0; i < n; i++){
+		diag(i, i) = w[i];
 	}
 	
 	Matrix Q(n, n);
 	for(int i = 0; i < n; i++){
 		for(int j = 0; j < n; j++){
-			Q.matrix[i][j] = a[i+n*j];
+			Q(i, j) = a[i+n*j];
 		}
 	}	
 
@@ -269,8 +172,8 @@ Matrix m_sqrt(const Matrix& A){
 	assert(A.rows==A.cols);
 	std::vector<Matrix> QR = diagonalize(A);
 	for(int i = 0; i < QR[0].rows; i++){
-		assert(QR[0].matrix[i][i] > 0);
-		QR[0].matrix[i][i] = sqrt(QR[0].matrix[i][i]);
+		assert(QR[0](i, i) > 0);
+		QR[0](i, i) = sqrt(QR[0](i, i));
 	}
 	return QR[1] * QR[0] * transpose(QR[1]);
 }
@@ -279,8 +182,8 @@ Matrix m_inv_sqrt(const Matrix& A){
 	assert(A.rows==A.cols);
 	std::vector<Matrix> QR = diagonalize(A);
 	for(int i = 0; i < QR[0].rows; i++){
-		assert(QR[0].matrix[i][i] > 0);
-		QR[0].matrix[i][i] = 1 / sqrt(QR[0].matrix[i][i]);
+		assert(QR[0](i, i) > 0);
+		QR[0](i, i) = 1 / sqrt(QR[0](i, i));
 	}
 	return QR[1] * QR[0] * transpose(QR[1]);
 }
@@ -295,14 +198,14 @@ std::vector<double> sym_linear_solve(const Matrix& A, const Matrix& B, int* icd)
 	std::vector<double> a(n*n);	// A matrix, column-major
 	for(int i = 0; i < n; i++){
 		for(int j = 0; j < n; j++){
-			a[i+n*j] = A.matrix[i][j];
+			a[i+n*j] = A(i, j);
 		}
 	}
 	int lda = n;				// leading dimension of A
 	std::vector<int> ipiv(n);	// Details of D
 	std::vector<double> b(n);	// B matrix, column-major
 	for(int i = 0; i < n; i++){
-		b[i] = B.matrix[i][0];
+		b[i] = B(i, 0);
 	}
 	int ldb = n;				// leading dimension of B
 	int info;					// successful if info == 0
@@ -332,3 +235,13 @@ std::vector<double> sym_linear_solve(const Matrix& A, const Matrix& B, int* icd)
 
 	return b;
 }
+
+/*void Matrix::printMatrix(int w){
+	for(int i = 0; i < rows; i++){
+		for(int j = 0; j < cols; j++){
+			std::cout << std::setw(w) << data(i * rows + j) << std::setw(w);
+		}
+		std::cout << '\n';
+	}
+	std::cout << '\n';
+}*/

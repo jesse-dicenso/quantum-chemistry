@@ -8,7 +8,7 @@ std::vector<double> Lowdin_PA(const Molecule& M, const Matrix& P, const Matrix& 
 		double sum = 0;
 		for(int j = 0; j < Nphis; j++){
 			if(M.AOs[j].atom_index==i){
-				sum += ShPSh.matrix[j][j];
+				sum += ShPSh(j, j);
 			}
 		}
 		LPA[i] = M.Zvals[i] - sum;
@@ -24,7 +24,7 @@ std::vector<double> Mulliken_PA(const Molecule& M, const Matrix& P, const Matrix
 		double sum = 0;
 		for(int j = 0; j < Nphis; j++){
 			if(M.AOs[j].atom_index==i){
-				sum += PS.matrix[j][j];
+				sum += PS(j, j);
 			}
 		}
 		MPA[i] = M.Zvals[i] - sum;
@@ -38,12 +38,12 @@ void R_print_orbital_energies(const Matrix& E, int Nocc, int Kb){
 	std::cout << "***************\n\n";
 	std::cout << "Occupied:\n";
 	for(int i = 0; i < Nocc/2; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E.matrix[i][i] << std::endl;
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E(i, i) << std::endl;
 	}
 	if(Kb>(Nocc/2)){
 		std::cout << "Virtual:\n";
 		for(int i = Nocc/2; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E.matrix[i][i] << std::endl; 
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E(i, i) << std::endl; 
 		}
 	}
 	std::cout << '\n';
@@ -58,7 +58,7 @@ void R_print_orbitals(const Matrix& C, int Nocc, int Kb){
 	for(int i = 0; i < Nocc/2; i++){
 		std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 		for(int j = 0; j < Kb; j++){
-			std::cout << C.matrix[j][i] << std::setw(20);
+			std::cout << C(j, i) << std::setw(20);
 			count++;
 			if(count>=5){
 				std::cout << '\n' << std::setw(25);
@@ -73,7 +73,7 @@ void R_print_orbitals(const Matrix& C, int Nocc, int Kb){
 		for(int i = Nocc/2; i < Kb; i++){
 			std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 			for(int j = 0; j < Kb; j++){
-				std::cout << C.matrix[j][i] << std::setw(20);
+				std::cout << C(j, i) << std::setw(20);
 				count++;
 				if(count>=5){
 					std::cout << '\n' << std::setw(25);
@@ -93,23 +93,23 @@ void UR_print_orbital_energies(const Matrix& Ea, const Matrix& Eb, int Nocca, in
 	std::cout << "***************\n\n";
 	std::cout << "Occupied (alpha):\n";
 	for(int i = 0; i < Nocca; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea.matrix[i][i] << '\n';
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea(i, i) << '\n';
 	}
 	if(Kb>Nocca){
 		std::cout << "Virtual (alpha):\n";
 		for(int i = Nocca; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea.matrix[i][i] << '\n'; 
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea(i, i) << '\n'; 
 		}
 	}
 	std::cout << '\n';
 	std::cout << "Occupied (beta):\n";
 	for(int i = 0; i < Noccb; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb.matrix[i][i] << '\n';
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb(i, i) << '\n';
 	}
 	if(Kb>Noccb){
 		std::cout << "Virtual (beta):\n";
 		for(int i = Noccb; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb.matrix[i][i] << '\n'; 
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb(i, i) << '\n'; 
 		}
 	}
 	std::cout << '\n';
@@ -124,7 +124,7 @@ void UR_print_orbitals(const Matrix& Ca, const Matrix& Cb, int Nocca, int Noccb,
 	for(int i = 0; i < Nocca; i++){
 		std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 		for(int j = 0; j < Kb; j++){
-			std::cout << Ca.matrix[j][i] << std::setw(20);
+			std::cout << Ca(j, i) << std::setw(20);
 			count++;
 			if(count>=5){
 				std::cout << '\n' << std::setw(25);
@@ -139,7 +139,7 @@ void UR_print_orbitals(const Matrix& Ca, const Matrix& Cb, int Nocca, int Noccb,
 		for(int i = Nocca; i < Kb; i++){
 			std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 			for(int j = 0; j < Kb; j++){
-				std::cout << Ca.matrix[j][i] << std::setw(20);
+				std::cout << Ca(j, i) << std::setw(20);
 				count++;
 				if(count>=5){
 					std::cout << '\n' << std::setw(25);
@@ -156,7 +156,7 @@ void UR_print_orbitals(const Matrix& Ca, const Matrix& Cb, int Nocca, int Noccb,
 	for(int i = 0; i < Noccb; i++){
 		std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 		for(int j = 0; j < Kb; j++){
-			std::cout << Cb.matrix[j][i] << std::setw(20);
+			std::cout << Cb(j, i) << std::setw(20);
 			count++;
 			if(count>=5){
 				std::cout << '\n' << std::setw(25);
@@ -171,7 +171,7 @@ void UR_print_orbitals(const Matrix& Ca, const Matrix& Cb, int Nocca, int Noccb,
 		for(int i = Noccb; i < Kb; i++){
 			std::cout << std::setw(5) << "MO" << i+1 << '\n' << std::setw(25); 
 			for(int j = 0; j < Kb; j++){
-				std::cout << Cb.matrix[j][i] << std::setw(20);
+				std::cout << Cb(j, i) << std::setw(20);
 				count++;
 				if(count>=5){
 					std::cout << '\n' << std::setw(25);

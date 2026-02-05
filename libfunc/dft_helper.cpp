@@ -4,9 +4,9 @@ double density(const std::vector<double>& phis, const Matrix& P){
 	double rho = 0;
 	for(int i = 0; i < P.rows; i++){
 			for(int j = i+1; j < P.cols; j++){
-					rho += 2 * P.matrix[i][j] * phis[i] * phis[j];
+					rho += 2 * P(i, j) * phis[i] * phis[j];
 			}
-			rho += P.matrix[i][i] * phis[i] * phis[i];
+			rho += P(i, i) * phis[i] * phis[i];
 	}
 	return rho;
 }
@@ -18,7 +18,7 @@ std::vector<double> density_gradient(const std::vector<double>& phis, const std:
 	std::vector<double> grad_rho = {0.0, 0.0, 0.0};
 	for(int i = 0; i < P.rows; i++){
 			for(int j = 0; j < P.cols; j++){
-					temp = P.matrix[i][j] * phis[j];
+					temp = P(i, j) * phis[j];
 					grad_rho[0] += gpx[i] * temp;
 					grad_rho[1] += gpy[i] * temp;
 					grad_rho[2] += gpz[i] * temp;
@@ -34,7 +34,7 @@ double ke_density(const std::vector<double>& gpx, const std::vector<double>& gpy
 	double tau = 0;
 	for(int i = 0; i < P.rows; i++){
 		for(int j = 0; j < P.cols; j++){
-			tau += P.matrix[i][j] * (gpx[i] * gpx[j] + gpy[i] * gpy[j] + gpz[i] * gpz[j]);
+			tau += P(i, j) * (gpx[i] * gpx[j] + gpy[i] * gpy[j] + gpz[i] * gpz[j]);
 		}
 	}
 	return tau;
@@ -199,9 +199,9 @@ double density2(double x, double y, double z, const Molecule& mol, const Matrix&
 	for(int i = 0; i < P.rows; i++){
 			eval_gf = mol.AOs[i].evaluate(x, y, z);
 			for(int j = i+1; j < P.cols; j++){
-					rho += 2 * P.matrix[i][j] * eval_gf * mol.AOs[j].evaluate(x, y, z);
+					rho += 2 * P(i, j) * eval_gf * mol.AOs[j].evaluate(x, y, z);
 			}
-			rho += P.matrix[i][i] * eval_gf * eval_gf;
+			rho += P(i, i) * eval_gf * eval_gf;
 	}
 	return rho;
 }

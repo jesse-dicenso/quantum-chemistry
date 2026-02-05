@@ -5,7 +5,7 @@ Matrix overlap(const std::vector<GF>& phis){
 	Matrix M(size_p, size_p);
 	for(int i = 0; i < size_p; i++){
 		for(int j = 0; j < size_p; j++){
-			M.matrix[i][j] = S(phis[i],phis[j]);
+			M(i, j) = S(phis[i], phis[j]);
 		}
 	}
 	return M;
@@ -16,7 +16,7 @@ Matrix kinetic(const std::vector<GF>& phis){
 	Matrix M(size_p, size_p);
 	for(int i = 0; i < size_p; i++){
 		for(int j = 0; j < size_p; j++){
-			M.matrix[i][j] = T(phis[i],phis[j]);
+			M(i, j) = T(phis[i], phis[j]);
 		}
 	}
 	return M;
@@ -29,7 +29,7 @@ Matrix nuclear(const std::vector<GF>& phis, const std::vector<int>& Zvals, const
 	for(int i = 0; i < size_p; i++){
 		for(int j = 0; j < size_p; j++){
 			for(int k = 0; k < size_z; k++){
-				M.matrix[i][j] += -Zvals[k]*V(phis[i],phis[j],xyzN[k]);
+				M(i, j) += -Zvals[k] * V(phis[i], phis[j], xyzN[k]);
 			}
 		}
 	}
@@ -44,10 +44,10 @@ Matrix coulomb(const Matrix& P, const std::vector<std::vector<std::vector<std::v
 			sum = 0;
 			for(int ld = 0; ld < J.rows; ld++){
 				for(int sg = 0; sg < J.cols; sg++){
-					sum += P.matrix[ld][sg] * g[mu][nu][sg][ld];
+					sum += P(ld, sg) * g[mu][nu][sg][ld];
 				}
 			}
-			J.matrix[mu][nu] = sum;
+			J(mu, nu) = sum;
 		}
 	}
 	return J;
@@ -67,9 +67,9 @@ double nucrepl(const std::vector<int>& Z, const std::vector<std::vector<double>>
 		for(int j = (i+1); j < size_z; j++){
 			Ri = xyzN[i];
 			Rj = xyzN[j];
-			Rij = sqrt((Ri[0]-Rj[0])*(Ri[0]-Rj[0]) + 
-				   (Ri[1]-Rj[1])*(Ri[1]-Rj[1]) + 
-				   (Ri[2]-Rj[2])*(Ri[2]-Rj[2]));
+			Rij = sqrt((Ri[0]-Rj[0]) * (Ri[0]-Rj[0]) + 
+				(Ri[1]-Rj[1]) * (Ri[1]-Rj[1]) + 
+				(Ri[2]-Rj[2]) * (Ri[2]-Rj[2]));
 			sum += Z[i]*Z[j] / Rij;
 		}
 	}
@@ -81,7 +81,7 @@ double E0(const XC& xc, const Matrix& Hcore, const Matrix& J){
 	double sum = 0;
 	for(int i = 0; i < xc.P[s]->rows; i++){
 		for(int j = 0; j < xc.P[s]->cols; j++){
-			sum += xc.P[s]->matrix[j][i]*(Hcore.matrix[i][j]+0.5*J.matrix[i][j]);
+			sum += (*xc.P[s])(j, i) * (Hcore(i, j) + 0.5 * J(i, j));
 		}
 	}
 	return sum + xc.E_XC;
