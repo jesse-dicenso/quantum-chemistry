@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/acetaldehyde.inp
+infile=inputs/H2O.inp
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=R_HFSNX
+method=R_PW92
 
 # basis set
 basis=STO-3G
@@ -26,3 +26,4 @@ pop=lowdin
 
 export OMP_NUM_THREADS=$(nproc);
 { time ./QC-EXEC $infile $method $basis $sps $eps $int_thresh $max_cycles $pop; } 2>&1 | tee outfile.dat
+#lldb ./QC-EXEC $infile $method $basis $sps $eps $int_thresh $max_cycles $pop

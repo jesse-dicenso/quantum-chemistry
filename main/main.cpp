@@ -129,10 +129,10 @@ int main(int argc, char* argv[]){
 	cout.flush();	
 
 	const Matrix s = overlap(M.AOs);
+    const Matrix s2 = m_inv_sqrt(s);
     if(xc.isNLC){xc.overlap = &s;}
 	const Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
 	const Matrix x = m_inv_sqrt(s);
-	
 	// Restricted
 	if(r){
 		Matrix p  (K, K);
@@ -150,7 +150,6 @@ int main(int argc, char* argv[]){
 		Matrix c = x * co;
 		
 		p = R_density_matrix(c, N);
-
 		if(sps==0){
 			while((abs(err) > eps) && (cycles <= max_cycles)){
 				R_FPI(s, hcore, x, &xc, &f, &fo, &e, &co, &c, &Eo, &err, N, cycles);
@@ -291,7 +290,7 @@ int main(int argc, char* argv[]){
 					double tempsum = 0;
 					for(int mu = 0; mu < K; mu++){
 						for(int nu = 0; nu < K; nu++){
-							tempsum += (ca.matrix[mu][i])*(cb.matrix[nu][j])*(s.matrix[mu][nu]);
+							tempsum += ca(mu, i) * cb(nu, j) * s(mu, nu);
 						}
 					}
 					S2_UHF -= tempsum*tempsum;
