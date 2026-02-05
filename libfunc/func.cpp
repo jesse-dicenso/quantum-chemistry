@@ -712,25 +712,20 @@ void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret){
     const double de_cos_dtau_a = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_a_dtau_a);
     const double de_cos_dtau_b = e_pw92_ab * (dgcos_dwc_ab * dwc_ab_dt_ab * 0.5 * dt_b_dtau_b);
 
-    // VV10 added later, see VV10 below
-    //XC_ret VV10_ret = VV10_per_gpt(xc, rho, grho2, b_VV10, C_VV10);
-    //const double e_VV10 = VV10_ret.e_XC;
-    //const double de_VV10_drho = VV10_ret.drho_XC[0];
-    //const double de_VV10_dgrho2 = VV10_ret.dgamma_XC[0];
-
-    ret.e_XC = e_X + e_css + e_cos /*+ e_VV10*/;
+    ret.e_XC = e_X + e_css + e_cos;
     ret.drho_XC = {
-        (de_X_drho_a + de_css_drho_a + de_cos_drho_a /*+ de_VV10_drho*/),
-        (de_X_drho_b + de_css_drho_b + de_cos_drho_b /*+ de_VV10_drho*/)
+        (de_X_drho_a + de_css_drho_a + de_cos_drho_a),
+        (de_X_drho_b + de_css_drho_b + de_cos_drho_b)
     };
     ret.dgamma_XC = {
-        (de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a /*+ de_VV10_dgrho2*/), 
-        (de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b /*+ de_VV10_dgrho2*/)
+        (de_X_dgrho2_a + de_css_dgrho2_a + de_cos_dgrho2_a), 
+        (de_X_dgrho2_b + de_css_dgrho2_b + de_cos_dgrho2_b)
     };
     ret.dtau_XC = {
         (de_X_dtau_a + de_css_dtau_a + de_cos_dtau_a), 
         (de_X_dtau_b + de_css_dtau_b + de_cos_dtau_b)
     };
+    // VV10 added later, see VV10 below
 }
 
 void eval_VV10_properties(const XC& xc, Matrix& phi_buf, Matrix& gpx_buf, Matrix& gpy_buf, Matrix& gpz_buf, 
@@ -798,24 +793,9 @@ void VV10(XC* xc){
     const std::vector<double>& gw = xc->g->w;
    
     const int spins = (xc->restricted ? 1 : 2); 
-    //const int spinidx = (xc->restricted ? 0 : 2);
-    //const Matrix& p = *(xc->P[spinidx]);
     double E_XC  = 0.0;
     #pragma omp parallel
     {
-        /*
-        std::vector<double> ref_phi_buf(size_p);
-        std::vector<double> ref_gpx_buf(size_p);
-        std::vector<double> ref_gpy_buf(size_p);
-        std::vector<double> ref_gpz_buf(size_p);
-        std::vector<double> ref_grd(3);
-
-        std::vector<double> phi_buf(size_p);
-        std::vector<double> gpx_buf(size_p);
-        std::vector<double> gpy_buf(size_p);
-        std::vector<double> gpz_buf(size_p);
-        std::vector<double> grd_gpt(3);
-        */
         std::vector<double> ref_grd(3);
         std::vector<double> grd_gpt(3);
         Matrix F_XC(size_p, size_p);
@@ -824,23 +804,20 @@ void VV10(XC* xc){
             const int rg = g / size_g;
             const int sg = g % size_g;
 
-            //eval_bfs_grad_per_gpt(*xc, ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, ref_grd, ref_gpt);
-            //eval_bfs_grad_per_gpt(*xc, phi_buf, gpx_buf, gpy_buf, gpz_buf, grd_gpt, gpt);
-            
-            const double ref_rho = rho[rg]; //density(ref_phi_buf, p);
+            const double ref_rho = rho[rg];
             const double ref_rho_div = (ref_rho > DIV_0_GUARD ? ref_rho : DIV_0_GUARD);
-            const double rho_gpt = rho[sg]; //density(phi_buf, p);
+            const double rho_gpt = rho[sg];
             const double rho_gpt_div = (rho_gpt > DIV_0_GUARD ? rho_gpt : DIV_0_GUARD);
             if((ref_rho < 1e-20) || (rho_gpt < 1e-20)){continue;}
 
-            ref_grd = grd[rg]; //density_gradient(ref_phi_buf, ref_gpx_buf, ref_gpy_buf, ref_gpz_buf, p);
+            ref_grd = grd[rg];
             const double ref_grho2 = (
                 ref_grd[0] * ref_grd[0] +
                 ref_grd[1] * ref_grd[1] +
                 ref_grd[2] * ref_grd[2]
             );
             const double ref_grho2_div = (ref_grho2 > DIV_0_GUARD ? ref_grho2 : DIV_0_GUARD);
-            grd_gpt = grd[sg]; //density_gradient(phi_buf, gpx_buf, gpy_buf, gpz_buf, p);
+            grd_gpt = grd[sg];
             const double grho2_gpt = (
                 grd_gpt[0] * grd_gpt[0] +
                 grd_gpt[1] * grd_gpt[1] +
@@ -872,27 +849,21 @@ void VV10(XC* xc){
             const double ref_domega_0_dgamma = ref_omega_g2 / (ref_grho2_div * ref_omega_0);
             const double FXC_GGA_term = -gw[rg] * gw[sg] * ref_rho * rho_gpt * ref_domega_0_dgamma * R2 * PHI * g_gprime_term;
 
-            //std::cout << "-prefock " << rg << " " << sg << " -" << std::endl; 
             for(int mu = 0; mu < size_p; mu++){
-                F_XC(mu, mu) += /*ref_*/phi_buf(rg, mu) * FXC_LDA_term * /*ref_*/phi_buf(rg, mu) + 
+                F_XC(mu, mu) += phi_buf(rg, mu) * FXC_LDA_term * phi_buf(rg, mu) + 
                     2 * FXC_GGA_term * (
 		                phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu)) + 
 		                phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu))
-		                //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
-		                //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu])
                     );
                 for(int nu = 0; nu < mu; nu++){
-                    F_XC(mu, nu) += /*ref_*/phi_buf(rg, mu) * FXC_LDA_term * /*ref_*/phi_buf(rg, nu) + 
+                    F_XC(mu, nu) += phi_buf(rg, mu) * FXC_LDA_term * phi_buf(rg, nu) + 
                         2 * FXC_GGA_term * (
 		                    phi_buf(rg, nu) * (ref_grd[0] * gpx_buf(rg, mu) + ref_grd[1] * gpy_buf(rg, mu) + ref_grd[2] * gpz_buf(rg, mu)) + 
 		                    phi_buf(rg, mu) * (ref_grd[0] * gpx_buf(rg, nu) + ref_grd[1] * gpy_buf(rg, nu) + ref_grd[2] * gpz_buf(rg, nu))
-		                    //ref_phi_buf[nu] * (ref_grd[0] * ref_gpx_buf[mu] + ref_grd[1] * ref_gpy_buf[mu] + ref_grd[2] * ref_gpz_buf[mu]) + 
-		                    //ref_phi_buf[mu] * (ref_grd[0] * ref_gpx_buf[nu] + ref_grd[1] * ref_gpy_buf[nu] + ref_grd[2] * ref_gpz_buf[nu])
                         );
                     F_XC(nu, mu) = F_XC(mu, nu);
                 }
             }
-            //std::cout << "-postfock " << rg << " " << sg << " -" << std::endl; 
         }
         #pragma omp critical
         {
