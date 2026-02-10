@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/CH4.inp
+infile=inputs/Ne.inp
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=R_HFSNX
@@ -24,5 +24,6 @@ max_cycles=50
 # population analysis: mulliken, lowdin
 pop=lowdin
 
-export OMP_NUM_THREADS=$(nproc);
+#export OMP_NUM_THREADS=$(nproc);
+export OMP_NUM_THREADS=1;
 { time ./QC-EXEC $infile $method $basis $sps $eps $int_thresh $max_cycles $pop; } 2>&1 | tee outfile.dat

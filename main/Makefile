@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -O3 -Wall -fopenmp -g
+CXXFLAGS := -Ofast -Wall -fopenmp -march=native
 
 SRC_DIRS := . ../libaux ../libfunc ../libgf ../libgrid ../libint ../libmath ../libmol ../libscf
 SRC := $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.cpp))

@@ -38,12 +38,14 @@ void R_print_orbital_energies(const Matrix& E, int Nocc, int Kb){
 	std::cout << "***************\n\n";
 	std::cout << "Occupied:\n";
 	for(int i = 0; i < Nocc/2; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E(i, i) << std::endl;
+        const int width = (i < 9 ? 20 : 19);
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << E(i, i) << std::endl;
 	}
 	if(Kb>(Nocc/2)){
 		std::cout << "Virtual:\n";
 		for(int i = Nocc/2; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << E(i, i) << std::endl; 
+            const int width = (i < 9 ? 20 : 19);
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << E(i, i) << std::endl; 
 		}
 	}
 	std::cout << '\n';
@@ -93,23 +95,27 @@ void UR_print_orbital_energies(const Matrix& Ea, const Matrix& Eb, int Nocca, in
 	std::cout << "***************\n\n";
 	std::cout << "Occupied (alpha):\n";
 	for(int i = 0; i < Nocca; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea(i, i) << '\n';
+        const int width = (i < 9 ? 20 : 19);
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << Ea(i, i) << '\n';
 	}
 	if(Kb>Nocca){
 		std::cout << "Virtual (alpha):\n";
 		for(int i = Nocca; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Ea(i, i) << '\n'; 
+            const int width = (i < 9 ? 20 : 19);
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << Ea(i, i) << '\n'; 
 		}
 	}
 	std::cout << '\n';
 	std::cout << "Occupied (beta):\n";
 	for(int i = 0; i < Noccb; i++){
-		std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb(i, i) << '\n';
+        const int width = (i < 9 ? 20 : 19);
+		std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << Eb(i, i) << '\n';
 	}
 	if(Kb>Noccb){
 		std::cout << "Virtual (beta):\n";
 		for(int i = Noccb; i < Kb; i++){
-			std::cout << std::setw(4) << 'E' << i+1 << std::setw(20) << Eb(i, i) << '\n'; 
+            const int width = (i < 9 ? 20 : 19);
+			std::cout << std::setw(4) << 'E' << i+1 << std::setw(width) << Eb(i, i) << '\n'; 
 		}
 	}
 	std::cout << '\n';

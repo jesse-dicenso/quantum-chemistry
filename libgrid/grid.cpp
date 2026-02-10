@@ -4,14 +4,11 @@ grid::grid(const Molecule &mol, int num_radial, int num_angular, int becke_k){
 	// radial  : Gauss-Chebyshev of the second kind
 	// angular : lebedev (degree 230)
 	assert( (num_radial >= 0) && (num_angular == 230) );
-
 	num_gridpoints = num_radial * num_angular * mol.Natoms;
-
 	x.resize(num_gridpoints);
 	y.resize(num_gridpoints);
 	z.resize(num_gridpoints);
 	w.resize(num_gridpoints);
-
 	double gauss_chebyshev_x, gauss_chebyshev_w, gauss_chebyshev_factor, r;
 	int idx = 0;
 	if(mol.Natoms == 1){
@@ -50,8 +47,8 @@ grid::grid(const Molecule &mol, int num_radial, int num_angular, int becke_k){
 			}
 		}
 	}
-
 	assert(num_gridpoints == idx);
+    hilbert_sort(x, y, z, w, num_gridpoints);
 }
 
 // Corresponds to w_me in Becke paper; common k = 3
@@ -59,13 +56,12 @@ double becke_weight(const Molecule &mol, double x, double y, double z, int atom_
 	assert(atom_me < mol.Natoms);
 	double r_i, r_j, R_ij, mu_ij, P_i, P_me = 0;
 	double sum_P = 0;
-
 	if(mol.heteronuclear){
 	double u_ij, a_ij = 0;
 		for(int i = 0; i < mol.Natoms; i++){
 			P_i = 1;
-			r_i = sqrt(	(x-mol.xyz[i][0])*(x-mol.xyz[i][0]) + 
-						(y-mol.xyz[i][1])*(y-mol.xyz[i][1]) + 
+			r_i = sqrt( (x-mol.xyz[i][0])*(x-mol.xyz[i][0]) + 
+					    (y-mol.xyz[i][1])*(y-mol.xyz[i][1]) + 
 						(z-mol.xyz[i][2])*(z-mol.xyz[i][2]));
 			for(int j = 0; j < mol.Natoms; j++){
 				if(j != i){
@@ -123,6 +119,34 @@ double becke_step(double mu, int k){
 		double temp = becke_step(mu, k-1);
 		return 1.5 * temp - 0.5 * temp * temp * temp;
 	}
+}
+
+// Sort gridpoints by their index on a Hilbert curve (default Hilbert depth of 21 in 3D to fit in a 64 bit unsigned int)
+void hilbert_sort(std::vector<double>& x, std::vector<double>& y, std::vector<double>& z, std::vector<double>& w, const int size_g){
+    // Transform coordinates: molecule -> [0,1]^3 -> (uint)[0,2^b)^3 -> Hilbert curve
+    const double x_max = *std::max_element(x.begin(), x.end());
+    const double y_max = *std::max_element(y.begin(), y.end());
+    const double z_max = *std::max_element(z.begin(), z.end());
+
+    const double x_min = *std::min_element(x.begin(), x.end());
+    const double y_min = *std::min_element(y.begin(), y.end());
+    const double z_min = *std::min_element(z.begin(), z.end());
+
+    const double p_max = (x_max > y_max ? (x_max > z_max ? x_max : z_max) : (y_max > z_max ? y_max : z_max));
+    const double p_min = (x_min < y_min ? (x_min < z_min ? x_min : z_min) : (y_min < z_min ? y_min : z_min));
+    const double delta = p_max - p_min;
+
+    const uint32_t M = 1 << 21;
+    uint32_t X[3];
+    std::vector<uint64_t> H(size_g);
+    for(int i = 0; i < size_g; i++){
+        X[0] = (uint32_t)((x[i] - x_min) / delta * M);
+        X[1] = (uint32_t)((y[i] - y_min) / delta * M);
+        X[2] = (uint32_t)((z[i] - z_min) / delta * M);
+        axes_to_transpose(X, 21, 3);
+        H[i] = transpose_to_hilbert(X, 21, 3);
+    }
+    // sort x, y, z, w according to H
 }
 
 const int lebedev_degree = 230;

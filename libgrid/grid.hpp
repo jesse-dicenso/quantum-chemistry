@@ -1,8 +1,10 @@
 #ifndef GRIDHEADERDEF
 #define GRIDHEADERDEF
 
+#include "hilbert.hpp"
 #include "../libmol/mol.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -20,6 +22,7 @@ class grid{
 
 double becke_weight(const Molecule& mol, double x, double y, double z, int atom_me, int k = 3);
 double becke_step(double mu, int k);
+void hilbert_sort(std::vector<double>& x, std::vector<double>& y, std::vector<double>& z, std::vector<double>& w, const int size_g);
 
 template <typename F, typename... Args>
 double integrate_quad(const grid& g, F&& func, const Args&... args){
