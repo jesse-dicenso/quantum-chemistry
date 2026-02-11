@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/H2O.inp
+infile=inputs/acetaldehyde.inp
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=R_HFSNX

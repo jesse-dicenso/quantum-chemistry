@@ -21,6 +21,7 @@ void zero_xc_data(XC* inp, int spins);
 
 void eval_bfs_per_gpt(const XC& xc, std::vector<double>& phi_buf, int gpix);
 void eval_bfs_per_gpt(const XC& xc, Matrix& phi_buf, int gpix);
+void eval_bfs_per_batch(const XC& xc, Matrix& phi_buf, int g_start, int g_end);
 void eval_bfs_grad_per_gpt(const XC& xc, std::vector<double>& phi_buf, std::vector<double>& gpx_buf, std::vector<double>& gpy_buf, 
 	std::vector<double>& gpz_buf, std::vector<double>& temp_grad, int gpix);
 

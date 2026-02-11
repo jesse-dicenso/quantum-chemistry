@@ -1,21 +1,20 @@
 ## Introduction
 This is a simple quantum chemistry program that I began during Summer 2024. This program will be continuously developed for my own learning (and perhaps for yours as well).
 
-Most of the implementation is entirely from scratch. The only external code is from LAPACK/BLAS, specifically DSYEV (eigenvalues/eigenvectors) and DSYSV (solve linear systems, for DIIS). Everything else, including a class for matrices, was written by me!
-
 ## Current capabilities:
 
 - Methods: RHF, UHF, DFT (RKS, UKS).
 
 - Functionals:
+  - HF  : analytical and seminumerical exchange.
   - LDA : Slater exchange, VWN5, PW92.
   - GGA : PBE exchange, PBE (restricted only).
-  - MGGA: B97M-V 
-  - Nonlocal: VV10
+  - MGGA: B97M-V. 
+  - Nonlocal: VV10.
 
 - Integrals: McMurchie-Davidson recursive scheme with Cauchy-Schwarz screening for ERIs.
 
-- Grid: Gauss-Chebyshev-Lebedev (100 radial points, 230 angular points).
+- Grid: Gauss-Chebyshev-Lebedev (100 radial points, 230 angular points) sorted with a Hilbert curve to keep spatial locality in grid batches.
 
 - Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 

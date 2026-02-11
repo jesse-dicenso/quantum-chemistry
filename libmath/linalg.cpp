@@ -1,20 +1,12 @@
 #include "linalg.hpp"
 
 double& Matrix::operator()(int i, int j){
-    if(!((i < rows) && (j < cols) && (i >= 0) && (j >= 0))){
-        std::cout << "bad row: " << i << std::endl;
-        std::cout << "bad col: " << j << std::endl;
-        assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
-    }
+    assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
     return data[cols * i + j];
 }
 
 const double& Matrix::operator()(int i, int j) const{
-    if(!((i < rows) && (j < cols) && (i >= 0) && (j >= 0))){
-        std::cout << "bad row: " << i << std::endl;
-        std::cout << "bad col: " << j << std::endl;
-        assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
-    }
+    assert((i < rows) && (j < cols) && (i >= 0) && (j >= 0));
     return data[cols * i + j];
 }
 
@@ -79,6 +71,12 @@ Matrix Matrix::operator*(const Matrix& A) const{
 	return product;	
 }
 
+void Matrix::resize(int r_new, int c_new){
+    rows = r_new;
+    cols = c_new;
+    data.resize(r_new * c_new);
+}
+
 std::vector<double> Matrix::getRow(int r) const{
     assert((r < rows) && (r >= 0));
     std::vector<double> row(cols);
@@ -97,6 +95,24 @@ std::vector<double> Matrix::getCol(int c) const{
     return col;
 }
 
+/*Matrix Matrix::getRow(int r) const{
+    assert((r < rows) && (r >= 0));
+    Matrix row(1, cols);
+    for(int i = 0; i < cols; i++){
+        row(0, i) = (*this)(r, i);
+    }
+    return row;
+}
+
+Matrix Matrix::getCol(int c) const{
+    assert((c < cols) && (c >= 0));
+    Matrix col(rows, 1);
+    for(int i = 0; i < rows; i++){
+        col(i, 0) = (*this)(i, c);
+    }
+    return col;
+}*/
+
 Matrix transpose(const Matrix& A){
 	Matrix tp(A.cols, A.rows);
 	for(int i = 0; i < A.rows; i++){
@@ -108,6 +124,7 @@ Matrix transpose(const Matrix& A){
 }
 
 void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols){
+    AM.resize(size);
     for(int i = 0; i < size; i++){
         AM.emplace_back(rows, cols);
     }
@@ -262,12 +279,76 @@ std::vector<double> sym_linear_solve(const Matrix& A, const Matrix& B, int* icd)
 	return b;
 }
 
-/*void Matrix::printMatrix(int w){
-	for(int i = 0; i < rows; i++){
-		for(int j = 0; j < cols; j++){
-			std::cout << std::setw(w) << data(i * rows + j) << std::setw(w);
-		}
-		std::cout << '\n';
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//                           //
+//    BEGIN Tensor3 CLASS    //
+//                           //
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+double& Tensor3::operator()(int i, int j, int k){
+    assert((i < dim1) && (j < dim2) && (k < dim3) && (i >= 0) && (j >= 0) && (k >= 0));
+    return data[dim2 * dim3 * i + dim3 * j + k];
+}
+
+const double& Tensor3::operator()(int i, int j, int k) const{
+    assert((i < dim1) && (j < dim2) && (k < dim3) && (i >= 0) && (j >= 0) && (k >= 0));
+    return data[dim2 * dim3 * i + dim3 * j + k];
+}
+
+Tensor3 Tensor3::operator-() const{
+	Tensor3 tns(dim1, dim2, dim3);
+	for(int i = 0; i < dim1 * dim2 * dim3; i++){
+		tns.data[i] = -data[i];
 	}
-	std::cout << '\n';
-}*/
+	return tns;
+}
+
+Tensor3& Tensor3::operator=(const Tensor3& A){
+	dim1 = A.dim1;
+	dim2 = A.dim2;
+	dim3 = A.dim3;
+    data = A.data;
+	return *this;
+}
+
+Tensor3& Tensor3::operator=(Tensor3&& A){
+	dim1 = A.dim1;
+	dim2 = A.dim2;
+	dim3 = A.dim3;
+    data = std::move(A.data);
+	return *this;
+}
+
+Tensor3 Tensor3::operator+(const Tensor3& A) const{
+	assert((dim1==A.dim1) && (dim2==A.dim2) && (dim3==A.dim3));
+	Tensor3 sum(dim1, dim2, dim3);
+	for(int i = 0; i < dim1 * dim2 * dim3; i++){
+		sum.data[i] = data[i] + A.data[i];
+	}
+	return sum;
+}
+
+Tensor3 Tensor3::operator-(const Tensor3& A) const{
+	assert((dim1==A.dim1) && (dim2==A.dim2) && (dim3==A.dim3));
+	Tensor3 dif(dim1, dim2, dim3);
+	for(int i = 0; i < dim1 * dim2 * dim3; i++){
+		dif.data[i] = data[i] - A.data[i];
+	}
+	return dif;
+}
+
+Tensor3 Tensor3::operator*(double c) const{
+	Tensor3 tns(dim1, dim2, dim3);
+	for(int i = 0; i < dim1 * dim2 * dim3; i++){
+		tns.data[i] = data[i] * c;
+	}
+	return tns;
+}
+
+void Tensor3::resize(int dim1_new, int dim2_new, int dim3_new){
+    dim1 = dim1_new;
+    dim2 = dim2_new;
+    dim3 = dim3_new;
+    data.resize(dim1_new * dim2_new * dim3_new);
+}
+

@@ -93,51 +93,92 @@ void HFX(XC* xc){
 	xc->E_XC *= 0.5;
 }
 
-// Helper for *_HF_SNX
-void SNX_A(XC* xc, Matrix& A, int gpix){
-	const std::vector<GF>& bfs = xc->mol->AOs;
-	const std::vector<double> xyzg = {xc->g->x[gpix], xc->g->y[gpix], xc->g->z[gpix]};
-	for(int sg = 0; sg < A.rows; sg++){
-		for(int nu = 0; nu < A.cols; nu++){
-			A(sg, nu) = V(bfs[sg], bfs[nu], xyzg);
+// Helper for *_HF_SNX; builds "3 index tensor" A_{\nu \lambda g}
+void SNX_A(const XC& xc, Tensor3& A, int g_start, int g_end){
+    const int size_bf = xc.mol->AOs.size();
+    assert((A.dim1==(g_end - g_start)) && (A.dim2 == size_bf) && (A.dim3 == size_bf));
+	const std::vector<GF>& bfs = xc.mol->AOs;
+    const std::vector<double>& x = xc.g->x;
+    const std::vector<double>& y = xc.g->y;
+    const std::vector<double>& z = xc.g->z;
+    const std::vector<double>& w = xc.g->w;
+    std::vector<double> xyz_g(3);
+    for(int g = g_start; g < g_end; g++){
+        xyz_g[0] = x[g];
+        xyz_g[1] = y[g];
+        xyz_g[2] = z[g];
+	    for(int sg = 0; sg < size_bf; sg++){
+		    for(int nu = 0; nu < size_bf; nu++){
+		    	A(g, sg, nu) = w[g] * V(bfs[sg], bfs[nu], xyz_g); // w[g] included in A
+		    }
+	    }
+    }
+}
+
+// Returns transpose of G (K = XG^T)
+// Assumes A is arranged s.t. g is slow idx
+Matrix contract_A_F(const Tensor3& A, const Matrix& F){
+    const int size_bf = F.rows;
+    const int size_bg = A.dim1;
+    assert((A.dim2 == size_bf) && (A.dim3 == size_bf));
+	Matrix G_T(size_bg, size_bf); // G is size_bf * size_gb and this is G^T
+	for(int g = 0; g < size_bg; g++){
+		for(int nu = 0; nu < size_bf; nu++){
+			for(int ld = 0; ld < size_bf; ld++){
+				G_T(g, nu) += A(g, nu, ld) * F(ld, g);
+			}
 		}
 	}
+	return G_T;
 }
 
 void HFSNX(XC* xc){
-	assert((xc->g!=nullptr) && (xc->mol!=nullptr));
+	assert((xc->g!=nullptr) && (xc->mol!=nullptr));	
+    const int size_p = xc->mol->AOs.size();
+    const int size_g = xc->g->num_gridpoints;
     const int spins = (xc->restricted ? 1 : 2);
     const double spin_factor = (xc->restricted ? 0.5 : 1.0);
     for(int s = 0; s < spins; s++){
         assert((xc->P[s]!=nullptr) && (xc->F_XC[s]!=nullptr));
     }
 	const std::vector<Matrix*>& p = xc->P;
-	const int size_p = xc->mol->AOs.size();
-    const int size_g = xc->g->num_gridpoints;
-	const std::vector<double>& w = xc->g->w;
-	
+    constexpr int target_batch_size = 64;
+    const int num_batches = (size_g + (target_batch_size - 1)) / target_batch_size; // round up int div	
     zero_xc_data(xc, spins);
     #pragma omp parallel
     {
+	    Matrix X;
+        Tensor3 A;
+        std::vector<Matrix> G_T;
         std::vector<Matrix> fxc;
         mat_alloc(fxc, spins, size_p, size_p);
+        #pragma omp for schedule(dynamic)
+        for(int gb = 0; gb < num_batches; gb++){
+            const int g_start = target_batch_size * gb;
+            const int g_end = std::min(target_batch_size * (gb + 1), size_g);
+            const int size_gb = g_end - g_start;
 
-	    Matrix X(size_p, 1);
-	    Matrix A(size_p, size_p);
-        std::vector<Matrix> G;
-        mat_alloc(G, spins, size_p, 1);
-        #pragma omp for
-        for(int g = 0; g < size_g; g++){
-            eval_bfs_per_gpt(*xc, X, g);
-            SNX_A(xc, A, g);
+            X.resize(size_p, size_gb);
+            A.resize(size_gb, size_p, size_p); // want g to be slow index
+            mat_alloc(G_T, spins, size_p, size_gb);
+
+            eval_bfs_per_batch(*xc, X, g_start, g_end);
+            SNX_A(*xc, A, g_start, g_end);
+
             for(int s = 0; s < spins; s++){
-                G[s] = (A * (*p[s] * X)) * w[g];
-                for(int mu = 0; mu < size_p; mu++){
-                    for(int nu = 0; nu < size_p; nu++){
-                        fxc[s](mu, nu) -= spin_factor * X(mu, 0) * G[s](nu, 0);
+                G_T[s] = contract_A_F(A, *p[s] * X);
+                fxc[s] = X * G_T[s] * (-spin_factor);
+            }
+            /*for(int g = 0; g < size_gb; g++){
+                for(int s = 0; s < spins; s++){
+                    G[s] = (A * (*p[s] * X)) * w[g];
+                    for(int mu = 0; mu < size_p; mu++){
+                        for(int nu = 0; nu < size_p; nu++){
+                            fxc[s](mu, nu) -= spin_factor * X(mu, 0) * G[s](nu, 0);
+                        }
                     }
                 }
-            }
+            }*/
         }
         #pragma omp critical
         {
