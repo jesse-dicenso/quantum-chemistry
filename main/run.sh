@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/Ne.inp
+infile=inputs/H2O.inp
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=R_HFSNX
@@ -16,7 +16,7 @@ sps=5
 eps=1e-6
 
 # screening threshold for ERIs
-int_thresh=1e-14
+int_thresh=1e-12
 
 # maximum number of scf iterations
 max_cycles=50
@@ -24,6 +24,5 @@ max_cycles=50
 # population analysis: mulliken, lowdin
 pop=lowdin
 
-#export OMP_NUM_THREADS=$(nproc);
-export OMP_NUM_THREADS=1;
+export OMP_NUM_THREADS=$(nproc);
 { time ./QC-EXEC $infile $method $basis $sps $eps $int_thresh $max_cycles $pop; } 2>&1 | tee outfile.dat
