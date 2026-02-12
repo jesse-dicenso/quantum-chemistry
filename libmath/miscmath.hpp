@@ -8,6 +8,7 @@
 double intpow(double x, int n);
 double long fact(double long n);
 double long dfact(double long n);
+double long nCk(double long n, double long k);
 double dot(const std::vector<double>& a, const std::vector<double>& b);
 double boys(int n, double x);
 

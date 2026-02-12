@@ -1,5 +1,6 @@
 #include "func.hpp"
 #include "eval.hpp"
+#include "snx_helper.hpp"
 
 XC::XC(const std::string& method){
 	if		(method.substr(0,2)=="R_"){restricted=true;}
@@ -93,7 +94,7 @@ void HFX(XC* xc){
 	xc->E_XC *= 0.5;
 }
 
-// Helper for *_HF_SNX; builds "3 index tensor" A_{\nu \lambda g}
+/*// Helper for *_HF_SNX; builds "3 index tensor" A_{\nu \lambda g}
 void SNX_A(const XC& xc, Tensor3& A, int g_start, int g_end){
     const int size_bf = xc.mol->AOs.size();
     assert((A.dim1==(g_end - g_start)) && (A.dim2 == size_bf) && (A.dim3 == size_bf));
@@ -131,7 +132,7 @@ Matrix contract_A_F(const Tensor3& A, const Matrix& F){
 	}
 	return G_T;
 }
-
+*/
 void HFSNX(XC* xc){
 	assert((xc->g!=nullptr) && (xc->mol!=nullptr));	
     const int size_p = xc->mol->AOs.size();
@@ -159,7 +160,7 @@ void HFSNX(XC* xc){
             const int size_gb = g_end - g_start;
 
             X.resize(size_p, size_gb);
-            A.resize(size_gb, size_p, size_p); // want g to be slow index
+            A.resize(size_gb, size_p, size_p);      // want g to be slow index
             mat_alloc(G_T, spins, size_p, size_gb);
 
             eval_bfs_per_batch(*xc, X, g_start, g_end);
@@ -169,16 +170,6 @@ void HFSNX(XC* xc){
                 G_T[s] = contract_A_F(A, *p[s] * X);
                 fxc[s] = X * G_T[s] * (-spin_factor);
             }
-            /*for(int g = 0; g < size_gb; g++){
-                for(int s = 0; s < spins; s++){
-                    G[s] = (A * (*p[s] * X)) * w[g];
-                    for(int mu = 0; mu < size_p; mu++){
-                        for(int nu = 0; nu < size_p; nu++){
-                            fxc[s](mu, nu) -= spin_factor * X(mu, 0) * G[s](nu, 0);
-                        }
-                    }
-                }
-            }*/
         }
         #pragma omp critical
         {

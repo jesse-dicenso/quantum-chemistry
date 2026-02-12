@@ -37,6 +37,12 @@ double long dfact(double long n){
 	}
 }
 
+double long nCk(double long n, double long k){
+    assert((n>=0) && (k>=0));
+    if(n < k){return 0.0;}
+    else{return fact(n) / (fact(k) * fact(n - k));}
+}
+
 double dot(const std::vector<double>& a, const std::vector<double>& b){
 	assert(a.size()==b.size());
 	const int size_a = a.size();

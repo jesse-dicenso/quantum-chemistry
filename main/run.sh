@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file name
-infile=inputs/acetaldehyde.inp
+infile=inputs/H2O.inp
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
 method=R_HFSNX
@@ -13,7 +13,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-6
+eps=1e-8
 
 # screening threshold for ERIs
 int_thresh=1e-12
