@@ -9,7 +9,9 @@ int main(int argc, char* argv[]){
 	//ofstream out("outfile.dat");
 	//auto coutbuf = cout.rdbuf(out.rdbuf());
 
-	const string infile = argv[1];
+    auto start_job = std::chrono::high_resolution_clock::now();
+	
+    const string infile = argv[1];
 	const string method = argv[2];
 	const string basis_set = argv[3];
 	const int sps = stoi(argv[4]);
@@ -116,11 +118,9 @@ int main(int argc, char* argv[]){
 	xc.mol  = &M;
 
     if(xc.isSNX){
-        cout << "Computing SNX screening matrix..." << endl;
-        *(xc.snx_screen) = V_screen(M.AOs);
+        xc.snx_screen = V_screen(M.AOs);
         xc.snx_thresh_e = snx_thresh_e;
         xc.snx_thresh_k = snx_thresh_k;
-        cout << "Computed SNX screening matrix." << endl;
     }
 
 	if(r){
@@ -139,16 +139,17 @@ int main(int argc, char* argv[]){
 	cout << "----------------------------------------------------\n";
 	cout.flush();	
 
-	const Matrix s = overlap(M.AOs);
+    // For timing SCF //
+    auto start_scf = std::chrono::high_resolution_clock::now();
+    // For timing SCF //
+	
+    const Matrix s = overlap(M.AOs);
     const Matrix s2 = m_inv_sqrt(s);
     if(xc.isNLC){xc.overlap = &s;}
 	const Matrix hcore = kinetic(M.AOs) + nuclear(M.AOs, M.Zvals, M.xyz);
 	const Matrix x = m_inv_sqrt(s);
 	// Restricted
 	if(r){
-        // For timing SCF //
-        auto start_scf = std::chrono::high_resolution_clock::now();
-        // For timing SCF //
 
 		Matrix p  (K, K);
 		Matrix fxc(K, K);
@@ -192,7 +193,7 @@ int main(int argc, char* argv[]){
 		}
         // For timing SCF //
         auto end_scf = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration<double>(end_scf - start_scf);
+        auto duration_scf = std::chrono::duration<double>(end_scf - start_scf);
         // For timing SCF //
 		cout << "----------------------------------------------------\n";
 
@@ -235,7 +236,10 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
-            cout << "SCF time (wall, s) = " << std::setprecision(2) << duration.count() << "\n\n";
+            auto end_job = std::chrono::high_resolution_clock::now();
+            auto duration_job = std::chrono::duration<double>(end_job - start_job);
+            cout << "SCF time (wall, s) = " << std::setprecision(2) << duration_scf.count() << "\n";
+            cout << "Job time (wall, s) = " << std::setprecision(2) << duration_job.count() << "\n";
 		}
 	}
 	// Unrestricted
@@ -294,8 +298,11 @@ int main(int argc, char* argv[]){
 					cycles+=1;
 				}
 			}
-		}
-		
+		}	
+        // For timing SCF //
+        auto end_scf = std::chrono::high_resolution_clock::now();
+        auto duration_scf = std::chrono::duration<double>(end_scf - start_scf);
+        // For timing SCF //
 		cout << "----------------------------------------------------\n";
 		if(cycles > max_cycles){
 			cerr << "ERR: No convergence after " << max_cycles << " cycles!\n";
@@ -360,6 +367,10 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
+            auto end_job = std::chrono::high_resolution_clock::now();
+            auto duration_job = std::chrono::duration<double>(end_job - start_job);
+            cout << "SCF time (wall, s) = " << std::setprecision(2) << duration_scf.count() << "\n";
+            cout << "Job time (wall, s) = " << std::setprecision(2) << duration_job.count() << "\n";
 		}
 	}
 

@@ -5,35 +5,35 @@ XC::XC(const std::string& method){
 	if		(method.substr(0,2)=="R_"){restricted=true;}
 	else if (method.substr(0,2)=="U_"){restricted=false;}
 	else{throw std::invalid_argument("ERR: method must be restricted 'R_' or unrestricted 'U_'");}
-    const unsigned int func = xc_register[method.substr(2)];
+    const Functional func = xc_register.at(method.substr(2));
     switch(func){
-        case 0 : 
+        case Functional::HF : 
             isHF = true;
             break;
-        case 1 : 
+        case Functional::SNX : 
             isSNX = true;
             break;
-        case 10 : 
+        case Functional::SLATER : 
             xc_functional = Slater;
             isLDA = true;
             break;
-        case 11 : 
+        case Functional::VWN5 : 
             xc_functional = VWN5;
             isLDA = true;
             break;
-        case 12 : 
+        case Functional::PW92 : 
             xc_functional = PW92;
             isLDA = true;
             break;
-        case 20 : 
+        case Functional::PBE_X : 
             xc_functional = PBE_X;
             isGGA = true;
             break;
-        case 21 : 
+        case Functional::PBE : 
             xc_functional = PBE;
             isGGA = true;
             break;
-        case 30 : 
+        case Functional::B97M_V : 
             xc_functional = B97M_V;
             nlc_functional = VV10;
             nlc_params = {6.0, 0.01};
@@ -46,16 +46,16 @@ XC::XC(const std::string& method){
     }
 }
 
-std::unordered_map<std::string, unsigned int> xc_register = 
+const std::unordered_map<std::string, Functional> xc_register = 
 {
-	{ "HF"     ,  0},
-	{ "SNX"    ,  1},
-	{ "Slater" , 10},
-	{ "VWN5"   , 11},
-	{ "PW92"   , 12},
-	{ "PBE_X"  , 20},
-	{ "PBE"    , 21},
-	{ "B97M-V" , 30}
+	{ "HF"     , Functional::HF     },
+	{ "SNX"    , Functional::SNX    },
+	{ "Slater" , Functional::SLATER },
+	{ "VWN5"   , Functional::VWN5   },
+	{ "PW92"   , Functional::PW92   },
+	{ "PBE_X"  , Functional::PBE_X  },
+	{ "PBE"    , Functional::PBE    },
+	{ "B97M-V" , Functional::B97M_V }
 };
 
 ///////////////////////////////////////////////////////////////////
@@ -94,10 +94,11 @@ void HFX(XC* xc){
 }
 
 void SNX(XC* xc){
-	assert((xc->g!=nullptr) && (xc->mol!=nullptr) && (xc->snx_screen!=nullptr));
+    //auto start_K = std::chrono::high_resolution_clock::now();
+    assert((xc->g!=nullptr) && (xc->mol!=nullptr));
     
     const double snx_int_thresh = xc->snx_thresh_k;
-    const Matrix Vs = *(xc->snx_screen);
+    const Matrix& Vs = xc->snx_screen;
     
     const int spins = (xc->restricted ? 1 : 2);
     const double spin_factor = (xc->restricted ? 0.5 : 1.0);
@@ -144,14 +145,15 @@ void SNX(XC* xc){
             }
         }
     }
-    for(int mu = 0; mu < size_p; mu++){
-        for(int nu = 0; nu < size_p; nu++){
-            for(int s = 0; s < spins; s++){
-                xc->E_XC += (*xc->F_XC[s])(mu, nu) * (*p[s])(mu, nu);
-            }
-        }
+    for(int s = 0; s < spins; s++){
+        *xc->F_XC[s] = (*xc->F_XC[s] + transpose(*xc->F_XC[s])) * 0.5; // symmetrize
+        xc->E_XC += Tr((*xc->F_XC[s]) * (*p[s]));
     }
 	xc->E_XC *= 0.5;
+
+    //auto end_K = std::chrono::high_resolution_clock::now();
+    //auto duration_K = std::chrono::duration<double>(end_K - start_K);
+    //std::cout << "K time (wall, s) = " << std::setprecision(2) << duration_K.count() << std::setprecision(10) << std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////

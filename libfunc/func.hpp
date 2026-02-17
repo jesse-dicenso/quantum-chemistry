@@ -5,9 +5,23 @@
 #include "dft_helper.hpp"
 #include "snx_helper.hpp"
 
+#include <chrono>
+#include <iostream>
+#include <iomanip>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
+enum class Functional{
+    HF,
+    SNX,
+    SLATER,
+    VWN5,
+    PW92,
+    PBE_X,
+    PBE,
+    B97M_V
+};
 
 // XC_* contains per-grid point quantities
 struct XC_inp{
@@ -58,7 +72,7 @@ class XC{
         double E_XC = 0.0;
 
         // For SNX
-        Matrix* snx_screen = nullptr;
+        Matrix snx_screen;
         double snx_thresh_e = 1e-10;
         double snx_thresh_k = 1e-7;
 
@@ -67,7 +81,7 @@ class XC{
         std::vector<double> nlc_params;
 };
 
-extern std::unordered_map<std::string, unsigned int> xc_register; 
+extern const std::unordered_map<std::string, Functional> xc_register; 
 
 // HF //
 void HFX  (XC* xc);

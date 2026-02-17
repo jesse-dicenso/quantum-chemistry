@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # input/output file names
-infile=inputs/H2.inp
+infile=inputs/CH3.inp
 outfile=outfile.dat
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=R_SNX
+method=U_SNX
 
 # basis set
 basis=STO-3G
@@ -14,7 +14,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-8
+eps=1e-6
 
 # maximum number of scf iterations
 max_cycles=50
@@ -25,7 +25,7 @@ pop=lowdin
 # screening threshold for ERIs and SNX (if applicable)
 eri_thresh=1e-10
 snx_thresh_e=1e-10
-snx_thresh_k=1e-7
+snx_thresh_k=1e-8
 
 export OMP_NUM_THREADS=$(nproc);
 #export OMP_NUM_THREADS=1;

@@ -128,16 +128,3 @@ void reorder_by_indices(const std::vector<size_t>& sort_idx, std::vector<double>
     for(size_t i = 0; i < v.size(); i++){v_tmp[i] = v[sort_idx[i]];}
     v = v_tmp; 
 }
-/*void sort_by_indices(const std::vector<uint64_t>& v1, std::vector<double>& v2){
-    assert(v1.size() == v2.size());
-    size_t size_v = v1.size();
-    std::vector<size_t> idx(size_v);
-    std::iota(idx.begin(), idx.end(), 0);
-    std::stable_sort(idx.begin(), idx.end(), [&v1](size_t i1, size_t i2){return v1[i1] < v1[i2];});
-
-    std::vector<double> v2_tmp(size_v);
-    for(size_t i = 0; i < size_v; i++){
-        v2_tmp[i] = v2[idx[i]];
-    }
-    v2 = v2_tmp;
-}*/

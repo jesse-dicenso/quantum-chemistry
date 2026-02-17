@@ -19,11 +19,6 @@ void SNX_A(const XC& xc, Tensor3& A, const Matrix& Vs, double int_thresh, int g_
                 xyz_g[1] = y[g];
                 xyz_g[2] = z[g];
 		    	A(nu, ld, g-g_start) = w[g] * V(bfs[nu], bfs[ld], xyz_g); // w[g] included in A
-                //if(nu==ld){
-                //    std::cout << "wg*Vs" << nu << "," << ld << " = " << w[g] * Vs(nu,ld) << std::endl;
-                //    std::cout << "wg*Ag" << nu << "," << ld << " = " << A(nu, ld, g) << std::endl;
-                //    std::cout.flush();
-                //}
 		    }
 	    }
     }
@@ -50,8 +45,10 @@ Matrix V_screen(const std::vector<GF>& bfs){
     Matrix result(size_bf, size_bf);
     for(int mu = 0; mu < size_bf; mu++){
         result(mu, mu) = V_screen_cGTOs(bfs[mu], bfs[mu]);
+        //std::cout << "V" << mu << "," << mu << " = " << result(mu,mu) << std::endl;
         for(int nu = 0; nu < mu; nu++){
             result(mu, nu) = V_screen_cGTOs(bfs[mu], bfs[nu]);
+            //std::cout << "V" << mu << "," << nu << " = " << result(mu,nu) << std::endl;
             result(nu, mu) = result(mu, nu);
         }
     }
