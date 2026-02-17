@@ -2,7 +2,7 @@
 #include "func.hpp"
 
 // Build 3 index tensor A_{\nu \lambda g} for batch of gridpoints
-void SNX_A(const XC& xc, Tensor3& A, /*const Matrix& Vs, double int_thresh,*/ int g_start, int g_end){
+void SNX_A(const XC& xc, Tensor3& A, const Matrix& Vs, double int_thresh, int g_start, int g_end){
     const int size_bf = xc.mol->AOs.size();
     assert((A.dim1==size_bf) && (A.dim2==size_bf) && (A.dim3==(g_end-g_start)));
 	const std::vector<GF>& bfs = xc.mol->AOs;
@@ -13,7 +13,7 @@ void SNX_A(const XC& xc, Tensor3& A, /*const Matrix& Vs, double int_thresh,*/ in
     std::vector<double> xyz_g(3);
 	for(int nu = 0; nu < size_bf; nu++){
 		for(int ld = 0; ld < size_bf; ld++){
-            //if(Vs(nu, ld) < int_thresh){continue;}
+            if(Vs(nu, ld) < int_thresh){continue;}
             for(int g = g_start; g < g_end; g++){
                 xyz_g[0] = x[g];
                 xyz_g[1] = y[g];
@@ -94,7 +94,7 @@ double V_screen_primitives(int r, int s, double a, double b, double QAB){
     const double I_ab = 2 * M_PI * B_Ylm(a, r) * B_Ylm(b, s);
     double result = 0.0;
     for(int t = 0; t <= r / 2; t++){
-        for(int u = 0; u <= s / 2; s++){
+        for(int u = 0; u <= s / 2; u++){
             result += E_rstu(r, s, t, u, a, b, QAB) * fact(t + u) / intpow(a + b, 1 + t + u);
         }
     }

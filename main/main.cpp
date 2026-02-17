@@ -115,13 +115,13 @@ int main(int argc, char* argv[]){
 	xc.g    = &mol_grid;
 	xc.mol  = &M;
 
-    /*if(xc.isSNX){
+    if(xc.isSNX){
         cout << "Computing SNX screening matrix..." << endl;
         *(xc.snx_screen) = V_screen(M.AOs);
         xc.snx_thresh_e = snx_thresh_e;
         xc.snx_thresh_k = snx_thresh_k;
         cout << "Computed SNX screening matrix." << endl;
-    }*/
+    }
 
 	if(r){
 		cout << "Performing restricted calculation...\n";	

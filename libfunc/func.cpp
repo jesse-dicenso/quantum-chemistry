@@ -94,10 +94,10 @@ void HFX(XC* xc){
 }
 
 void SNX(XC* xc){
-	//assert((xc->g!=nullptr) && (xc->mol!=nullptr) && (xc->snx_screen!=nullptr));
+	assert((xc->g!=nullptr) && (xc->mol!=nullptr) && (xc->snx_screen!=nullptr));
     
-    //const double snx_int_thresh = xc->snx_thresh_k;
-    //const Matrix Vs = *(xc->snx_screen);
+    const double snx_int_thresh = xc->snx_thresh_k;
+    const Matrix Vs = *(xc->snx_screen);
     
     const int spins = (xc->restricted ? 1 : 2);
     const double spin_factor = (xc->restricted ? 0.5 : 1.0);
@@ -130,7 +130,7 @@ void SNX(XC* xc){
             mat_alloc(G_T, spins, size_p, size_gb);
 
             eval_bfs_per_batch(*xc, X, g_start, g_end);
-            SNX_A(*xc, A, /*Vs, snx_int_thresh,*/ g_start, g_end);
+            SNX_A(*xc, A, Vs, snx_int_thresh, g_start, g_end);
 
             for(int s = 0; s < spins; s++){
                 G_T[s] = contract_A_F(A, *p[s] * X);

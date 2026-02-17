@@ -12,7 +12,7 @@
 class XC;
 
 // Build 3 index tensor A_{\nu \lambda g} for batch of gridpoints
-void SNX_A(const XC& xc, Tensor3& A, /*const Matrix& Vs, double int_thresh,*/ int g_start, int g_end);
+void SNX_A(const XC& xc, Tensor3& A, const Matrix& Vs, double int_thresh, int g_start, int g_end);
 
 // Contract A and F to give G^T, assumes g is fast idx of A
 Matrix contract_A_F(const Tensor3& A, const Matrix& F);
