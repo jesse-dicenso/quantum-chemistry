@@ -5,7 +5,7 @@
 
 void scf_xc_call(XC* xc){
     if(xc->isHF){HFX(xc);}
-    else if(xc->isHFSN){HFSNX(xc);}
+    else if(xc->isSNX){SNX(xc);}
     else if(xc->isLDA){LDA(xc);}
     else if((xc->isGGA) || (xc->isMGGA)){GGA_MGGA(xc);}
     if(xc->isNLC){xc->nlc_functional(xc);}
@@ -117,17 +117,18 @@ void eval_bfs_per_gpt(const XC& xc, Matrix& phi_buf, int gpix){
 }
 
 void eval_bfs_per_batch(const XC& xc, Matrix& phi_buf, int g_start, int g_end){
-	assert(phi_buf.cols==(g_start - g_end));
 	const int size_p = xc.mol->AOs.size();
+	assert(phi_buf.rows==size_p);
+	assert(phi_buf.cols==(g_end - g_start));
 	const std::vector<GF>& bfs = xc.mol->AOs;
 	const std::vector<double>& gx = xc.g->x;
 	const std::vector<double>& gy = xc.g->y;
 	const std::vector<double>& gz = xc.g->z;
 	for(int j = 0; j < size_p; j++){
         for(int sub_g = g_start; sub_g < g_end; sub_g++){
-		    phi_buf(j, sub_g) = bfs[j].evaluate(gx[sub_g], gy[sub_g], gz[sub_g]);
+		    phi_buf(j, sub_g - g_start) = bfs[j].evaluate(gx[sub_g], gy[sub_g], gz[sub_g]);
         }
-	}	
+	}
 }
 
 void eval_bfs_grad_per_gpt(const XC& xc, std::vector<double>& phi_buf, std::vector<double>& gpx_buf, std::vector<double>& gpy_buf, 

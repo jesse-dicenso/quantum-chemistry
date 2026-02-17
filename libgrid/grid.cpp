@@ -108,13 +108,27 @@ void hilbert_sort(std::vector<double>& x, std::vector<double>& y, std::vector<do
         H[i] = transpose_to_hilbert(X);
     }
     // sort x, y, z, w according to H
-    sort_by_indices(H, x);
-    sort_by_indices(H, y);
-    sort_by_indices(H, z);
-    sort_by_indices(H, w);
+    const std::vector<size_t> sort_indices = get_sort_indices(H);
+    reorder_by_indices(sort_indices, x);
+    reorder_by_indices(sort_indices, y);
+    reorder_by_indices(sort_indices, z);
+    reorder_by_indices(sort_indices, w);
 }
 
-void sort_by_indices(const std::vector<uint64_t>& v1, std::vector<double>& v2){
+std::vector<size_t> get_sort_indices(const std::vector<uint64_t>& v1){
+    std::vector<size_t> idx(v1.size());
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&v1](size_t i1, size_t i2){return v1[i1] < v1[i2];});
+    return idx;
+}
+
+void reorder_by_indices(const std::vector<size_t>& sort_idx, std::vector<double>& v){
+    assert(sort_idx.size() == v.size());
+    std::vector<double> v_tmp(v.size());
+    for(size_t i = 0; i < v.size(); i++){v_tmp[i] = v[sort_idx[i]];}
+    v = v_tmp; 
+}
+/*void sort_by_indices(const std::vector<uint64_t>& v1, std::vector<double>& v2){
     assert(v1.size() == v2.size());
     size_t size_v = v1.size();
     std::vector<size_t> idx(size_v);
@@ -126,4 +140,4 @@ void sort_by_indices(const std::vector<uint64_t>& v1, std::vector<double>& v2){
         v2_tmp[i] = v2[idx[i]];
     }
     v2 = v2_tmp;
-}
+}*/

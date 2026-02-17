@@ -1,6 +1,5 @@
 #include "func.hpp"
 #include "eval.hpp"
-#include "snx_helper.hpp"
 
 XC::XC(const std::string& method){
 	if		(method.substr(0,2)=="R_"){restricted=true;}
@@ -8,11 +7,11 @@ XC::XC(const std::string& method){
 	else{throw std::invalid_argument("ERR: method must be restricted 'R_' or unrestricted 'U_'");}
     const unsigned int func = xc_register[method.substr(2)];
     switch(func){
-        case 00 : 
+        case 0 : 
             isHF = true;
             break;
-        case 01 : 
-            isHFSN = true;
+        case 1 : 
+            isSNX = true;
             break;
         case 10 : 
             xc_functional = Slater;
@@ -49,8 +48,8 @@ XC::XC(const std::string& method){
 
 std::unordered_map<std::string, unsigned int> xc_register = 
 {
-	{ "HF"     , 00},
-	{ "HF_SNX" , 01},
+	{ "HF"     ,  0},
+	{ "SNX"    ,  1},
 	{ "Slater" , 10},
 	{ "VWN5"   , 11},
 	{ "PW92"   , 12},
@@ -94,57 +93,24 @@ void HFX(XC* xc){
 	xc->E_XC *= 0.5;
 }
 
-/*// Helper for *_HF_SNX; builds "3 index tensor" A_{\nu \lambda g}
-void SNX_A(const XC& xc, Tensor3& A, int g_start, int g_end){
-    const int size_bf = xc.mol->AOs.size();
-    assert((A.dim1==(g_end - g_start)) && (A.dim2 == size_bf) && (A.dim3 == size_bf));
-	const std::vector<GF>& bfs = xc.mol->AOs;
-    const std::vector<double>& x = xc.g->x;
-    const std::vector<double>& y = xc.g->y;
-    const std::vector<double>& z = xc.g->z;
-    const std::vector<double>& w = xc.g->w;
-    std::vector<double> xyz_g(3);
-    for(int g = g_start; g < g_end; g++){
-        xyz_g[0] = x[g];
-        xyz_g[1] = y[g];
-        xyz_g[2] = z[g];
-	    for(int sg = 0; sg < size_bf; sg++){
-		    for(int nu = 0; nu < size_bf; nu++){
-		    	A(g, sg, nu) = w[g] * V(bfs[sg], bfs[nu], xyz_g); // w[g] included in A
-		    }
-	    }
-    }
-}
-
-// Returns transpose of G (K = XG^T)
-// Assumes A is arranged s.t. g is slow idx
-Matrix contract_A_F(const Tensor3& A, const Matrix& F){
-    const int size_bf = F.rows;
-    const int size_bg = A.dim1;
-    assert((A.dim2 == size_bf) && (A.dim3 == size_bf));
-	Matrix G_T(size_bg, size_bf); // G is size_bf * size_gb and this is G^T
-	for(int g = 0; g < size_bg; g++){
-		for(int nu = 0; nu < size_bf; nu++){
-			for(int ld = 0; ld < size_bf; ld++){
-				G_T(g, nu) += A(g, nu, ld) * F(ld, g);
-			}
-		}
-	}
-	return G_T;
-}
-*/
-void HFSNX(XC* xc){
-	assert((xc->g!=nullptr) && (xc->mol!=nullptr));	
-    const int size_p = xc->mol->AOs.size();
-    const int size_g = xc->g->num_gridpoints;
+void SNX(XC* xc){
+	//assert((xc->g!=nullptr) && (xc->mol!=nullptr) && (xc->snx_screen!=nullptr));
+    
+    //const double snx_int_thresh = xc->snx_thresh_k;
+    //const Matrix Vs = *(xc->snx_screen);
+    
     const int spins = (xc->restricted ? 1 : 2);
     const double spin_factor = (xc->restricted ? 0.5 : 1.0);
     for(int s = 0; s < spins; s++){
         assert((xc->P[s]!=nullptr) && (xc->F_XC[s]!=nullptr));
     }
 	const std::vector<Matrix*>& p = xc->P;
+    const int size_p = xc->mol->AOs.size();
+    
+    const int size_g = xc->g->num_gridpoints;
     constexpr int target_batch_size = 64;
     const int num_batches = (size_g + (target_batch_size - 1)) / target_batch_size; // round up int div	
+   
     zero_xc_data(xc, spins);
     #pragma omp parallel
     {
@@ -160,15 +126,15 @@ void HFSNX(XC* xc){
             const int size_gb = g_end - g_start;
 
             X.resize(size_p, size_gb);
-            A.resize(size_gb, size_p, size_p);      // want g to be slow index
+            A.resize(size_p, size_p, size_gb);
             mat_alloc(G_T, spins, size_p, size_gb);
 
             eval_bfs_per_batch(*xc, X, g_start, g_end);
-            SNX_A(*xc, A, g_start, g_end);
+            SNX_A(*xc, A, /*Vs, snx_int_thresh,*/ g_start, g_end);
 
             for(int s = 0; s < spins; s++){
                 G_T[s] = contract_A_F(A, *p[s] * X);
-                fxc[s] = X * G_T[s] * (-spin_factor);
+                fxc[s] = fxc[s] + X * G_T[s] * (-spin_factor);
             }
         }
         #pragma omp critical

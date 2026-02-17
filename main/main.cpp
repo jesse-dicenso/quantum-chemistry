@@ -14,9 +14,12 @@ int main(int argc, char* argv[]){
 	const string basis_set = argv[3];
 	const int sps = stoi(argv[4]);
 	const double eps = stod(argv[5]);
-    const double int_thresh = stod(argv[6]);
-	const int max_cycles = stoi(argv[7]);
-	const string pop = argv[8];
+	const int max_cycles = stoi(argv[6]);
+	const string pop = argv[7];
+    
+    const double eri_thresh = stod(argv[8]);
+    const double snx_thresh_e = stod(argv[9]);
+    const double snx_thresh_k = stod(argv[10]);
 
 	int cycles = 1;
 	double err = eps + 1;
@@ -102,15 +105,23 @@ int main(int argc, char* argv[]){
 	cout << "Nuclear Repulsion Energy = " << nuc << " Ha\n\n";
     cout.flush();
 	
-	cout << "Computing ERIs..." << endl;
-	const vector<vector<vector<vector<double>>>> eris = ERIs(M.AOs, int_thresh);
-	cout << "ERIs computed.\n" << endl;
+	cout << "Computing ERIs...\n";
+	const vector<vector<vector<vector<double>>>> eris = ERIs(M.AOs, eri_thresh);
+	cout << "ERIs computed.\n";
 
 	const grid mol_grid(M);
 	XC xc(method);
 	xc.eris = &eris;
 	xc.g    = &mol_grid;
 	xc.mol  = &M;
+
+    /*if(xc.isSNX){
+        cout << "Computing SNX screening matrix..." << endl;
+        *(xc.snx_screen) = V_screen(M.AOs);
+        xc.snx_thresh_e = snx_thresh_e;
+        xc.snx_thresh_k = snx_thresh_k;
+        cout << "Computed SNX screening matrix." << endl;
+    }*/
 
 	if(r){
 		cout << "Performing restricted calculation...\n";	
@@ -135,6 +146,10 @@ int main(int argc, char* argv[]){
 	const Matrix x = m_inv_sqrt(s);
 	// Restricted
 	if(r){
+        // For timing SCF //
+        auto start_scf = std::chrono::high_resolution_clock::now();
+        // For timing SCF //
+
 		Matrix p  (K, K);
 		Matrix fxc(K, K);
 		
@@ -175,6 +190,10 @@ int main(int argc, char* argv[]){
 				}
 			}
 		}
+        // For timing SCF //
+        auto end_scf = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration<double>(end_scf - start_scf);
+        // For timing SCF //
 		cout << "----------------------------------------------------\n";
 
 		if(cycles > max_cycles){
@@ -216,6 +235,7 @@ int main(int argc, char* argv[]){
 			}
 			cout << "=======================\n";
 			cout << "Sum of atomic charges = " << sum_chg << "\n\n";
+            cout << "SCF time (wall, s) = " << std::setprecision(2) << duration.count() << "\n\n";
 		}
 	}
 	// Unrestricted

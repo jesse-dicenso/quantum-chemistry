@@ -6,4 +6,6 @@
 #include "../libscf/scfr.hpp"
 #include "../libscf/scfu.hpp"
 
+#include <chrono>
+
 #endif

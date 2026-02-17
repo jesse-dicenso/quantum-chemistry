@@ -1,0 +1,6 @@
+# Ignore binaries, outputs, and tests
+*.o
+main/QC-EXEC
+main/outfile.dat
+main/he_chains.sh
+main/He_chains

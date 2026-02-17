@@ -3,6 +3,7 @@
 
 #include "../libint/1e.hpp"
 #include "dft_helper.hpp"
+#include "snx_helper.hpp"
 
 #include <stdexcept>
 #include <string>
@@ -41,7 +42,7 @@ class XC{
         void (*nlc_functional)(XC* xc) = nullptr;
 		bool restricted;
         bool isHF   = false;
-        bool isHFSN = false;
+        bool isSNX  = false;
         bool isLDA  = false;
         bool isGGA  = false;
         bool isMGGA = false;
@@ -56,6 +57,11 @@ class XC{
 
         double E_XC = 0.0;
 
+        // For SNX
+        Matrix* snx_screen = nullptr;
+        double snx_thresh_e = 1e-10;
+        double snx_thresh_k = 1e-7;
+
         // For VV10
         const Matrix* overlap = nullptr;
         std::vector<double> nlc_params;
@@ -65,7 +71,7 @@ extern std::unordered_map<std::string, unsigned int> xc_register;
 
 // HF //
 void HFX  (XC* xc);
-void HFSNX(XC* xc);	// Seminumerical Exchange
+void SNX(XC* xc); // Seminumerical Exchange
 
 // LDA //
 void Slater(const XC& xc, const XC_inp& inp, XC_ret& ret);

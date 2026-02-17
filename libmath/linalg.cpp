@@ -124,7 +124,7 @@ Matrix transpose(const Matrix& A){
 }
 
 void mat_alloc(std::vector<Matrix>& AM, int size, int rows, int cols){
-    AM.resize(size);
+    AM.resize(0);
     for(int i = 0; i < size; i++){
         AM.emplace_back(rows, cols);
     }

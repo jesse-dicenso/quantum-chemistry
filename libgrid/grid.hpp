@@ -23,8 +23,10 @@ class grid{
 
 double becke_weight(const Molecule& mol, double x, double y, double z, int atom_me, int k = 3);
 double becke_step(double mu, int k);
+
 void hilbert_sort(std::vector<double>& x, std::vector<double>& y, std::vector<double>& z, std::vector<double>& w, const int size_g);
-void sort_by_indices(const std::vector<uint64_t>& v1, std::vector<double>& v2);
+std::vector<size_t> get_sort_indices(const std::vector<uint64_t>& v1);
+void reorder_by_indices(const std::vector<size_t>& sort_idx, std::vector<double>& v);
 
 template <typename F, typename... Args>
 double integrate_quad(const grid& g, F&& func, const Args&... args){
