@@ -366,7 +366,7 @@ namespace _PBE{
 	inline constexpr double beta = 0.066725;
 	inline constexpr double kappa = 0.804;
 	inline constexpr double mu = beta * (M_PI * M_PI / 3);
-	inline const     double gamma = (1 - log(2)) / (M_PI * M_PI);
+	inline const     double gam = (1 - log(2)) / (M_PI * M_PI);
 }
 
 void PBE_X(const XC& xc, const XC_inp& inp, XC_ret& ret){
@@ -504,16 +504,16 @@ void PBE(const XC& xc, const XC_inp& inp, XC_ret& ret){
     // PBE correlation correction
     const double ks = sqrt(4 * kF / M_PI);
     const double t2 = grho2 / (4 * ks * ks * rho * rho);
-    double A_PBE = (beta / gamma) / (exp(-eps_c_LDA / gamma) - 1);
+    double A_PBE = (beta / gam) / (exp(-eps_c_LDA / gam) - 1);
     A_PBE = (A_PBE > 1e10 ? 1e10 : A_PBE);
     const double dnm = 1 + A_PBE * t2 + A_PBE * A_PBE * t2 * t2;
-    const double Q = 1 + (beta / gamma) * t2 * (1 + A_PBE * t2) / dnm;
-    const double H = gamma * log(Q);
+    const double Q = 1 + (beta / gam) * t2 * (1 + A_PBE * t2) / dnm;
+    const double H = gam * log(Q);
 
     const double dH_dt2 = (beta / Q) * (1 + 2 * A_PBE * t2) / (dnm * dnm);
     const double dt2_dn = -(7.0 / 3.0) * t2 / rho;
     const double dH_dA_PBE = -(beta / Q) * A_PBE * t2 * t2 * t2 * (2 + A_PBE * t2) / (dnm * dnm);
-    const double dA_PBE_deps = A_PBE * (A_PBE + beta / gamma) / beta;
+    const double dA_PBE_deps = A_PBE * (A_PBE + beta / gam) / beta;
     const double dt2_dgrho2 = t2 / grho2;
 
     ret.e_XC += rho * (eps_c_LDA + H);
