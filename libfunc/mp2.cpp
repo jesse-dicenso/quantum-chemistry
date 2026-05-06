@@ -9,7 +9,7 @@ struct tens4 {
         m_data.assign(d1*d2*d3*d4, 0.0);
     }
     const double& operator()(size_t i, size_t j, size_t k, size_t l) const {
-        assert((i < d1) && (j < d2) && (k < d3) && (l < d4));
+        assert((i < m_dims[0]) && (j < m_dims[1]) && (k < m_dims[2]) && (l < m_dims[3]));
         return m_data[i*m_strides[0] + j*m_strides[1] + k*m_strides[2] + l];
     }
     double& operator()(size_t i, size_t j, size_t k, size_t l) {
@@ -37,47 +37,47 @@ double MP2_ENERGY(
     tens4 MO_ERIS(nocc, nvirt, nocc, nvirt);
 
     // Transform first index (occ)
-    for (size_t i = 0; i < nocc; ++i)        // occ , MO
-    for (size_t mu = 0; mu < nocc; ++mu)     // occ , AO
-    for (size_t nu = nocc + 1; nu < K; ++nu) // virt, AO
-    for (size_t ld = 0; ld < nocc; ++ld)     // occ , AO
-    for (size_t sg = nocc + 1; sg < K; ++sg) // virt, AO
+    for (size_t i = 0; i < nocc; ++i) // MO (occ)
+    for (size_t mu = 0; mu < K; ++mu) // AO
+    for (size_t nu = 0; nu < K; ++nu) // AO
+    for (size_t ld = 0; ld < K; ++ld) // AO
+    for (size_t sg = 0; sg < K; ++sg) // AO
         MO_ERIS(i, nu, ld, sg) += C(mu, i) * eris[mu][nu][ld][sg]; 
     }
 
     // Transform second index (virt)
-    for (size_t i = 0; i < nocc; ++i)        // occ , MO
-    for (size_t a = nocc + 1; a < K; ++a)    // virt, MO
-    for (size_t nu = nocc + 1; nu < K; ++nu) // virt, AO
-    for (size_t ld = 0; ld < nocc; ++ld)     // occ , AO
-    for (size_t sg = nocc + 1; sg < K; ++sg) // virt, AO
-        MO_ERIS(i, a, ld, sg) += C(nu, a) * MO_ERIS(i, nu, ld, sg); 
+    for (size_t i = 0; i < nocc ; ++i) // MO (occ)
+    for (size_t a = 0; a < nvirt; ++a) // MO (virt)
+    for (size_t nu = 0; nu < K; ++nu)  // AO
+    for (size_t ld = 0; ld < K; ++ld)  // AO
+    for (size_t sg = 0; sg < K; ++sg)  // AO
+        MO_ERIS(i, a, ld, sg) += C(nu, a+nocc) * MO_ERIS(i, nu, ld, sg); 
     }
 
     // Transform third index (occ)
-    for (size_t i = 0; i < nocc; ++i)        // occ , MO
-    for (size_t a = nocc + 1; a < K; ++a)    // virt, MO
-    for (size_t j = 0; j < nocc; ++j)        // occ , MO
-    for (size_t ld = 0; ld < nocc; ++ld)     // occ , AO
-    for (size_t sg = nocc + 1; sg < K; ++sg) // virt, AO
+    for (size_t i = 0; i < nocc ; ++i) // MO (occ)
+    for (size_t a = 0; a < nvirt; ++a) // MO (virt)
+    for (size_t j = 0; j < nocc ; ++j) // MO (occ)
+    for (size_t ld = 0; ld < K; ++ld)  // AO
+    for (size_t sg = 0; sg < K; ++sg)  // AO
         MO_ERIS(i, a, j, sg) += C(ld, j) * MO_ERIS(i, a, ld, sg); 
     }
 
     // Transform fourth index (virt)
-    for (size_t i = 0; i < nocc; ++i)        // occ , MO
-    for (size_t a = nocc + 1; a < K; ++a)    // virt, MO
-    for (size_t j = 0; j < nocc; ++j)        // occ , MO
-    for (size_t b = nocc + 1; b < K; ++b)    // virt, MO
-    for (size_t sg = nocc + 1; sg < K; ++sg) // virt, AO
-        MO_ERIS(i, a, j, b) += C(sg, b) * MO_ERIS(i, a, j, sg); 
+    for (size_t i = 0; i < nocc ; ++i) // MO (occ)
+    for (size_t a = 0; a < nvirt; ++a) // MO (virt)
+    for (size_t j = 0; j < nocc ; ++j) // MO (occ)
+    for (size_t b = 0; b < nvirt; ++b) // MO (virt)
+    for (size_t sg = 0; sg < K; ++sg)  // AO
+        MO_ERIS(i, a, j, b) += C(sg, b+nocc) * MO_ERIS(i, a, j, sg); 
     }
 
     // Compute E_MP2
     double E_MP2 = 0.0;
-    for (size_t i = 0; i < nocc; ++i)        // occ
-    for (size_t a = nocc + 1; a < K; ++a)    // virt
-    for (size_t j = 0; j < nocc; ++j)        // occ
-    for (size_t b = nocc + 1; b < K; ++b) {  // virt
+    for (size_t i = 0; i < nocc ; ++i)   // MO (occ)
+    for (size_t a = 0; a < nvirt; ++a)   // MO (virt)
+    for (size_t j = 0; j < nocc ; ++j)   // MO (occ)
+    for (size_t b = 0; b < nvirt; ++b) { // MO (virt)
         const double Delta_ijab = e(i,i) + e(j,j) - e(a,a) - e(b,b);
         const double numerator  = MO_ERIS(i,a,j,b) * (2.0 * MO_ERIS(i,a,j,b) - MO_ERIS(i,b,j,a));
         E_MP2 += numerator / Delta_ijab;
