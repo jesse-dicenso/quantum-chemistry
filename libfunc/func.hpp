@@ -20,7 +20,9 @@ enum class Functional{
     PW92,
     PBE_X,
     PBE,
-    B97M_V
+    B97M_V, 
+    PBE0,
+    PBE0_DH
 };
 
 // XC_* contains per-grid point quantities
@@ -61,6 +63,7 @@ class XC{
         bool isGGA  = false;
         bool isMGGA = false;
         bool isNLC  = false;
+        bool isGH   = false;
 
         std::vector<Matrix*> P;
         std::vector<Matrix*> F_XC;
@@ -79,12 +82,17 @@ class XC{
         // For VV10
         const Matrix* overlap = nullptr;
         std::vector<double> nlc_params;
+
+        // For global hybrids
+        double fraction_sl_x = 0.0;
+        double fraction_sl_c = 0.0;
+        double fraction_hf_x = 0.0;
 };
 
 extern const std::unordered_map<std::string, Functional> xc_register; 
 
 // HF //
-void HFX  (XC* xc);
+void HFX(XC* xc);
 void SNX(XC* xc); // Seminumerical Exchange
 
 // LDA //
@@ -101,6 +109,5 @@ void B97M_V(const XC& xc, const XC_inp& inp, XC_ret& ret);
 
 // NLC //
 void VV10(XC* xc);
-//XC_ret VV10_per_gpt(XC* xc, double ref_rho, double ref_grho2, const double b, const double C);
 
 #endif

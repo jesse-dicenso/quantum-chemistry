@@ -15,6 +15,7 @@ void scf_xc_call(XC* xc);
 // Evaluate E_XC, F_XC
 void LDA (XC* xc);
 void GGA_MGGA(XC* xc);
+void GH(XC* xc);
 
 // Helpers
 void zero_xc_data(XC* inp, int spins);

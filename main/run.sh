@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # input/output file names
-infile=inputs/CH3.inp
+infile=inputs/H2.inp
 outfile=outfile.dat
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=U_SNX
+method=R_PBE0
 
 # basis set
 basis=STO-3G
@@ -14,7 +14,7 @@ basis=STO-3G
 sps=5
 
 # convergence criterion (energy)
-eps=1e-6
+eps=1e-8
 
 # maximum number of scf iterations
 max_cycles=50

@@ -14,7 +14,7 @@ double S(const GF& g1, const GF& g2){
         double sum = 0;
         for(int i = 0; i < size_1; i++){
                 for(int j = 0; j < size_2; j++){
-			sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Sp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz);
+			        sum += g1.N[i] * g2.N[j] * g1.d[i] * g2.d[j] * Sp(g1.shell, g2.shell, g1.exps[i], g2.exps[j], g1.xyz, g2.xyz);
                 }
         }
         return sum;

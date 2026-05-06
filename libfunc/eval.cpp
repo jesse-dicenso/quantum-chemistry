@@ -5,9 +5,11 @@
 
 void scf_xc_call(XC* xc){
     if(xc->isHF){HFX(xc);}
-    else if(xc->isSNX){SNX(xc);}
-    else if(xc->isLDA){LDA(xc);}
-    else if((xc->isGGA) || (xc->isMGGA)){GGA_MGGA(xc);}
+    else if( xc->isSNX){SNX(xc);}
+    else if( xc->isLDA){LDA(xc);}
+    else if(((xc->isGGA) || (xc->isMGGA)) && (!xc->isGH)){GGA_MGGA(xc);}
+    else if( xc->isGH ){GH(xc);}
+
     if(xc->isNLC){xc->nlc_functional(xc);}
 }
 
@@ -81,6 +83,11 @@ void GGA_MGGA(XC* xc){
         }
 	}
     xc->E_XC = E_XC;
+}
+
+void GH(XC* xc) {
+    GGA_MGGA(xc); // semilocal part first
+    HFX(xc);      // then HF exchange
 }
 
 // Helpers //////////////////////////////////////////////////////

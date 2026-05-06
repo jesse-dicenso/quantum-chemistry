@@ -9,6 +9,7 @@ XC::XC(const std::string& method){
     switch(func){
         case Functional::HF : 
             isHF = true;
+            fraction_hf_x = 1.0;
             break;
         case Functional::SNX : 
             isSNX = true;
@@ -32,6 +33,8 @@ XC::XC(const std::string& method){
         case Functional::PBE : 
             xc_functional = PBE;
             isGGA = true;
+            fraction_sl_x = 1.0;
+            fraction_sl_c = 1.0;
             break;
         case Functional::B97M_V : 
             xc_functional = B97M_V;
@@ -39,6 +42,22 @@ XC::XC(const std::string& method){
             nlc_params = {6.0, 0.01};
             isMGGA = true;
             isNLC = true;
+            break;
+        case Functional::PBE0 : 
+            xc_functional = PBE;
+            isGGA = true;
+            isGH  = true;
+            fraction_sl_x = 0.75;
+            fraction_hf_x = 0.25;
+            fraction_sl_c = 1.0;
+            break;
+        case Functional::PBE0_DH : 
+            xc_functional = PBE;
+            isGGA = true;
+            isGH  = true; // MP2 done post-SCF; treat as global hybrid at SCF level
+            fraction_sl_x = 0.5;
+            fraction_hf_x = 0.5;
+            fraction_sl_c = 0.875;
             break;
         default :
             throw std::invalid_argument("ERR: method unknown");
@@ -55,13 +74,16 @@ const std::unordered_map<std::string, Functional> xc_register =
 	{ "PW92"   , Functional::PW92   },
 	{ "PBE_X"  , Functional::PBE_X  },
 	{ "PBE"    , Functional::PBE    },
-	{ "B97M-V" , Functional::B97M_V }
+	{ "B97M-V" , Functional::B97M_V },
+	{ "PBE0"   , Functional::PBE0   },
+	{ "PBE0-DH", Functional::PBE0_DH}
 };
 
 ///////////////////////////////////////////////////////////////////
 // HF /////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+// For standalone HF
 void HFX(XC* xc){
 	assert(xc->eris!=nullptr);
     const int spins = (xc->restricted ? 1 : 2);
@@ -71,26 +93,35 @@ void HFX(XC* xc){
     const int dim = xc->F_XC[0]->rows;
     const double spin_factor = (xc->restricted ? 0.5 : 1.0);
     std::vector<double> fxc(spins, 0.0);
-	xc->E_XC = 0.0;
-	for(int mu = 0; mu < dim; mu++){
-		for(int nu = 0; nu < dim; nu++){
-            for(int s = 0; s < spins; s++){
+    if(!xc->isGH) {zero_xc_data(xc, spins);}
+
+    // Allocate fresh K matrices and add to 
+    // F_XC for the sake of global hybrids
+    std::vector<Matrix> K;
+    mat_alloc(K, spins, dim, dim);
+
+    const double frac_hfx = xc->fraction_hf_x;
+    for(int s = 0; s < spins; s++) {
+        for(int mu = 0; mu < dim; mu++){
+            for(int nu = 0; nu < dim; nu++){
                 fxc[s] = 0.0;
-            }
-			for(int ld = 0; ld < dim; ld++){
-				for(int sg = 0; sg < dim; sg++){
-                    for(int s = 0; s < spins; s++){
-					    fxc[s] -= (*xc->P[s])(ld, sg) * (*xc->eris)[mu][ld][sg][nu];
+                for(int ld = 0; ld < dim; ld++){
+                    for(int sg = 0; sg < dim; sg++){
+                        fxc[s] -= (*xc->P[s])(ld, sg) * (*xc->eris)[mu][ld][sg][nu];
                     }
-				}
-			}
-            for(int s = 0; s < spins; s++){
-			    (*xc->F_XC[s])(mu, nu) = spin_factor * fxc[s]; 
-			    xc->E_XC += (*xc->F_XC[s])(mu, nu) * (*xc->P[s])(mu, nu);
+                }
+                K[s](mu, nu) = frac_hfx * spin_factor * fxc[s]; 
             }
-		}
-	}
-	xc->E_XC *= 0.5;
+        }
+    }
+
+    double E_HF_X = 0.0;
+    for(int s = 0; s < spins; s++){
+        (*xc->F_XC[s]) = (*xc->F_XC[s]) + K[s];
+        E_HF_X += 0.5 * Tr((*xc->P[s]) * K[s]);
+    }
+	xc->E_XC += E_HF_X;
+    std::cout << "E_HF_X = " << E_HF_X << std::endl;
 }
 
 void SNX(XC* xc){
@@ -128,7 +159,7 @@ void SNX(XC* xc){
 
             X.resize(size_p, size_gb);
             A.resize(size_p, size_p, size_gb);
-            mat_alloc(G_T, spins, size_p, size_gb);
+            mat_alloc(G_T, spins, size_gb, size_p); //
 
             eval_bfs_per_batch(*xc, X, g_start, g_end);
             SNX_A(*xc, A, Vs, snx_int_thresh, g_start, g_end);
@@ -461,6 +492,9 @@ void PBE(const XC& xc, const XC_inp& inp, XC_ret& ret){
 	using namespace _PBE;
 	assert(xc.restricted); // only restricted PBE for now!
 	
+    const double frac_x = xc.fraction_sl_x;
+    const double frac_c = xc.fraction_sl_c;
+
     // Slater Exchange
     const double rho = inp.rho;
     const double rho_3 = cbrt(rho);
@@ -486,10 +520,11 @@ void PBE(const XC& xc, const XC_inp& inp, XC_ret& ret){
     const double de_X_drho = v_LDA_X * FX + e_LDA_X * dFX_drho;
     const double de_X_dgrho2 = e_LDA_X * dFX_dgrho2;
 
-    ret.e_XC = e_LDA_X * FX;
-    ret.drho_XC = {de_X_drho};
-    ret.dgamma_XC = {de_X_dgrho2};
-
+    // Final exchange quantities
+    const double e_X = e_LDA_X * FX;
+    const double drho_X = de_X_drho;
+    const double dgamma_X = de_X_dgrho2;
+    
     // PW92 correlation
     const double rs = cbrt(3 / (4 * M_PI * rho));
     const double Q0  = -2 * A_P * (1 + a1_P * rs);
@@ -516,9 +551,14 @@ void PBE(const XC& xc, const XC_inp& inp, XC_ret& ret){
     const double dA_PBE_deps = A_PBE * (A_PBE + beta / gam) / beta;
     const double dt2_dgrho2 = t2 / grho2;
 
-    ret.e_XC += rho * (eps_c_LDA + H);
-    ret.drho_XC[0] += v_c_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_c_LDA_dn);
-    ret.dgamma_XC[0] += rho * dH_dt2 * dt2_dgrho2;
+    // Final correlation quantities
+    const double e_C = rho * (eps_c_LDA + H);
+    const double drho_C = v_c_LDA + H + rho * (dH_dt2 * dt2_dn + dH_dA_PBE * dA_PBE_deps * deps_c_LDA_dn);
+    const double dgamma_C = rho * dH_dt2 * dt2_dgrho2;
+    
+    ret.e_XC = (frac_x * e_X) + (frac_c * e_C);
+    ret.drho_XC = {(frac_x * drho_X) + (frac_c * drho_C)};
+    ret.dgamma_XC = {(frac_x * dgamma_X) + (frac_c * dgamma_C)};
 }
 
 ///////////////////////////////////////////////////////////////////
