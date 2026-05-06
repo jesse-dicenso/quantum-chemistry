@@ -30,49 +30,54 @@ double MP2_ENERGY(
     ) 
 {  
     // 
-    // Perform standard O(N^5) AO->MO ERI transformation
+    //  Perform standard O(N^5) AO->MO ERI transformation
     //
     const size_t nocc  = N/2;
     const size_t nvirt = K - nocc;
-    tens4 MO_ERIS(nocc, nvirt, nocc, nvirt);
 
     // Transform first index (occ)
+    tens4 T1(nocc, K, K, K);
     for (size_t i = 0; i < nocc; ++i) // MO (occ)
     for (size_t mu = 0; mu < K; ++mu) // AO
     for (size_t nu = 0; nu < K; ++nu) // AO
     for (size_t ld = 0; ld < K; ++ld) // AO
     for (size_t sg = 0; sg < K; ++sg) // AO
-        MO_ERIS(i, nu, ld, sg) += C(mu, i) * eris[mu][nu][ld][sg]; 
+        T1(i, nu, ld, sg) += C(mu, i) * eris[mu][nu][ld][sg]; 
     }
 
     // Transform second index (virt)
+    tens4 T2(nocc, nvirt, K, K);
     for (size_t i = 0; i < nocc ; ++i) // MO (occ)
     for (size_t a = 0; a < nvirt; ++a) // MO (virt)
     for (size_t nu = 0; nu < K; ++nu)  // AO
     for (size_t ld = 0; ld < K; ++ld)  // AO
     for (size_t sg = 0; sg < K; ++sg)  // AO
-        MO_ERIS(i, a, ld, sg) += C(nu, a+nocc) * MO_ERIS(i, nu, ld, sg); 
+        T2(i, a, ld, sg) += C(nu, a+nocc) * T1(i, nu, ld, sg); 
     }
 
     // Transform third index (occ)
+    tens4 T3(nocc, nvirt, nocc, K);
     for (size_t i = 0; i < nocc ; ++i) // MO (occ)
     for (size_t a = 0; a < nvirt; ++a) // MO (virt)
     for (size_t j = 0; j < nocc ; ++j) // MO (occ)
     for (size_t ld = 0; ld < K; ++ld)  // AO
     for (size_t sg = 0; sg < K; ++sg)  // AO
-        MO_ERIS(i, a, j, sg) += C(ld, j) * MO_ERIS(i, a, ld, sg); 
+        T3(i, a, j, sg) += C(ld, j) * T2(i, a, ld, sg); 
     }
 
     // Transform fourth index (virt)
+    tens4 MO_ERIS(nocc, nvirt, nocc, nvirt);
     for (size_t i = 0; i < nocc ; ++i) // MO (occ)
     for (size_t a = 0; a < nvirt; ++a) // MO (virt)
     for (size_t j = 0; j < nocc ; ++j) // MO (occ)
     for (size_t b = 0; b < nvirt; ++b) // MO (virt)
     for (size_t sg = 0; sg < K; ++sg)  // AO
-        MO_ERIS(i, a, j, b) += C(sg, b+nocc) * MO_ERIS(i, a, j, sg); 
+        MO_ERIS(i, a, j, b) += C(sg, b+nocc) * T3(i, a, j, sg); 
     }
 
-    // Compute E_MP2
+    //
+    //  Compute E_MP2
+    //
     double E_MP2 = 0.0;
     for (size_t i = 0; i < nocc ; ++i)   // MO (occ)
     for (size_t a = 0; a < nvirt; ++a)   // MO (virt)
