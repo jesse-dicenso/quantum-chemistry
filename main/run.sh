@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # input/output file names
-infile=inputs/H2.inp
+infile=inputs/acetaldehyde.inp
 outfile=outfile.dat
 
 # XC functional (R_, U_: HF, HFSNX, Slater, VWN5, PW92, PBE_X, PBE (R_ only), B97M-V (U_ only))
-method=R_PBE0
+method=R_PBE0-DH
 
 # basis set
 basis=STO-3G

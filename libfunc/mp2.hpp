@@ -5,6 +5,12 @@
 
 #include <vector>
 
-double MP2_ENERGY(const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, const Matrix& C, const Matrix& E);
+double MP2_ENERGY(
+        const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, // AO ERIs
+        const Matrix& C, // MO coefficient matrix, K * K
+        const Matrix& e, // Orbital energies (HF eigenvalues), K * K
+        size_t N,        // # electrons
+        size_t K         // # basis functions
+    );
 
 #endif

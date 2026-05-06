@@ -16,7 +16,7 @@ struct tens4 {
         assert((i < m_dims[0]) && (j < m_dims[1]) && (k < m_dims[2]) && (l < m_dims[3]));
         return m_data[i*m_strides[0] + j*m_strides[1] + k*m_strides[2] + l];
     }
-}
+};
 
 //
 //  Restricted MP2 correlation energy
@@ -25,8 +25,8 @@ double MP2_ENERGY(
         const std::vector<std::vector<std::vector<std::vector<double>>>>& eris, // AO ERIs
         const Matrix& C, // MO coefficient matrix, K * K
         const Matrix& e, // Orbital energies (HF eigenvalues), K * K
-        int N,           // # electrons
-        int K            // # basis functions
+        size_t N,        // # electrons
+        size_t K         // # basis functions
     ) 
 {  
     // 

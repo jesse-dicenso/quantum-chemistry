@@ -15,6 +15,7 @@
 enum class Functional{
     HF,
     SNX,
+    MP2,
     SLATER,
     VWN5,
     PW92,
@@ -58,12 +59,14 @@ class XC{
         void (*nlc_functional)(XC* xc) = nullptr;
 		bool restricted;
         bool isHF   = false;
+        bool isMP2  = false;
         bool isSNX  = false;
         bool isLDA  = false;
         bool isGGA  = false;
         bool isMGGA = false;
         bool isNLC  = false;
         bool isGH   = false;
+        bool isDH   = false;
 
         std::vector<Matrix*> P;
         std::vector<Matrix*> F_XC;
@@ -87,6 +90,9 @@ class XC{
         double fraction_sl_x = 0.0;
         double fraction_sl_c = 0.0;
         double fraction_hf_x = 0.0;
+
+        // For double hybrids
+        double fraction_pt2_c = 0.0;
 };
 
 extern const std::unordered_map<std::string, Functional> xc_register; 

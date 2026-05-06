@@ -14,6 +14,12 @@ XC::XC(const std::string& method){
         case Functional::SNX : 
             isSNX = true;
             break;
+        case Functional::MP2 : 
+            isHF  = true;
+            isMP2 = true;
+            fraction_hf_x  = 1.0;
+            fraction_pt2_c = 1.0;
+            break;
         case Functional::SLATER : 
             xc_functional = Slater;
             isLDA = true;
@@ -55,9 +61,11 @@ XC::XC(const std::string& method){
             xc_functional = PBE;
             isGGA = true;
             isGH  = true; // MP2 done post-SCF; treat as global hybrid at SCF level
-            fraction_sl_x = 0.5;
-            fraction_hf_x = 0.5;
-            fraction_sl_c = 0.875;
+            isDH  = true;
+            fraction_sl_x  = 0.5;
+            fraction_hf_x  = 0.5;
+            fraction_sl_c  = 0.875;
+            fraction_pt2_c = 0.125;
             break;
         default :
             throw std::invalid_argument("ERR: method unknown");
@@ -69,6 +77,7 @@ const std::unordered_map<std::string, Functional> xc_register =
 {
 	{ "HF"     , Functional::HF     },
 	{ "SNX"    , Functional::SNX    },
+	{ "MP2"    , Functional::MP2    },
 	{ "Slater" , Functional::SLATER },
 	{ "VWN5"   , Functional::VWN5   },
 	{ "PW92"   , Functional::PW92   },
@@ -83,7 +92,6 @@ const std::unordered_map<std::string, Functional> xc_register =
 // HF /////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-// For standalone HF
 void HFX(XC* xc){
 	assert(xc->eris!=nullptr);
     const int spins = (xc->restricted ? 1 : 2);
@@ -121,7 +129,6 @@ void HFX(XC* xc){
         E_HF_X += 0.5 * Tr((*xc->P[s]) * K[s]);
     }
 	xc->E_XC += E_HF_X;
-    std::cout << "E_HF_X = " << E_HF_X << std::endl;
 }
 
 void SNX(XC* xc){

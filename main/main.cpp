@@ -203,6 +203,12 @@ int main(int argc, char* argv[]){
 		}
 		else{
 			cout << "Convergence criterion met; exiting SCF loop.\n\n";
+            if (xc.isMP2 || xc.isDH) {
+                cout << "Computing MP2 correlation energy (fraction = " << xc.fraction_pt2_c << ")\n";
+                const double E_MP2 = xc.fraction_pt2_c * MP2_ENERGY(eris, c, e, N, K);
+			    cout << "MP2   Ec    = " << E_MP2 << " Ha\n\n";
+                Eo += E_MP2;
+            }
 			cout << "Total E     = " << Eo + nuc << " Ha\n\n";
 			
 			double trps = Tr(p*s);

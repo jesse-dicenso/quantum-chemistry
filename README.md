@@ -3,20 +3,22 @@ This is a simple quantum chemistry program that I began during Summer 2024. This
 
 ## Current capabilities:
 
-- Methods: RHF, UHF, DFT (RKS, UKS).
+- Methods: RHF, UHF, DFT (RKS, UKS), RMP2.
 
 - Functionals:
   - HF  : analytical and seminumerical exchange.
   - LDA : Slater exchange, VWN5, PW92.
   - GGA : PBE exchange, PBE (restricted only).
   - MGGA: B97M-V. 
+  - Global Hybrids: PBE0
+  - Double Hybrids: PBE0-DH
   - Nonlocal: VV10.
 
 - Integrals: McMurchie-Davidson recursive scheme with Cauchy-Schwarz screening for ERIs.
 
 - Grid: Gauss-Chebyshev-Lebedev (100 radial points, 230 angular points) sorted with a Hilbert curve to keep spatial locality in grid batches.
 
-- Basis Sets: STO-3G, def2-SVP (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
+- Basis Sets: STO-3G (others may be easily added from [Basis Set Exchange](https://www.basissetexchange.org/) with some slight modifications; see libmol).
 
 - SCF Algorithms: fixed-point, DIIS with variable subspace size.
 
